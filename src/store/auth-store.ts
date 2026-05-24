@@ -12,6 +12,7 @@ interface AuthState {
   isLoading: boolean;
   isNewUser: boolean;
   unreadMessages: number;
+  authError: string | null;
   initialize: () => Promise<void>;
   signInWithGitHub: () => Promise<void>;
   signInWithEmail: (email: string) => Promise<{ error: string | null }>;
@@ -28,30 +29,50 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
   isNewUser: false,
   unreadMessages: 0,
+  authError: null,
 
   initialize: async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    set({ session, user: session?.user ?? null, isLoading: false });
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      set({
+        session,
+        user: session?.user ?? null,
+        isLoading: false,
+        authError: null,
+      });
 
-    if (session?.user) {
-      await get().fetchProfile(session.user.id);
-      await get().fetchUnreadMessages();
-    }
-
-    authSubscription?.unsubscribe();
-    authSubscription = supabase.auth.onAuthStateChange((_event, session) => {
-      set({ session, user: session?.user ?? null });
       if (session?.user) {
-        (async () => {
-          await get().fetchProfile(session.user.id);
-          await get().fetchUnreadMessages();
-        })();
-      } else {
-        set({ profile: null, unreadMessages: 0 });
+        await get().fetchProfile(session.user.id);
+        await get().fetchUnreadMessages();
       }
-    }).data.subscription;
+
+      authSubscription?.unsubscribe();
+      authSubscription = supabase.auth.onAuthStateChange((_event, session) => {
+        set({ session, user: session?.user ?? null, authError: null });
+        if (session?.user) {
+          (async () => {
+            await get().fetchProfile(session.user.id);
+            await get().fetchUnreadMessages();
+          })();
+        } else {
+          set({ profile: null, unreadMessages: 0 });
+        }
+      }).data.subscription;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Impossible d'initialiser la session.";
+      console.error("Echec d'initialisation auth Supabase:", error);
+      set({
+        user: null,
+        session: null,
+        profile: null,
+        unreadMessages: 0,
+        isLoading: false,
+        authError: message,
+      });
+    }
   },
 
   signInWithGitHub: async () => {
