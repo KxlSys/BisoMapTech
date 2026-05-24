@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Spinner } from "@/components/ui/spinner";
 import { AppErrorBoundary } from "@/components/error/app-error-boundary";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth-store";
 
 function lazyWithRetry<T>(
@@ -129,11 +130,31 @@ export default function App() {
   const { initialize } = useAuthStore();
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      return;
+    }
     initialize();
     sessionStorage.removeItem(
       "lazy-retry-refreshed"
     );
   }, [initialize]);
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-3 px-6 text-center">
+        <h1 className="text-2xl font-bold">
+          Configuration manquante
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Cette page blanche venait d&apos;une erreur d&apos;initialisation Supabase. Ajoute les variables Vercel
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_URL</code>
+          et
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_ANON_KEY</code>
+          puis redéploie.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <AppErrorBoundary>
