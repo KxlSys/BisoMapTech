@@ -35,7 +35,7 @@ export function Navbar() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20">
               <Map className="h-4 w-4 text-primary" />
             </div>
-            <span className="hidden sm:inline tracking-tight">TechCongo</span>
+            <span className="hidden sm:inline tracking-tight">BisoMapTech</span>
           </Link>
 
           {/* Nav links */}
@@ -161,7 +161,7 @@ export function Navbar() {
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/20">
             <Map className="h-3.5 w-3.5 text-primary" />
           </div>
-          <span className="text-sm tracking-tight">TechCongo</span>
+          <span className="text-sm tracking-tight">BisoMapTech</span>
         </Link>
 
         <div className="flex items-center gap-1">

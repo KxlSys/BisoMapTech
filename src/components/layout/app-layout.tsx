@@ -17,7 +17,7 @@ export function AppLayout() {
         <footer className="hidden border-t border-white/10 py-3 md:block"
           style={{ background: "oklch(0.10 0.025 240 / 80%)" }}>
           <div className="mx-auto max-w-7xl px-4 text-center text-xs text-muted-foreground">
-            TechCongo Map &mdash; Cartographie de la communaute tech congolaise
+            BisoMapTech Map &mdash; Cartographie de la communaute tech congolaise
           </div>
         </footer>
       )}
