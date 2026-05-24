@@ -1,0 +1,58 @@
+import { Link } from "react-router-dom";
+import { Users, MapPin, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export function HomePage() {
+  return (
+    <div className="mx-auto max-w-6xl px-4 pb-24 pt-10 md:pb-8">
+      <div className="pointer-events-none absolute left-1/2 top-24 h-96 w-96 -translate-x-1/2 rounded-full bg-primary/6 blur-[120px]" />
+
+      <div className="mb-8 max-w-2xl">
+        <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
+          TechMapCongo
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
+          Deux cartes dans une seule app : les talents (communauté) et les lieux utiles.
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="glass-panel rounded-2xl border border-white/10 p-6">
+          <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Users className="h-5 w-5" />
+          </div>
+          <h2 className="text-xl font-bold">Talents</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Trouvez des profils tech, filtrez, matchez et envoyez un message.
+          </p>
+          <div className="mt-5">
+            <Link to="/talents">
+              <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
+                Ouvrir la carte
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="glass-panel rounded-2xl border border-white/10 p-6">
+          <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-foreground">
+            <MapPin className="h-5 w-5 text-tertiary" />
+          </div>
+          <h2 className="text-xl font-bold">Lieux</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Explorez et proposez des lieux utiles : restaurants, marchés, pharmacies, hubs tech…
+          </p>
+          <div className="mt-5">
+            <Link to="/lieux">
+              <Button className="gap-2 border border-white/15 bg-white/5 hover:bg-white/8 text-foreground font-semibold">
+                Ouvrir la carte
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
