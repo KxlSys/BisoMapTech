@@ -32,7 +32,7 @@ export function LoginPage() {
         <div className="relative z-10">
           <Link to="/" className="mb-16 flex items-center gap-2 text-primary">
             <MapPin className="h-5 w-5" />
-            <span className="text-lg font-bold tracking-tight text-foreground">TechCongo</span>
+            <span className="text-lg font-bold tracking-tight text-foreground">BisoMapTech</span>
           </Link>
 
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight">
@@ -84,7 +84,7 @@ export function LoginPage() {
           {/* Mobile logo */}
           <Link to="/" className="mb-8 flex items-center gap-2 text-primary lg:hidden">
             <MapPin className="h-5 w-5" />
-            <span className="text-base font-bold tracking-tight text-foreground">TechCongo</span>
+            <span className="text-base font-bold tracking-tight text-foreground">BisoMapTech</span>
           </Link>
 
           <div className="mb-7">

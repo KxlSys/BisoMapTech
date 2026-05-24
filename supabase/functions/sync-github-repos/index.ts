@@ -99,7 +99,7 @@ Deno.serve(async (req: Request) => {
       {
         headers: {
           Accept: "application/vnd.github.v3+json",
-          "User-Agent": "TechCongo-Map",
+          "User-Agent": "BisoMapTech-Map",
         },
       }
     );

@@ -1,14 +1,38 @@
 import type { Profile } from "@/types";
 
 const COMPLEMENTARY_ROLES: Record<string, string[]> = {
-  frontend: ["backend", "fullstack", "devops"],
-  backend: ["frontend", "fullstack", "mobile"],
-  fullstack: ["frontend", "backend", "data", "devops", "mobile"],
+  frontend: ["backend", "fullstack", "devops", "design"],
+  backend: ["frontend", "fullstack", "mobile", "devops", "data"],
+  fullstack: ["frontend", "backend", "data", "devops", "mobile", "design"],
+  mobile: ["backend", "fullstack", "devops", "design"],
   data: ["backend", "fullstack", "devops"],
-  devops: ["backend", "fullstack", "data"],
-  mobile: ["backend", "fullstack", "devops"],
-  autre: ["frontend", "backend", "fullstack", "data", "devops", "mobile"],
+  devops: ["backend", "fullstack", "data", "sysadmin", "cybersecurite"],
+  sysadmin: ["devops", "cybersecurite", "support", "hardware"],
+  cybersecurite: ["sysadmin", "devops", "backend", "support"],
+  support: ["sysadmin", "hardware", "cybersecurite"],
+  design: ["frontend", "fullstack", "mobile", "product"],
+  hardware: ["sysadmin", "support"],
+  product: ["frontend", "backend", "fullstack", "design", "enseignement"],
+  enseignement: ["product", "frontend", "backend", "data"],
+  nocode: ["design", "product", "frontend"],
+  autre: [
+    "frontend",
+    "backend",
+    "fullstack",
+    "mobile",
+    "data",
+    "devops",
+    "sysadmin",
+    "cybersecurite",
+    "support",
+    "design",
+    "hardware",
+    "product",
+    "enseignement",
+    "nocode",
+  ],
 };
+
 
 export interface MatchResult {
   profile: Profile;
