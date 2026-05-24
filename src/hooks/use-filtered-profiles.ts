@@ -209,7 +209,6 @@ export function useFilteredProfiles(
           city: mockArgs.city,
           département:
             mockArgs.département,
-
           roleType:
             mockArgs.roleType,
 

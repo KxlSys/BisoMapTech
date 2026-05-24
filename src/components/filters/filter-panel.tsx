@@ -2,14 +2,12 @@ import { Search, RotateCcw, SlidersHorizontal } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 import { useFilterStore } from "@/store/filter-store";
 
 import { CONGO_CITIES } from "@/lib/cities";
 
 import {
-  TECH_OPTIONS,
   ROLE_TYPE_LABELS,
   EXPERIENCE_LABELS,
   département_OPTIONS,
@@ -51,11 +49,9 @@ export function FilterPanel({
 
     setSearchQuery,
     setCity,
-    setdépartement,
-    setTechStack,
+    setDépartement,
     setRoleType,
     setExperienceLevel,
-    setOpenToCollaboration,
 
     resetFilters,
   } = useFilterStore();
@@ -231,7 +227,7 @@ export function FilterPanel({
 
         <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
           <button
-            onClick={() => setdépartement("all")}
+            onClick={() => setDépartement("all")}
             className={cn(
               "rounded-full border px-2.5 py-0.5 text-[11px] transition-all",
               !département || département === "all"
@@ -249,7 +245,7 @@ export function FilterPanel({
               <button
                 key={dep}
                 onClick={() =>
-                  setdépartement(
+                  setDépartement(
                     isActive ? "all" : dep
                   )
                 }
