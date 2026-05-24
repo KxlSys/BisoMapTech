@@ -57,7 +57,7 @@ export interface Profile {
   bio: string;
 
   city: string;
-  département: département;
+  département: Department;
 
   latitude: number;
   longitude: number;
@@ -112,6 +112,7 @@ export interface AdminInvitation {
 
 export interface CityCoordinates {
   name: string;
+  département: Department;
 
   latitude: number;
   longitude: number;
