@@ -32,27 +32,19 @@ const placeSchema = z.object({
   website: z
     .string()
     .optional()
-    .refine(
-      (v) => !v || /^https?:\/\//i.test(v),
-      "Le site doit commencer par http:// ou https://"
-    ),
-  latitude: z
-    .string()
-    .optional()
-    .refine(
-      (v) => !v || (!Number.isNaN(Number(v)) && Number(v) >= -90 && Number(v) <= 90),
-      "Latitude invalide (-90 à 90)"
-    ),
-  longitude: z
-    .string()
-    .optional()
-    .refine(
-      (v) => !v || (!Number.isNaN(Number(v)) && Number(v) >= -180 && Number(v) <= 180),
-      "Longitude invalide (-180 à 180)"
-    ),
+    .refine((v) => !v || /^https?:\/\//i.test(v), "Le site doit commencer par http:// ou https://"),
+  latitude: z.union([z.string(), z.number(), z.undefined(), z.null()]).optional().transform(v => {
+    if (v === "" || v === undefined || v === null) return undefined;
+    return Number(v);
+  }).pipe(z.number().min(-90).max(90).optional()),
+  longitude: z.union([z.string(), z.number(), z.undefined(), z.null()]).optional().transform(v => {
+    if (v === "" || v === undefined || v === null) return undefined;
+    return Number(v);
+  }).pipe(z.number().min(-180).max(180).optional()),
 });
 
-type PlaceFormData = z.infer<typeof placeSchema>;
+type PlaceFormInput = z.input<typeof placeSchema>;
+type PlaceFormOutput = z.output<typeof placeSchema>;
 
 export function PlaceCreatePage() {
   const { user } = useAuthStore();
@@ -64,7 +56,7 @@ export function PlaceCreatePage() {
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<PlaceFormData>({
+  } = useForm<PlaceFormInput, any, PlaceFormOutput>({
     resolver: zodResolver(placeSchema),
     defaultValues: {
       name: "",
@@ -86,7 +78,7 @@ export function PlaceCreatePage() {
     if (!user) navigate("/login");
   }, [user, navigate]);
 
-  async function onSubmit(data: PlaceFormData) {
+  async function onSubmit(data: PlaceFormOutput) {
     if (!user) return;
     try {
       const coords = getCityCoordinates(data.city);
