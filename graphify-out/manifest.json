@@ -1,0 +1,487 @@
+{
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\.graphify_detect.json": {
+    "mtime": 1779592180.363478,
+    "ast_hash": "0c18272a24ac812d387b3c89cde706c4",
+    "semantic_hash": "0c18272a24ac812d387b3c89cde706c4"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\components.json": {
+    "mtime": 1779588016.0,
+    "ast_hash": "99b875c74c56001d12d43258ffe0fe0c",
+    "semantic_hash": "99b875c74c56001d12d43258ffe0fe0c"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\package.json": {
+    "mtime": 1779588016.0,
+    "ast_hash": "d7faf1af0bc60c68f5528728d44f5eb1",
+    "semantic_hash": "d7faf1af0bc60c68f5528728d44f5eb1"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\tsconfig.app.json": {
+    "mtime": 1779588016.0,
+    "ast_hash": "901547f9f2b709368486096112bea925",
+    "semantic_hash": "901547f9f2b709368486096112bea925"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\tsconfig.json": {
+    "mtime": 1779588016.0,
+    "ast_hash": "7b5e29df8aa966a4f53eeb1d92c1c602",
+    "semantic_hash": "7b5e29df8aa966a4f53eeb1d92c1c602"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\tsconfig.node.json": {
+    "mtime": 1779588016.0,
+    "ast_hash": "eec85c9d7c6b599801557f1afd86672c",
+    "semantic_hash": "eec85c9d7c6b599801557f1afd86672c"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\vite.config.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "85c26be29c985ffdfe97607096e3a0ce",
+    "semantic_hash": "85c26be29c985ffdfe97607096e3a0ce"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\.bolt\\config.json": {
+    "mtime": 1779588016.0,
+    "ast_hash": "12d91ea3dbb0b15fe0746376ba1d12ce",
+    "semantic_hash": "12d91ea3dbb0b15fe0746376ba1d12ce"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\App.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "ee2b211f360a39d5dece44d9cdfb4efe",
+    "semantic_hash": "ee2b211f360a39d5dece44d9cdfb4efe"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\main.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "79a696b62aba9772738aff06135fb809",
+    "semantic_hash": "79a696b62aba9772738aff06135fb809"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\mode-toggle.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "0c8f6f042f7a5abbc0ef49f594566031",
+    "semantic_hash": "0c8f6f042f7a5abbc0ef49f594566031"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\theme-provider.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "7acb1d3d5f4e7cc8d9b87e04f197c094",
+    "semantic_hash": "7acb1d3d5f4e7cc8d9b87e04f197c094"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\filters\\filter-panel.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "5496bd2d593e9e691caba54c94dd257d",
+    "semantic_hash": "5496bd2d593e9e691caba54c94dd257d"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\hero\\hero-section.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "69fa275b970d7eec7c2606a7270dcb52",
+    "semantic_hash": "69fa275b970d7eec7c2606a7270dcb52"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\layout\\app-layout.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "618636b5883c526327c2a36448082995",
+    "semantic_hash": "618636b5883c526327c2a36448082995"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\layout\\navbar.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "c5dbb0a7ea56ca88726c6a4ecd62bc98",
+    "semantic_hash": "c5dbb0a7ea56ca88726c6a4ecd62bc98"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\map\\congo-map.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "32eb783ea732f72c7fb1484dc62f74b3",
+    "semantic_hash": "32eb783ea732f72c7fb1484dc62f74b3"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\onboarding\\onboarding-stepper.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "fcb15ee2e883423fbc9f4c92729bc876",
+    "semantic_hash": "fcb15ee2e883423fbc9f4c92729bc876"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\profile\\profile-card.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "fd566f0ed0ee1413212e1e75f4a991ba",
+    "semantic_hash": "fd566f0ed0ee1413212e1e75f4a991ba"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\accordion.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "9fa141d383e900bc92f1a78b203bc378",
+    "semantic_hash": "9fa141d383e900bc92f1a78b203bc378"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\alert-dialog.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "d0fac2578c24ac7767e2e69ad2d137fb",
+    "semantic_hash": "d0fac2578c24ac7767e2e69ad2d137fb"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\alert.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "f90e428654b2145ee1a80c66f46fdbef",
+    "semantic_hash": "f90e428654b2145ee1a80c66f46fdbef"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\aspect-ratio.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "12640eece02ed0eedea63d35360e6062",
+    "semantic_hash": "12640eece02ed0eedea63d35360e6062"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\avatar.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "c0136d9a1c07129863348811dcc037e0",
+    "semantic_hash": "c0136d9a1c07129863348811dcc037e0"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\badge.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "8510911fff59be294d64dbfc67f5c710",
+    "semantic_hash": "8510911fff59be294d64dbfc67f5c710"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\breadcrumb.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "f745d4c268d7b95d591932f9ba6c87e2",
+    "semantic_hash": "f745d4c268d7b95d591932f9ba6c87e2"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\button-group.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "3ed2c390c33124f07ba3b6de13aafc09",
+    "semantic_hash": "3ed2c390c33124f07ba3b6de13aafc09"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\button.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "5eb5c23dfc552fe75b9beeffacede350",
+    "semantic_hash": "5eb5c23dfc552fe75b9beeffacede350"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\card.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "5f465338c9c83716fd67bba76b9852d4",
+    "semantic_hash": "5f465338c9c83716fd67bba76b9852d4"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\chart.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "64a1d46e722b43214791858f60845205",
+    "semantic_hash": "64a1d46e722b43214791858f60845205"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\checkbox.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "8ab728d8b37af0d62855c63521e6aa5e",
+    "semantic_hash": "8ab728d8b37af0d62855c63521e6aa5e"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\collapsible.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "8afc6de380a5fda231f8500179a49984",
+    "semantic_hash": "8afc6de380a5fda231f8500179a49984"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\context-menu.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "7f0b02ab4aa2c7e64799a49680fd5fa3",
+    "semantic_hash": "7f0b02ab4aa2c7e64799a49680fd5fa3"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\dialog.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "993a9ca4c90359250f452aadd3e2e28c",
+    "semantic_hash": "993a9ca4c90359250f452aadd3e2e28c"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\direction.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "0e6607c55dc525d36700d40d576a5c4d",
+    "semantic_hash": "0e6607c55dc525d36700d40d576a5c4d"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\drawer.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "ffd797b65456e7a20ec47a7f23c533d7",
+    "semantic_hash": "ffd797b65456e7a20ec47a7f23c533d7"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\dropdown-menu.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "687ccb0d62020e2e0f9c1d894a825bd4",
+    "semantic_hash": "687ccb0d62020e2e0f9c1d894a825bd4"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\empty.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "389b7c49008cc028f232dbb88b823a3c",
+    "semantic_hash": "389b7c49008cc028f232dbb88b823a3c"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\field.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "cfc948bd0acf77acf10861264abb5071",
+    "semantic_hash": "cfc948bd0acf77acf10861264abb5071"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\form.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "8d0ada0108b2d32ea3fd1e903b9c464d",
+    "semantic_hash": "8d0ada0108b2d32ea3fd1e903b9c464d"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\hover-card.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "3e6682ccc96c7257152f39c1727e24dc",
+    "semantic_hash": "3e6682ccc96c7257152f39c1727e24dc"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\input-group.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "b433d2597a2ca2324e934cf2e640efaa",
+    "semantic_hash": "b433d2597a2ca2324e934cf2e640efaa"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\input.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "186052fef4d6a678824a3ac70ec3bdec",
+    "semantic_hash": "186052fef4d6a678824a3ac70ec3bdec"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\item.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "16a60b2befc66ed13b70ff9f4c545ddb",
+    "semantic_hash": "16a60b2befc66ed13b70ff9f4c545ddb"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\kbd.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "b202043155a7ab81c01211ce1d78b38f",
+    "semantic_hash": "b202043155a7ab81c01211ce1d78b38f"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\label.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "84c1875f4b045f280ff7e6947cab726b",
+    "semantic_hash": "84c1875f4b045f280ff7e6947cab726b"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\menubar.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "0c24231eb8fe61c5bfcbc1ad9acb6ed7",
+    "semantic_hash": "0c24231eb8fe61c5bfcbc1ad9acb6ed7"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\native-select.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "3239c5abbfa25236189b470a38d6e6f8",
+    "semantic_hash": "3239c5abbfa25236189b470a38d6e6f8"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\navigation-menu.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "5b61da8c889471fe7b7483e44d95264c",
+    "semantic_hash": "5b61da8c889471fe7b7483e44d95264c"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\pagination.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "ba23d7233a420983feef894ee045234d",
+    "semantic_hash": "ba23d7233a420983feef894ee045234d"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\popover.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "61634f232c0fee4cab67d97f8140b5d8",
+    "semantic_hash": "61634f232c0fee4cab67d97f8140b5d8"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\progress.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "6f1d36c0a5010b07d110eadc45dc5e91",
+    "semantic_hash": "6f1d36c0a5010b07d110eadc45dc5e91"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\radio-group.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "017a01d9f4021d142d6df7d5df502ac5",
+    "semantic_hash": "017a01d9f4021d142d6df7d5df502ac5"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\scroll-area.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "8bf02de15eee0da6e5942ea2ff1c64c3",
+    "semantic_hash": "8bf02de15eee0da6e5942ea2ff1c64c3"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\select.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "8f59eda15860f917b57c8c427e6a6960",
+    "semantic_hash": "8f59eda15860f917b57c8c427e6a6960"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\separator.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "31309c8fad1e9a91db2a4bdfb4988b45",
+    "semantic_hash": "31309c8fad1e9a91db2a4bdfb4988b45"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\sheet.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "2870f88e897b04912a4412cd1012de1b",
+    "semantic_hash": "2870f88e897b04912a4412cd1012de1b"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\sidebar.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "6306e80397ebc273f447bee6b11729cf",
+    "semantic_hash": "6306e80397ebc273f447bee6b11729cf"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\skeleton.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "64033a08d89d382ad050d80cbb0cc98d",
+    "semantic_hash": "64033a08d89d382ad050d80cbb0cc98d"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\slider.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "278677f40e6e49f2784ad57a3ffe6dd5",
+    "semantic_hash": "278677f40e6e49f2784ad57a3ffe6dd5"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\sonner.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "5dde0d04f3ecf6b5e812104aca12c546",
+    "semantic_hash": "5dde0d04f3ecf6b5e812104aca12c546"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\spinner.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "28b695734ef3b6840b47d713ae3d31ce",
+    "semantic_hash": "28b695734ef3b6840b47d713ae3d31ce"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\switch.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "087ecf042be8e20dcfdb89f95648e1df",
+    "semantic_hash": "087ecf042be8e20dcfdb89f95648e1df"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\table.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "272befb25c23dfc75de476daef37f02e",
+    "semantic_hash": "272befb25c23dfc75de476daef37f02e"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\tabs.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "3db2474e4c66b1e544bb514bf1024612",
+    "semantic_hash": "3db2474e4c66b1e544bb514bf1024612"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\textarea.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "b068d08e701aefd6216234a763e3a2ef",
+    "semantic_hash": "b068d08e701aefd6216234a763e3a2ef"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\toggle-group.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "5752d9fc30a6528c54c333d4fb1e442e",
+    "semantic_hash": "5752d9fc30a6528c54c333d4fb1e442e"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\toggle.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "19e57219410292dd065cc51cfa97159d",
+    "semantic_hash": "19e57219410292dd065cc51cfa97159d"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\components\\ui\\tooltip.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "870cad7a2a1504aa894032e4ff90d8e1",
+    "semantic_hash": "870cad7a2a1504aa894032e4ff90d8e1"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\hooks\\use-filtered-profiles.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "ecb017a6d703c0006fd760ff71ac35e5",
+    "semantic_hash": "ecb017a6d703c0006fd760ff71ac35e5"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\hooks\\use-mobile.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "209b5193af16624cdd89d3591480dd48",
+    "semantic_hash": "209b5193af16624cdd89d3591480dd48"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\lib\\cities.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "b083d47d9a5640d524322908e59b7ae5",
+    "semantic_hash": "b083d47d9a5640d524322908e59b7ae5"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\lib\\constants.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "4d1669419d7e97e5d6963f0987c850d3",
+    "semantic_hash": "4d1669419d7e97e5d6963f0987c850d3"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\lib\\matching.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "ae82b0d18638ffb5c93d500c9bedfbb1",
+    "semantic_hash": "ae82b0d18638ffb5c93d500c9bedfbb1"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\lib\\profile-service.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "8e2dc049f5262936a6a05ab3e4638180",
+    "semantic_hash": "8e2dc049f5262936a6a05ab3e4638180"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\lib\\supabase.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "89b2a045783f924192c60d24b67957fb",
+    "semantic_hash": "89b2a045783f924192c60d24b67957fb"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\lib\\utils.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "5a6fd53fdcf2be529e9cc0b718fde352",
+    "semantic_hash": "5a6fd53fdcf2be529e9cc0b718fde352"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\about-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "7f9110bd7aed7304385f976909ce8de6",
+    "semantic_hash": "7f9110bd7aed7304385f976909ce8de6"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\admin-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "7e50d261a1cf8506427b308faaeeb108",
+    "semantic_hash": "7e50d261a1cf8506427b308faaeeb108"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\auth-callback-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "1812d242f751175b75836e324c957696",
+    "semantic_hash": "1812d242f751175b75836e324c957696"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\contributors-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "63ea1b6015087cd0f3d805569384c661",
+    "semantic_hash": "63ea1b6015087cd0f3d805569384c661"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\login-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "9a273244567aaeb1ce032cf476fa1d17",
+    "semantic_hash": "9a273244567aaeb1ce032cf476fa1d17"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\map-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "77a291cac0ca1419a49dafe12e26f6a8",
+    "semantic_hash": "77a291cac0ca1419a49dafe12e26f6a8"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\matching-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "f1f423c61c11f80f0fc0450a2d7a80b2",
+    "semantic_hash": "f1f423c61c11f80f0fc0450a2d7a80b2"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\messages-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "5a8b5b16cc9984e45483304e2aa332f8",
+    "semantic_hash": "5a8b5b16cc9984e45483304e2aa332f8"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\onboarding-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "f29bda02bc605de11b0c3dc86aee15e1",
+    "semantic_hash": "f29bda02bc605de11b0c3dc86aee15e1"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\profile-detail-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "a95f047fc927e2ea12855a2989fe6792",
+    "semantic_hash": "a95f047fc927e2ea12855a2989fe6792"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\pages\\profile-edit-page.tsx": {
+    "mtime": 1779588016.0,
+    "ast_hash": "78931510247cba43d1613ce0b00d0890",
+    "semantic_hash": "78931510247cba43d1613ce0b00d0890"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\store\\auth-store.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "c69c2ce62cc126eab69f35194084955f",
+    "semantic_hash": "c69c2ce62cc126eab69f35194084955f"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\store\\filter-store.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "f9425a271204a740fced21d02bb30291",
+    "semantic_hash": "f9425a271204a740fced21d02bb30291"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\src\\types\\index.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "8e8cc3a7aef65acbdafce3e1cd079dec",
+    "semantic_hash": "8e8cc3a7aef65acbdafce3e1cd079dec"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\supabase\\functions\\sync-github-repos\\index.ts": {
+    "mtime": 1779588016.0,
+    "ast_hash": "c89ab3f839cce85668ace43ca2977e71",
+    "semantic_hash": "c89ab3f839cce85668ace43ca2977e71"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\supabase\\migrations\\20260523234142_create_profiles_and_repositories.sql": {
+    "mtime": 1779588016.0,
+    "ast_hash": "e7006255de29dfc705885bc4ff18fe5c",
+    "semantic_hash": "e7006255de29dfc705885bc4ff18fe5c"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\supabase\\migrations\\20260524002043_add_messages_table.sql": {
+    "mtime": 1779588016.0,
+    "ast_hash": "27ed7b96a042e635854bc3fb1e4bc1bf",
+    "semantic_hash": "27ed7b96a042e635854bc3fb1e4bc1bf"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\CLAUDE.md": {
+    "mtime": 1779591994.0200553,
+    "ast_hash": "0a4d7cb8da792e33b12924b311af4352",
+    "semantic_hash": "0a4d7cb8da792e33b12924b311af4352"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\index.html": {
+    "mtime": 1779588016.0,
+    "ast_hash": "4b1ff64f637afe35d5b82f67548fcd1c",
+    "semantic_hash": "4b1ff64f637afe35d5b82f67548fcd1c"
+  },
+  "C:\\Users\\DrSmoke\\Downloads\\TechMapCongo\\public\\vite.svg": {
+    "mtime": 1779588016.0,
+    "ast_hash": "16ae23255d48f467f45da5f0cf2e8844",
+    "semantic_hash": "16ae23255d48f467f45da5f0cf2e8844"
+  }
+}
