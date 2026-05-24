@@ -25,12 +25,13 @@ export async function fetchPaginatedProfiles(params: {
   pageSize: number;
   search?: string;
   city?: string;
+  département?: string;
   roleType?: string;
   experienceLevel?: string;
   techStack?: string[];
   openToCollaboration?: boolean | null;
 }): Promise<{ profiles: Profile[]; total: number }> {
-  const { page, pageSize, search, city, roleType, experienceLevel, techStack, openToCollaboration } = params;
+  const { page, pageSize, search, city, département, roleType, experienceLevel, techStack, openToCollaboration } = params;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -47,6 +48,9 @@ export async function fetchPaginatedProfiles(params: {
 
   if (city && city !== "all") {
     query = query.eq("city", city);
+  }
+  if (département && département !== "all") {
+    query = query.eq("département", département);
   }
 
   if (roleType && roleType !== "all") {
