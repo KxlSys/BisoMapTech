@@ -24,20 +24,32 @@ import { toast } from "sonner";
 const placeSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères").max(80),
   category: z.string().min(1, "Choisissez une catégorie"),
-  description: z.string().max(500, "La description ne peut pas dépasser 500 caractères").optional().default(""),
+  description: z.string().max(500, "La description ne peut pas dépasser 500 caractères").optional(),
   city: z.string().min(1, "Choisissez une ville"),
-  address: z.string().max(160, "L'adresse est trop longue").optional().default(""),
-  phone: z.string().max(30).optional().default(""),
-  whatsapp: z.string().max(30).optional().default(""),
+  address: z.string().max(160, "L'adresse est trop longue").optional(),
+  phone: z.string().max(30).optional(),
+  whatsapp: z.string().max(30).optional(),
   website: z
     .string()
     .optional()
-    .default("")
-    .refine((v) => v === "" || /^https?:\/\//i.test(v), "Le site doit commencer par http:// ou https://"),
+    .refine(
+      (v) => !v || /^https?:\/\//i.test(v),
+      "Le site doit commencer par http:// ou https://"
+    ),
   latitude: z
-    .preprocess((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)), z.number().min(-90).max(90).optional()),
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || (!Number.isNaN(Number(v)) && Number(v) >= -90 && Number(v) <= 90),
+      "Latitude invalide (-90 à 90)"
+    ),
   longitude: z
-    .preprocess((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)), z.number().min(-180).max(180).optional()),
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || (!Number.isNaN(Number(v)) && Number(v) >= -180 && Number(v) <= 180),
+      "Longitude invalide (-180 à 180)"
+    ),
 });
 
 type PlaceFormData = z.infer<typeof placeSchema>;
@@ -63,8 +75,8 @@ export function PlaceCreatePage() {
       phone: "",
       whatsapp: "",
       website: "",
-      latitude: undefined,
-      longitude: undefined,
+      latitude: "",
+      longitude: "",
     },
   });
 
@@ -78,8 +90,10 @@ export function PlaceCreatePage() {
     if (!user) return;
     try {
       const coords = getCityCoordinates(data.city);
-      const latitude = data.latitude ?? coords?.latitude ?? 0;
-      const longitude = data.longitude ?? coords?.longitude ?? 0;
+      const lat = data.latitude ? Number(data.latitude) : undefined;
+      const lon = data.longitude ? Number(data.longitude) : undefined;
+      const latitude = lat ?? coords?.latitude ?? 0;
+      const longitude = lon ?? coords?.longitude ?? 0;
 
       await createPlace({
         name: data.name,
@@ -151,8 +165,8 @@ export function PlaceCreatePage() {
                       field.onChange(v);
                       const coords = getCityCoordinates(v);
                       if (coords) {
-                        setValue("latitude", coords.latitude);
-                        setValue("longitude", coords.longitude);
+                        setValue("latitude", String(coords.latitude));
+                        setValue("longitude", String(coords.longitude));
                       }
                     }}>
                       <SelectTrigger className="bg-white/5 border-white/10">
@@ -273,7 +287,7 @@ export function PlaceCreatePage() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Latitude</Label>
                   <Input
-                    value={field.value === undefined ? "" : String(field.value)}
+                    value={field.value ?? ""}
                     onChange={field.onChange}
                     placeholder="Ex: -4.27"
                     className="bg-white/5 border-white/10"
@@ -289,7 +303,7 @@ export function PlaceCreatePage() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Longitude</Label>
                   <Input
-                    value={field.value === undefined ? "" : String(field.value)}
+                    value={field.value ?? ""}
                     onChange={field.onChange}
                     placeholder="Ex: 15.28"
                     className="bg-white/5 border-white/10"
