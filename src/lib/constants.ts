@@ -1,6 +1,6 @@
 // src/lib/constants.ts
 
-import type { département } from "@/types";
+import type { Department } from "@/types";
 import { CONGO_CITIES } from "@/lib/cities";
 
 // ======================================================
@@ -167,7 +167,7 @@ export const PLACE_CATEGORIES = [
 // départementS
 // ======================================================
 
-export const département_OPTIONS: département[] = [
+export const département_OPTIONS: Department[] = [
   "Bouenza",
   "Brazzaville",
   "Cuvette",
