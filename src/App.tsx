@@ -130,7 +130,7 @@ function LoadingFallback() {
 }
 
 export default function App() {
-  const { initialize } = useAuthStore();
+  const { initialize, isLoading, authError } = useAuthStore();
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -165,9 +165,18 @@ export default function App() {
     );
   }
 
+  if (isLoading) {
+    return <LoadingFallback />;
+  }
+
   return (
     <AppErrorBoundary>
       <BrowserRouter>
+        {authError && (
+          <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
+            Session indisponible pour le moment ({authError}). Mode invite actif.
+          </div>
+        )}
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route element={<AppLayout />}>
