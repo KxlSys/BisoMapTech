@@ -188,7 +188,7 @@ export function AdminPage() {
             <h1 className="text-xl font-bold tracking-tight">Centre de Commande</h1>
           </div>
           <p className="text-xs text-muted-foreground">
-            Métriques en temps réel — Administration TechCongo
+            Métriques en temps réel — Administration BisoMapTech
           </p>
         </div>
         <Button

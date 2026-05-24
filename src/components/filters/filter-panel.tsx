@@ -1,10 +1,20 @@
 import { Search, RotateCcw, SlidersHorizontal } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
 import { useFilterStore } from "@/store/filter-store";
+
 import { CONGO_CITIES } from "@/lib/cities";
-import { TECH_OPTIONS, ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
+
+import {
+  TECH_OPTIONS,
+  ROLE_TYPE_LABELS,
+  EXPERIENCE_LABELS,
+  département_OPTIONS,
+} from "@/lib/constants";
+
 import { cn } from "@/lib/utils";
 
 const ROLE_ICONS: Record<string, string> = {
@@ -14,52 +24,90 @@ const ROLE_ICONS: Record<string, string> = {
   data: "DA",
   devops: "DO",
   mobile: "MB",
+  sysadmin: "SA",
+  cybersecurite: "CY",
+  support: "SP",
+  design: "DS",
+  hardware: "HW",
+  product: "PM",
+  enseignement: "ED",
+  nocode: "NC",
   autre: "AU",
 };
 
-export function FilterPanel({ compact = false }: { compact?: boolean }) {
+export function FilterPanel({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   const {
     searchQuery,
     city,
+    département,
     techStack,
     roleType,
     experienceLevel,
     openToCollaboration,
+
     setSearchQuery,
     setCity,
+    setdépartement,
     setTechStack,
     setRoleType,
     setExperienceLevel,
     setOpenToCollaboration,
+
     resetFilters,
   } = useFilterStore();
 
   const hasActiveFilters =
-    searchQuery || city || techStack.length > 0 || roleType || experienceLevel || openToCollaboration !== null;
+    searchQuery ||
+    city ||
+    département ||
+    techStack.length > 0 ||
+    roleType ||
+    experienceLevel ||
+    openToCollaboration !== null;
 
   const activeCount = [
     searchQuery,
     city && city !== "all" ? city : null,
+    département && département !== "all" ? département : null,
     techStack.length > 0 ? techStack : null,
     roleType && roleType !== "all" ? roleType : null,
-    experienceLevel && experienceLevel !== "all" ? experienceLevel : null,
-    openToCollaboration !== null ? openToCollaboration : null,
+    experienceLevel && experienceLevel !== "all"
+      ? experienceLevel
+      : null,
+    openToCollaboration !== null
+      ? openToCollaboration
+      : null,
   ].filter(Boolean).length;
 
   return (
-    <div className={cn("space-y-5", !compact && "glass-panel rounded-xl border border-white/10 p-4")}>
-      {/* Header — only shown when not compact (standalone use) */}
+    <div
+      className={cn(
+        "space-y-5",
+        !compact &&
+          "glass-panel rounded-xl border border-white/10 p-4"
+      )}
+    >
+      {/* Header */}
       {!compact && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">Filtres</span>
+
+            <span className="text-sm font-semibold">
+              Filtres
+            </span>
+
             {activeCount > 0 && (
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
                 {activeCount}
               </span>
             )}
           </div>
+
           {hasActiveFilters && (
             <Button
               variant="ghost"
@@ -73,6 +121,7 @@ export function FilterPanel({ compact = false }: { compact?: boolean }) {
           )}
         </div>
       )}
+
       {/* Compact reset button */}
       {compact && hasActiveFilters && (
         <div className="flex justify-end">
@@ -91,6 +140,7 @@ export function FilterPanel({ compact = false }: { compact?: boolean }) {
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+
         <Input
           placeholder="Nom, competence..."
           value={searchQuery}
@@ -99,50 +149,118 @@ export function FilterPanel({ compact = false }: { compact?: boolean }) {
         />
       </div>
 
-      {/* Role type — pill grid */}
+      {/* Role type */}
       <div className="space-y-2">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Type de role</p>
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          Type de role
+        </p>
+
         <div className="grid grid-cols-3 gap-1.5">
-          {Object.entries(ROLE_TYPE_LABELS).map(([value, label]) => {
-            const isActive = roleType === value;
-            return (
-              <button
-                key={value}
-                onClick={() => setRoleType(isActive ? "" : value)}
-                className={cn(
-                  "rounded-lg border px-2 py-2 text-center transition-all",
-                  "flex flex-col items-center gap-0.5",
-                  isActive
-                    ? "border-primary/60 bg-primary/15 text-primary"
-                    : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:bg-white/8 hover:text-foreground"
-                )}
-              >
-                <span className="text-[10px] font-bold">{ROLE_ICONS[value]}</span>
-                <span className="text-[10px] leading-tight">{label}</span>
-              </button>
-            );
-          })}
+          {Object.entries(ROLE_TYPE_LABELS).map(
+            ([value, label]) => {
+              const isActive = roleType === value;
+
+              return (
+                <button
+                  key={value}
+                  onClick={() =>
+                    setRoleType(isActive ? "" : value)
+                  }
+                  className={cn(
+                    "rounded-lg border px-2 py-2 text-center transition-all",
+                    "flex flex-col items-center gap-0.5",
+                    isActive
+                      ? "border-primary/60 bg-primary/15 text-primary"
+                      : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:bg-white/8 hover:text-foreground"
+                  )}
+                >
+                  <span className="text-[10px] font-bold">
+                    {ROLE_ICONS[value]}
+                  </span>
+
+                  <span className="text-[10px] leading-tight">
+                    {label}
+                  </span>
+                </button>
+              );
+            }
+          )}
         </div>
       </div>
 
-      {/* Experience level */}
+      {/* Experience */}
       <div className="space-y-2">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Niveau</p>
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          Niveau
+        </p>
+
         <div className="flex gap-1.5">
-          {Object.entries(EXPERIENCE_LABELS).map(([value, label]) => {
-            const isActive = experienceLevel === value;
+          {Object.entries(EXPERIENCE_LABELS).map(
+            ([value, label]) => {
+              const isActive =
+                experienceLevel === value;
+
+              return (
+                <button
+                  key={value}
+                  onClick={() =>
+                    setExperienceLevel(
+                      isActive ? "" : value
+                    )
+                  }
+                  className={cn(
+                    "flex-1 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-all",
+                    isActive
+                      ? "border-primary/60 bg-primary/15 text-primary"
+                      : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:bg-white/8 hover:text-foreground"
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            }
+          )}
+        </div>
+      </div>
+
+      {/* département */}
+      <div className="space-y-2">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          Département
+        </p>
+
+        <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
+          <button
+            onClick={() => setdépartement("all")}
+            className={cn(
+              "rounded-full border px-2.5 py-0.5 text-[11px] transition-all",
+              !département || département === "all"
+                ? "border-primary/60 bg-primary/15 text-primary"
+                : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:text-foreground"
+            )}
+          >
+            Tous
+          </button>
+
+          {département_OPTIONS.map((dep) => {
+            const isActive = département === dep;
+
             return (
               <button
-                key={value}
-                onClick={() => setExperienceLevel(isActive ? "" : value)}
+                key={dep}
+                onClick={() =>
+                  setdépartement(
+                    isActive ? "all" : dep
+                  )
+                }
                 className={cn(
-                  "flex-1 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-all",
+                  "rounded-full border px-2.5 py-0.5 text-[11px] transition-all",
                   isActive
                     ? "border-primary/60 bg-primary/15 text-primary"
-                    : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:bg-white/8 hover:text-foreground"
+                    : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:text-foreground"
                 )}
               >
-                {label}
+                {dep}
               </button>
             );
           })}
@@ -151,7 +269,10 @@ export function FilterPanel({ compact = false }: { compact?: boolean }) {
 
       {/* City */}
       <div className="space-y-2">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Ville</p>
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          Ville
+        </p>
+
         <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
           <button
             onClick={() => setCity("all")}
@@ -164,12 +285,18 @@ export function FilterPanel({ compact = false }: { compact?: boolean }) {
           >
             Toutes
           </button>
+
           {CONGO_CITIES.map((c) => {
             const isActive = city === c.name;
+
             return (
               <button
                 key={c.name}
-                onClick={() => setCity(isActive ? "all" : c.name)}
+                onClick={() =>
+                  setCity(
+                    isActive ? "all" : c.name
+                  )
+                }
                 className={cn(
                   "rounded-full border px-2.5 py-0.5 text-[11px] transition-all",
                   isActive
@@ -183,66 +310,6 @@ export function FilterPanel({ compact = false }: { compact?: boolean }) {
           })}
         </div>
       </div>
-
-      {/* Tech chips */}
-      <div className="space-y-2">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Technologies</p>
-        <div className="flex max-h-28 flex-wrap gap-1 overflow-y-auto">
-          {TECH_OPTIONS.slice(0, 20).map((tech) => {
-            const isSelected = techStack.includes(tech);
-            return (
-              <Badge
-                key={tech}
-                variant="outline"
-                className={cn(
-                  "cursor-pointer border text-[11px] transition-all",
-                  isSelected
-                    ? "border-primary/60 bg-primary/15 text-primary hover:bg-primary/20"
-                    : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:text-foreground"
-                )}
-                onClick={() => {
-                  if (isSelected) {
-                    setTechStack(techStack.filter((t) => t !== tech));
-                  } else {
-                    setTechStack([...techStack, tech]);
-                  }
-                }}
-              >
-                {tech}
-              </Badge>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Collaboration toggle */}
-      <button
-        onClick={() => setOpenToCollaboration(openToCollaboration === true ? null : true)}
-        className={cn(
-          "w-full rounded-lg border px-3 py-2.5 text-left transition-all",
-          "flex items-center gap-2.5",
-          openToCollaboration === true
-            ? "border-primary/60 bg-primary/10"
-            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
-        )}
-      >
-        <div className={cn(
-          "h-4 w-4 rounded-sm border-2 flex items-center justify-center shrink-0 transition-colors",
-          openToCollaboration === true ? "border-primary bg-primary" : "border-muted-foreground"
-        )}>
-          {openToCollaboration === true && (
-            <svg className="h-2.5 w-2.5 text-primary-foreground" fill="none" viewBox="0 0 12 12">
-              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
-        </div>
-        <span className={cn(
-          "text-xs font-medium",
-          openToCollaboration === true ? "text-primary" : "text-muted-foreground"
-        )}>
-          Ouvert a la collaboration
-        </span>
-      </button>
     </div>
   );
 }

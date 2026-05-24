@@ -67,8 +67,8 @@ export function PlaceCreatePage() {
       phone: "",
       whatsapp: "",
       website: "",
-      latitude: undefined,
-      longitude: undefined,
+      latitude: "",
+      longitude: "",
     },
   });
 
@@ -82,8 +82,10 @@ export function PlaceCreatePage() {
     if (!user) return;
     try {
       const coords = getCityCoordinates(data.city);
-      const latitude = data.latitude ?? coords?.latitude ?? 0;
-      const longitude = data.longitude ?? coords?.longitude ?? 0;
+      const lat = data.latitude ? Number(data.latitude) : undefined;
+      const lon = data.longitude ? Number(data.longitude) : undefined;
+      const latitude = lat ?? coords?.latitude ?? 0;
+      const longitude = lon ?? coords?.longitude ?? 0;
 
       await createPlace({
         name: data.name,
@@ -155,8 +157,8 @@ export function PlaceCreatePage() {
                       field.onChange(v);
                       const coords = getCityCoordinates(v);
                       if (coords) {
-                        setValue("latitude", coords.latitude);
-                        setValue("longitude", coords.longitude);
+                        setValue("latitude", String(coords.latitude));
+                        setValue("longitude", String(coords.longitude));
                       }
                     }}>
                       <SelectTrigger className="bg-white/5 border-white/10">
@@ -277,7 +279,7 @@ export function PlaceCreatePage() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Latitude</Label>
                   <Input
-                    value={field.value === undefined ? "" : String(field.value)}
+                    value={field.value ?? ""}
                     onChange={field.onChange}
                     placeholder="Ex: -4.27"
                     className="bg-white/5 border-white/10"
@@ -293,7 +295,7 @@ export function PlaceCreatePage() {
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Longitude</Label>
                   <Input
-                    value={field.value === undefined ? "" : String(field.value)}
+                    value={field.value ?? ""}
                     onChange={field.onChange}
                     placeholder="Ex: 15.28"
                     className="bg-white/5 border-white/10"

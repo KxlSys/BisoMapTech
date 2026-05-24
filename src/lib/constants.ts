@@ -1,4 +1,14 @@
+// src/lib/constants.ts
+
+import type { département } from "@/types";
+import { CONGO_CITIES } from "@/lib/cities";
+
+// ======================================================
+// TECH STACK OPTIONS
+// ======================================================
+
 export const TECH_OPTIONS = [
+  // --- Développement web & mobile ---
   "React",
   "Vue.js",
   "Angular",
@@ -22,40 +32,124 @@ export const TECH_OPTIONS = [
   "Laravel",
   "Ruby",
   "Rails",
+  "C#",
+  ".NET",
+
+  // --- Bases de données ---
   "PostgreSQL",
+  "MySQL",
   "MongoDB",
   "Firebase",
   "Supabase",
+  "Redis",
+
+  // --- DevOps / Cloud ---
   "Docker",
   "Kubernetes",
   "AWS",
   "GCP",
   "Azure",
-  "Tailwind CSS",
+  "Terraform",
+  "Ansible",
+  "CI/CD",
   "GraphQL",
   "REST API",
   "Git",
-  "CI/CD",
+  "Tailwind CSS",
+
+  // --- Systèmes & Réseaux ---
   "Linux",
+  "Windows Server",
+  "Active Directory",
+  "Bash",
+  "PowerShell",
+  "Cisco",
+  "MikroTik",
+  "pfSense",
+  "VMware",
+  "Proxmox",
+  "Zabbix",
+  "Nagios",
+
+  // --- Cybersécurité ---
+  "Wireshark",
+  "Nmap",
+  "Metasploit",
+  "Burp Suite",
+  "Wazuh",
+  "Kali Linux",
+  "SIEM",
+  "Pentest",
+
+  // --- Support / Helpdesk ---
+  "GLPI",
+  "Ticketing",
+  "ITIL",
+
+  // --- Data / IA ---
   "Machine Learning",
   "Data Science",
+  "TensorFlow",
+  "Pandas",
+  "Power BI",
+
+  // --- Design ---
+  "Figma",
+  "Adobe XD",
+
+  // --- No-code / Automatisation ---
+  "n8n",
+  "Zapier",
+  "Make",
+  "WordPress",
 ] as const;
+
+// ======================================================
+// ROLE LABELS
+// ======================================================
 
 export const ROLE_TYPE_LABELS: Record<string, string> = {
   frontend: "Frontend",
   backend: "Backend",
   fullstack: "Fullstack",
-  data: "Data / IA",
-  devops: "DevOps",
   mobile: "Mobile",
+
+  data: "Data / IA",
+
+  devops: "DevOps / Cloud",
+
+  sysadmin: "Systèmes & Réseaux",
+
+  cybersecurite: "Cybersécurité",
+
+  support: "Support / Helpdesk",
+
+  design: "Design / UX",
+
+  hardware: "Hardware / Électronique",
+
+  product: "Gestion de projet / Product",
+
+  enseignement: "Enseignement / Formation",
+
+  nocode: "No-code / Automatisation",
+
   autre: "Autre",
 };
 
+// ======================================================
+// EXPERIENCE LABELS
+// ======================================================
+
 export const EXPERIENCE_LABELS: Record<string, string> = {
   junior: "Junior",
-  mid: "Intermediaire",
+  mid: "Intermédiaire",
   senior: "Senior",
 };
+
+// ======================================================
+// PLACE CATEGORIES
+// ======================================================
 
 export const PLACE_CATEGORIES = [
   "Restaurant",
@@ -68,3 +162,35 @@ export const PLACE_CATEGORIES = [
   "Incubateur",
   "Autre",
 ] as const;
+
+// ======================================================
+// départementS
+// ======================================================
+
+export const département_OPTIONS: département[] = [
+  "Bouenza",
+  "Brazzaville",
+  "Cuvette",
+  "Cuvette-Ouest",
+  "Kouilou",
+  "Lékoumou",
+  "Likouala",
+  "Niari",
+  "Plateaux",
+  "Pointe-Noire",
+  "Pool",
+  "Sangha",
+
+  // Zones complémentaires
+  "Nkéni-Alima",
+  "Djoué-Léfini",
+  "Congo-Oubangui",
+];
+
+// ======================================================
+// CITY OPTIONS
+// ======================================================
+
+export const CITY_OPTIONS = CONGO_CITIES.map(
+  (city) => city.name
+);
