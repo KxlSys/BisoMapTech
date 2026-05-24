@@ -1,4 +1,6 @@
-# Logs
+# -----------------------------------------------------------------------------
+# LOGS & RAPPORTS
+# -----------------------------------------------------------------------------
 logs
 *.log
 npm-debug.log*
@@ -7,24 +9,43 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# -----------------------------------------------------------------------------
+# DOSSIERS DE DÉPENDANCES & DOSSIERS DE PRODUCTION (BUILD)
+# -----------------------------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
 *.local
 
-# Env — ne jamais committer
+# -----------------------------------------------------------------------------
+# SÉCURITÉ & CONFIGURATION ENVIRONNEMENT (À NE JAMAIS COMMITTER)
+# -----------------------------------------------------------------------------
 .env
 .env.*
 !.env.example
 
-# Supabase local data
+# -----------------------------------------------------------------------------
+# DONNÉES LOCALES SUPABASE
+# -----------------------------------------------------------------------------
 supabase/.branches/
 supabase/.temp/
 
-# Editor directories and files
+# -----------------------------------------------------------------------------
+# FICHIERS DE SUIVI & NOTES DE L'IA (BOLT / CLAUDE)
+# -----------------------------------------------------------------------------
+.bolt/
+.claude/
+CLAUDE.md
+HANDOFF.md
+JOURNAL.md
+LESSONS.md
+
+# -----------------------------------------------------------------------------
+# CONFIGURATIONS DES ÉDITEURS DE CODE (VS CODE, IDEAS, ETC.)
+# -----------------------------------------------------------------------------
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
