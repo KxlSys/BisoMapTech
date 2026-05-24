@@ -2,55 +2,120 @@ import { useEffect, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Spinner } from "@/components/ui/spinner";
+import { AppErrorBoundary } from "@/components/error/app-error-boundary";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth-store";
 
-const HomePage = lazy(() =>
-  import("@/pages/home-page").then((m) => ({ default: m.HomePage }))
+function lazyWithRetry<T>(
+  importer: () => Promise<T>
+) {
+  return async () => {
+    try {
+      return await importer();
+    } catch (error) {
+      const isChunkError =
+        error instanceof Error &&
+        /loading chunk|failed to fetch dynamically imported module/i.test(
+          error.message
+        );
+
+      const alreadyRefreshed =
+        sessionStorage.getItem(
+          "lazy-retry-refreshed"
+        ) === "1";
+
+      if (isChunkError && !alreadyRefreshed) {
+        sessionStorage.setItem(
+          "lazy-retry-refreshed",
+          "1"
+        );
+        window.location.reload();
+      }
+
+      throw error;
+    }
+  };
+}
+
+const HomePage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/home-page").then((m) => ({ default: m.HomePage }))
+  )
 );
-const MapPage = lazy(() =>
-  import("@/pages/map-page").then((m) => ({ default: m.MapPage }))
+const MapPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/map-page").then((m) => ({ default: m.MapPage }))
+  )
 );
-const PlacesPage = lazy(() =>
-  import("@/pages/places-page").then((m) => ({ default: m.PlacesPage }))
+const PlacesPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/places-page").then((m) => ({ default: m.PlacesPage }))
+  )
 );
-const PlaceCreatePage = lazy(() =>
-  import("@/pages/place-create-page").then((m) => ({ default: m.PlaceCreatePage }))
+const PlaceCreatePage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/place-create-page").then((m) => ({ default: m.PlaceCreatePage }))
+  )
 );
-const PlaceDetailPage = lazy(() =>
-  import("@/pages/place-detail-page").then((m) => ({ default: m.PlaceDetailPage }))
+const PlaceDetailPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/place-detail-page").then((m) => ({ default: m.PlaceDetailPage }))
+  )
 );
-const ContributorsPage = lazy(() =>
-  import("@/pages/contributors-page").then((m) => ({ default: m.ContributorsPage }))
+const ContributorsPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/contributors-page").then((m) => ({ default: m.ContributorsPage }))
+  )
 );
-const ProfileDetailPage = lazy(() =>
-  import("@/pages/profile-detail-page").then((m) => ({ default: m.ProfileDetailPage }))
+const ProfileDetailPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/profile-detail-page").then((m) => ({ default: m.ProfileDetailPage }))
+  )
 );
-const ProfileEditPage = lazy(() =>
-  import("@/pages/profile-edit-page").then((m) => ({ default: m.ProfileEditPage }))
+const ProfileEditPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/profile-edit-page").then((m) => ({ default: m.ProfileEditPage }))
+  )
 );
-const MatchingPage = lazy(() =>
-  import("@/pages/matching-page").then((m) => ({ default: m.MatchingPage }))
+const MatchingPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/matching-page").then((m) => ({ default: m.MatchingPage }))
+  )
 );
-const AdminPage = lazy(() =>
-  import("@/pages/admin-page").then((m) => ({ default: m.AdminPage }))
+const AdminPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/admin-page").then((m) => ({ default: m.AdminPage }))
+  )
 );
-const AuthCallbackPage = lazy(() =>
-  import("@/pages/auth-callback-page").then((m) => ({ default: m.AuthCallbackPage }))
+const AuthCallbackPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/auth-callback-page").then((m) => ({ default: m.AuthCallbackPage }))
+  )
 );
-const LoginPage = lazy(() =>
-  import("@/pages/login-page").then((m) => ({ default: m.LoginPage }))
+const LoginPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/login-page").then((m) => ({ default: m.LoginPage }))
+  )
 );
-const OnboardingPage = lazy(() =>
-  import("@/pages/onboarding-page").then((m) => ({ default: m.OnboardingPage }))
+const OnboardingPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/onboarding-page").then((m) => ({ default: m.OnboardingPage }))
+  )
 );
-const MessagesPage = lazy(() =>
-  import("@/pages/messages-page").then((m) => ({ default: m.MessagesPage }))
+const MessagesPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/messages-page").then((m) => ({ default: m.MessagesPage }))
+  )
 );
-const AboutPage = lazy(() =>
-  import("@/pages/about-page").then((m) => ({ default: m.AboutPage }))
+const AboutPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/about-page").then((m) => ({ default: m.AboutPage }))
+  )
 );
-const ProjectNewPage = lazy(() =>
-  import("@/pages/project-new-page").then((m) => ({ default: m.ProjectNewPage }))
+const ProjectNewPage = lazy(
+  lazyWithRetry(() =>
+    import("@/pages/project-new-page").then((m) => ({ default: m.ProjectNewPage }))
+  )
 );
 
 function LoadingFallback() {
@@ -65,33 +130,58 @@ export default function App() {
   const { initialize } = useAuthStore();
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      return;
+    }
     initialize();
+    sessionStorage.removeItem(
+      "lazy-retry-refreshed"
+    );
   }, [initialize]);
 
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-3 px-6 text-center">
+        <h1 className="text-2xl font-bold">
+          Configuration manquante
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Cette page blanche venait d&apos;une erreur d&apos;initialisation Supabase. Ajoute les variables Vercel
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_URL</code>
+          et
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_ANON_KEY</code>
+          puis redéploie.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <BrowserRouter>
-      <Suspense fallback={<LoadingFallback />}>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="/talents" element={<MapPage />} />
-            <Route path="/lieux" element={<PlacesPage />} />
-            <Route path="/lieux/nouveau" element={<PlaceCreatePage />} />
-            <Route path="/lieux/:id" element={<PlaceDetailPage />} />
-            <Route path="/contributeurs" element={<ContributorsPage />} />
-            <Route path="/contributeurs/:username" element={<ProfileDetailPage />} />
-            <Route path="/profil/edit" element={<ProfileEditPage />} />
-            <Route path="/matching" element={<MatchingPage />} />
-            <Route path="/projet/nouveau" element={<ProjectNewPage />} />
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/a-propos" element={<AboutPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/auth/callback" element={<AuthCallbackPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/onboarding" element={<OnboardingPage />} />
-          </Route>
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+    <AppErrorBoundary>
+      <BrowserRouter>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route index element={<HomePage />} />
+              <Route path="/talents" element={<MapPage />} />
+              <Route path="/lieux" element={<PlacesPage />} />
+              <Route path="/lieux/nouveau" element={<PlaceCreatePage />} />
+              <Route path="/lieux/:id" element={<PlaceDetailPage />} />
+              <Route path="/contributeurs" element={<ContributorsPage />} />
+              <Route path="/contributeurs/:username" element={<ProfileDetailPage />} />
+              <Route path="/profil/edit" element={<ProfileEditPage />} />
+              <Route path="/matching" element={<MatchingPage />} />
+              <Route path="/projet/nouveau" element={<ProjectNewPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/a-propos" element={<AboutPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/auth/callback" element={<AuthCallbackPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </AppErrorBoundary>
   );
 }
