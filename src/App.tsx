@@ -3,7 +3,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Spinner } from "@/components/ui/spinner";
 import { AppErrorBoundary } from "@/components/error/app-error-boundary";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import {
+  isSupabaseConfigured,
+  supabaseConfigStatus,
+} from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth-store";
 
 function lazyWithRetry<T>(
@@ -146,12 +149,18 @@ export default function App() {
           Configuration manquante
         </h1>
         <p className="text-sm text-muted-foreground">
-          Cette page blanche venait d&apos;une erreur d&apos;initialisation Supabase. Ajoute les variables Vercel
+          Configuration Supabase invalide en production. Vérifie les variables Vercel
           <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_URL</code>
           et
           <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_ANON_KEY</code>
           puis redéploie.
         </p>
+        <ul className="mt-2 list-disc space-y-1 text-left text-xs text-muted-foreground">
+          <li>URL présente: {supabaseConfigStatus.hasUrl ? "oui" : "non"}</li>
+          <li>URL valide: {supabaseConfigStatus.isValidSupabaseUrl ? "oui" : "non"}</li>
+          <li>Anon key présente: {supabaseConfigStatus.hasAnonKey ? "oui" : "non"}</li>
+          <li>Anon key valide: {supabaseConfigStatus.isValidAnonKey ? "oui" : "non"}</li>
+        </ul>
       </div>
     );
   }
