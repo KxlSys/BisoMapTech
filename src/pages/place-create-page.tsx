@@ -24,23 +24,27 @@ import { toast } from "sonner";
 const placeSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères").max(80),
   category: z.string().min(1, "Choisissez une catégorie"),
-  description: z.string().max(500, "La description ne peut pas dépasser 500 caractères").optional().default(""),
+  description: z.string().max(500, "La description ne peut pas dépasser 500 caractères").optional(),
   city: z.string().min(1, "Choisissez une ville"),
-  address: z.string().max(160, "L'adresse est trop longue").optional().default(""),
-  phone: z.string().max(30).optional().default(""),
-  whatsapp: z.string().max(30).optional().default(""),
+  address: z.string().max(160, "L'adresse est trop longue").optional(),
+  phone: z.string().max(30).optional(),
+  whatsapp: z.string().max(30).optional(),
   website: z
     .string()
     .optional()
-    .default("")
-    .refine((v) => v === "" || /^https?:\/\//i.test(v), "Le site doit commencer par http:// ou https://"),
-  latitude: z
-    .preprocess((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)), z.number().min(-90).max(90).optional()),
-  longitude: z
-    .preprocess((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)), z.number().min(-180).max(180).optional()),
+    .refine((v) => !v || /^https?:\/\//i.test(v), "Le site doit commencer par http:// ou https://"),
+  latitude: z.union([z.string(), z.number(), z.undefined(), z.null()]).optional().transform(v => {
+    if (v === "" || v === undefined || v === null) return undefined;
+    return Number(v);
+  }).pipe(z.number().min(-90).max(90).optional()),
+  longitude: z.union([z.string(), z.number(), z.undefined(), z.null()]).optional().transform(v => {
+    if (v === "" || v === undefined || v === null) return undefined;
+    return Number(v);
+  }).pipe(z.number().min(-180).max(180).optional()),
 });
 
-type PlaceFormData = z.infer<typeof placeSchema>;
+type PlaceFormInput = z.input<typeof placeSchema>;
+type PlaceFormOutput = z.output<typeof placeSchema>;
 
 export function PlaceCreatePage() {
   const { user } = useAuthStore();
@@ -52,7 +56,7 @@ export function PlaceCreatePage() {
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<PlaceFormData>({
+  } = useForm<PlaceFormInput, any, PlaceFormOutput>({
     resolver: zodResolver(placeSchema),
     defaultValues: {
       name: "",
@@ -74,7 +78,7 @@ export function PlaceCreatePage() {
     if (!user) navigate("/login");
   }, [user, navigate]);
 
-  async function onSubmit(data: PlaceFormData) {
+  async function onSubmit(data: PlaceFormOutput) {
     if (!user) return;
     try {
       const coords = getCityCoordinates(data.city);
