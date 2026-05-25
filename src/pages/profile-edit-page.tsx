@@ -37,6 +37,11 @@ const profileSchema = z.object({
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
+type DbRoleType = (typeof DB_ROLE_TYPES)[number];
+
+function isDbRoleType(value: string): value is DbRoleType {
+  return DB_ROLE_TYPES.includes(value as DbRoleType);
+}
 
 export function ProfileEditPage() {
   const { user, profile, fetchProfile } = useAuthStore();
@@ -70,10 +75,11 @@ export function ProfileEditPage() {
       return;
     }
     if (profile) {
+      const safeRoleType = isDbRoleType(profile.role_type) ? profile.role_type : "autre";
       setValue("full_name", profile.full_name);
       setValue("bio", profile.bio);
       setValue("city", profile.city);
-      setValue("role_type", profile.role_type);
+      setValue("role_type", safeRoleType);
       setValue("experience_level", profile.experience_level);
       setValue("tech_stack", profile.tech_stack);
       setValue("open_to_collaboration", profile.open_to_collaboration);

@@ -40,6 +40,10 @@ const TECH_CATEGORIES = [
   },
 ];
 
+function isDbRoleType(value: string): value is (typeof DB_ROLE_TYPES)[number] {
+  return DB_ROLE_TYPES.includes(value as (typeof DB_ROLE_TYPES)[number]);
+}
+
 export function OnboardingStepper() {
   const { user, profile, fetchProfile, setIsNewUser } = useAuthStore();
   const navigate = useNavigate();
@@ -50,7 +54,9 @@ export function OnboardingStepper() {
   const [bio, setBio] = useState(profile?.bio || "");
   const [city, setCity] = useState(profile?.city || "Brazzaville");
   const [techStack, setTechStack] = useState<string[]>(profile?.tech_stack || []);
-  const [roleType, setRoleType] = useState<RoleType>(profile?.role_type || "fullstack");
+  const [roleType, setRoleType] = useState<RoleType>(
+    profile?.role_type && isDbRoleType(profile.role_type) ? profile.role_type : "fullstack"
+  );
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(
     profile?.experience_level || "junior"
   );
