@@ -55,7 +55,7 @@ const profileSchema = z.object({
     .array(z.string())
     .min(1, "Sélectionnez au moins une technologie"),
   open_to_collaboration: z.boolean(),
-  avatar_url: z.string().default(""),
+  avatar_url: z.string(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
