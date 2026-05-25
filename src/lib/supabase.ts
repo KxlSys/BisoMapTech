@@ -43,7 +43,10 @@ if (!isSupabaseConfigured) {
   );
 }
 
+// Quand la config est absente/invalide, on construit un client placeholder valide :
+// createClient("") lèverait "supabaseUrl is required." au chargement du module, ce
+// qui produit un écran blanc avant que la page de diagnostic ne puisse s'afficher.
 export const supabase = createClient(
-  supabaseUrl ?? "https://placeholder.supabase.co",
-  supabaseAnonKey ?? "placeholder-anon-key"
+  isSupabaseConfigured ? supabaseUrl : "https://placeholder.supabase.co",
+  isSupabaseConfigured ? supabaseAnonKey : "placeholder-anon-key"
 );
