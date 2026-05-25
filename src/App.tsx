@@ -142,6 +142,10 @@ export default function App() {
     );
   }, [initialize]);
 
+  const showSupabaseDebug =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("supabase-debug");
+
   if (!isSupabaseConfigured) {
     return (
       <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center gap-3 px-6 text-center">
@@ -154,8 +158,11 @@ export default function App() {
           (ou
           <code className="mx-1 rounded bg-white/10 px-1 py-0.5">SUPABASE_URL</code>) et
           <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_ANON_KEY</code>
+          /
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_PUBLISHABLE_KEY</code>
           (ou
-          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">SUPABASE_ANON_KEY</code>)
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">SUPABASE_ANON_KEY</code> /
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">SUPABASE_PUBLISHABLE_KEY</code>)
           puis redéploie.
         </p>
         <ul className="mt-2 list-disc space-y-1 text-left text-xs text-muted-foreground">
@@ -163,6 +170,11 @@ export default function App() {
           <li>URL valide: {supabaseConfigStatus.isValidSupabaseUrl ? "oui" : "non"}</li>
           <li>Anon key présente: {supabaseConfigStatus.hasAnonKey ? "oui" : "non"}</li>
           <li>Anon key valide: {supabaseConfigStatus.isValidAnonKey ? "oui" : "non"}</li>
+          <li>Source URL: {supabaseConfigStatus.urlSource}</li>
+          <li>Source clé: {supabaseConfigStatus.anonKeySource}</li>
+          <li>URL injectée: {supabaseConfigStatus.urlPreview}</li>
+          <li>Clé injectée: {supabaseConfigStatus.anonKeyPreview}</li>
+          <li>Build mode: {supabaseConfigStatus.buildMode} (PROD={String(supabaseConfigStatus.isProd)})</li>
         </ul>
       </div>
     );
@@ -175,6 +187,14 @@ export default function App() {
   return (
     <AppErrorBoundary>
       <BrowserRouter>
+        {showSupabaseDebug && (
+          <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-left text-xs text-amber-200">
+            <strong>[supabase-debug]</strong> url={supabaseConfigStatus.urlPreview} | source-url=
+            {supabaseConfigStatus.urlSource} | key={supabaseConfigStatus.anonKeyPreview} | source-key=
+            {supabaseConfigStatus.anonKeySource} | mode={supabaseConfigStatus.buildMode} | prod=
+            {String(supabaseConfigStatus.isProd)}
+          </div>
+        )}
         {authError && (
           <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
             Session indisponible pour le moment ({authError}). Mode invite actif.
