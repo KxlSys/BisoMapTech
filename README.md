@@ -235,7 +235,7 @@ donnée de localisation publiée sur la carte :
 > Astuce : [gps-coordinates.net](https://www.gps-coordinates.net) permet de
 > trouver rapidement les coordonnées d'un point public.
 
-### Exemples de coordonnées sûres (Congo-Brazzaville)
+### Exemples de coordonnées sûres (République of Congo)
 
 | Ville        | Département   |  Latitude |  Longitude |
 | ------------ | ------------- | --------: | ---------: |
