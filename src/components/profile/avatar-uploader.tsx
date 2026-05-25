@@ -90,45 +90,67 @@ export function AvatarUploader({
   }
 
   return (
-    <div className={cn("flex flex-col items-center gap-2", className)}>
-      <div className="relative">
-        <Avatar
+    <div className={cn("flex flex-col items-center gap-3.5", className)}>
+      {/* Interactive Avatar Container */}
+      <div 
+        className={cn(
+          "group relative cursor-pointer select-none",
+          (disabled || isUploading) && "cursor-not-allowed pointer-events-none"
+        )}
+        onClick={pickFile}
+      >
+        {/* Sleek Gradient Glowing Halo on Hover */}
+        <div className="absolute inset-0 -m-1.5 rounded-full bg-gradient-to-tr from-primary/30 to-tertiary/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        {/* Double-Ring Border Container */}
+        <div 
           className={cn(
-            "h-24 w-24 border-2 transition-all",
-            value
-              ? "border-primary/40 shadow-[0_0_18px_rgba(78,222,163,0.18)]"
-              : "border-white/15 bg-white/5"
+            "relative h-28 w-28 rounded-full border p-1 transition-all duration-300",
+            value 
+              ? "border-primary/40 bg-primary/5 shadow-[0_0_20px_rgba(78,222,163,0.15)]" 
+              : "border-white/10 bg-white/3 group-hover:border-white/20"
           )}
         >
-          {value && <AvatarImage src={value} alt="Avatar" />}
-          <AvatarFallback className="bg-primary/15 text-primary text-2xl font-bold">
-            {fallbackText?.charAt(0)?.toUpperCase() || (
-              <Camera className="h-8 w-8 text-muted-foreground/70" />
+          <Avatar className="h-full w-full border border-white/5 overflow-hidden transition-all duration-300">
+            {value && (
+              <AvatarImage 
+                src={value} 
+                alt="Photo de profil" 
+                className="object-cover transition-transform duration-500 group-hover:scale-105" 
+              />
             )}
-          </AvatarFallback>
-        </Avatar>
+            <AvatarFallback className="bg-white/5 text-primary text-3xl font-extrabold flex items-center justify-center select-none uppercase">
+              {fallbackText?.slice(0, 2) || (
+                <Camera className="h-7 w-7 text-muted-foreground/60" />
+              )}
+            </AvatarFallback>
+          </Avatar>
 
-        {/* Loader overlay during upload */}
-        {isUploading && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70 backdrop-blur-sm">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          {/* Interactive Floating Camera Indicator on Hover */}
+          <div className="absolute inset-1 flex flex-col items-center justify-center rounded-full bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[10px] font-bold text-white/90 gap-1">
+            <Camera className="h-4.5 w-4.5 text-primary animate-pulse" />
+            <span>Modifier</span>
+          </div>
+
+          {/* Uploading overlay */}
+          {isUploading && (
+            <div className="absolute inset-1 flex items-center justify-center rounded-full bg-background/70 backdrop-blur-sm">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          )}
+        </div>
+
+        {/* Small floating action trigger (always visible for visual affordance) */}
+        {!isUploading && (
+          <div 
+            className={cn(
+              "absolute bottom-0 right-0 flex h-7.5 w-7.5 items-center justify-center rounded-full border border-white/10 bg-primary text-primary-foreground shadow-lg transition-transform duration-300 group-hover:scale-110",
+              disabled && "opacity-50"
+            )}
+          >
+            <Camera className="h-3.5 w-3.5" />
           </div>
         )}
-
-        {/* Edit pill */}
-        <button
-          type="button"
-          onClick={pickFile}
-          disabled={disabled || isUploading}
-          aria-label="Modifier l'avatar"
-          className={cn(
-            "absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-md transition-all",
-            "hover:scale-105 hover:shadow-lg",
-            (disabled || isUploading) && "cursor-not-allowed opacity-60"
-          )}
-        >
-          <Camera className="h-3.5 w-3.5" />
-        </button>
       </div>
 
       <input
@@ -140,14 +162,17 @@ export function AvatarUploader({
         disabled={disabled || isUploading}
       />
 
-      {/* Caption + actions */}
-      {caption && !error && (
-        <p className="text-xs text-muted-foreground">{caption}</p>
-      )}
-      {!caption && !error && !isUploading && (
-        <p className="text-[11px] text-muted-foreground">
-          JPG, PNG, WebP ou GIF · max 2 Mo
-        </p>
+      {/* Helper text / state info */}
+      {!error && !isUploading && (
+        <div className="text-center space-y-0.5">
+          {caption ? (
+            <p className="text-xs font-medium text-muted-foreground">{caption}</p>
+          ) : (
+            <p className="text-[10px] text-muted-foreground/70">
+              JPG, PNG, WebP ou GIF · max 2 Mo
+            </p>
+          )}
+        </div>
       )}
 
       {value && !error && !isUploading && (
@@ -155,35 +180,41 @@ export function AvatarUploader({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={handleClear}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClear();
+          }}
           disabled={disabled}
-          className="h-6 gap-1 px-2 text-[11px] text-muted-foreground hover:text-destructive hover:bg-white/5"
+          className="h-6.5 gap-1 px-2.5 text-[11px] rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
         >
           <Trash2 className="h-3 w-3" />
-          Réinitialiser
+          Supprimer la photo
         </Button>
       )}
 
-      {/* Error UI with retry */}
+      {/* Error UI with elegant alert layout */}
       {error && (
         <div
           role="alert"
-          className="flex w-full max-w-xs flex-col items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2"
+          className="flex w-full max-w-xs flex-col items-center gap-1.5 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2.5 shadow-lg shadow-destructive/5"
         >
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-destructive">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-destructive">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            <span className="text-center leading-tight">{error}</span>
+            <span className="text-center leading-snug">{error}</span>
           </div>
           <Button
             type="button"
             size="sm"
             variant="ghost"
-            onClick={handleRetry}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRetry();
+            }}
             disabled={isUploading || disabled}
-            className="h-6 gap-1 px-2 text-[11px] text-primary hover:bg-primary/10"
+            className="h-6.5 gap-1 px-2.5 text-[11px] text-primary hover:bg-primary/10 rounded-lg transition-colors"
           >
             <RefreshCw className="h-3 w-3" />
-            Réessayer
+            Réessayer l'upload
           </Button>
         </div>
       )}
