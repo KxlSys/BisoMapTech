@@ -151,8 +151,14 @@ export default function App() {
         <p className="text-sm text-muted-foreground">
           Configuration Supabase invalide en production. Vérifie les variables Vercel
           <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_URL</code>
-          et
+          (ou
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">SUPABASE_URL</code>) et
           <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_ANON_KEY</code>
+          /
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">VITE_SUPABASE_PUBLISHABLE_KEY</code>
+          (ou
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">SUPABASE_ANON_KEY</code> /
+          <code className="mx-1 rounded bg-white/10 px-1 py-0.5">SUPABASE_PUBLISHABLE_KEY</code>)
           puis redéploie.
         </p>
         <ul className="mt-2 list-disc space-y-1 text-left text-xs text-muted-foreground">
