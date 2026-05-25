@@ -16,7 +16,7 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import { updateProfile } from "@/lib/profile-service";
 import { CONGO_CITIES, getCityCoordinates } from "@/lib/cities";
-import { TECH_OPTIONS, ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
+import { TECH_OPTIONS, ROLE_TYPE_LABELS, EXPERIENCE_LABELS, DB_ROLE_TYPES } from "@/lib/constants";
 import type { RoleType, ExperienceLevel } from "@/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,10 @@ const TECH_CATEGORIES = [
   },
 ];
 
+function isDbRoleType(value: string): value is (typeof DB_ROLE_TYPES)[number] {
+  return DB_ROLE_TYPES.includes(value as (typeof DB_ROLE_TYPES)[number]);
+}
+
 export function OnboardingStepper() {
   const { user, profile, fetchProfile, setIsNewUser } = useAuthStore();
   const navigate = useNavigate();
@@ -50,7 +54,9 @@ export function OnboardingStepper() {
   const [bio, setBio] = useState(profile?.bio || "");
   const [city, setCity] = useState(profile?.city || "Brazzaville");
   const [techStack, setTechStack] = useState<string[]>(profile?.tech_stack || []);
-  const [roleType, setRoleType] = useState<RoleType>(profile?.role_type || "fullstack");
+  const [roleType, setRoleType] = useState<RoleType>(
+    profile?.role_type && isDbRoleType(profile.role_type) ? profile.role_type : "fullstack"
+  );
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(
     profile?.experience_level || "junior"
   );
@@ -83,8 +89,10 @@ export function OnboardingStepper() {
       setIsNewUser(false);
       toast.success("Bienvenue sur BisoMapTech Map !");
       navigate("/");
-    } catch {
-      toast.error("Erreur lors de la sauvegarde du profil");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur lors de la sauvegarde du profil";
+      console.error("Erreur SQL update profiles (onboarding):", error);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -203,7 +211,7 @@ export function OnboardingStepper() {
                 Role principal
               </Label>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {Object.entries(ROLE_TYPE_LABELS).map(([value, label]) => (
+                {DB_ROLE_TYPES.map((value) => (
                   <button
                     key={value}
                     type="button"
@@ -215,7 +223,7 @@ export function OnboardingStepper() {
                         : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:text-foreground"
                     )}
                   >
-                    {label}
+                    {ROLE_TYPE_LABELS[value]}
                   </button>
                 ))}
               </div>
