@@ -20,8 +20,14 @@ const supabaseUrl = readEnv(
 );
 const supabaseAnonKey = readEnv(
   "VITE_SUPABASE_ANON_KEY",
+  "VITE_SUPABASE_PUBLISHABLE_KEY",
+  "VITE_SUPABASE_KEY",
   "SUPABASE_ANON_KEY",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+  "SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_KEY",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+  "NEXT_PUBLIC_SUPABASE_KEY"
 );
 
 const isPlaceholderValue = (value: string) =>
@@ -56,7 +62,7 @@ export const supabaseConfigStatus = {
 
 if (!isSupabaseConfigured) {
   console.error(
-    "Configuration Supabase invalide: vérifiez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.",
+    "Configuration Supabase invalide: vérifiez VITE_SUPABASE_URL et une clé publique (VITE_SUPABASE_ANON_KEY ou VITE_SUPABASE_PUBLISHABLE_KEY).",
     supabaseConfigStatus
   );
 }
