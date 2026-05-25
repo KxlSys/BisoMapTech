@@ -5,6 +5,7 @@ export const MOCK_PROFILES: Profile[] = [
     id: "mock-1",
     username: "jb-moukoko",
     full_name: "Jean-Baptiste Moukoko",
+    email: "jb.moukoko@example.cg",
     avatar_url:
       "https://api.dicebear.com/9.x/initials/svg?seed=JBM&backgroundColor=0d9488",
     bio: "Passionné de web, je construis des interfaces modernes et performantes.",
@@ -42,6 +43,7 @@ export const MOCK_PROFILES: Profile[] = [
     id: "mock-2",
     username: "grace-ngoma",
     full_name: "Grace Ngoma",
+    email: "grace.ngoma@example.cg",
     avatar_url:
       "https://api.dicebear.com/9.x/initials/svg?seed=GN&backgroundColor=7c3aed",
     bio: "Architecte backend spécialisée en APIs REST et systèmes distribués.",
@@ -80,6 +82,7 @@ export const MOCK_PROFILES: Profile[] = [
     id: "mock-3",
     username: "patrick-loemba",
     full_name: "Patrick Loemba",
+    email: "patrick.loemba@example.cg",
     avatar_url:
       "https://api.dicebear.com/9.x/initials/svg?seed=PL&backgroundColor=0891b2",
     bio: "Développeur fullstack, j'aime construire des produits de A à Z.",
@@ -117,6 +120,7 @@ export const MOCK_PROFILES: Profile[] = [
     id: "mock-4",
     username: "aurelia-nkounkou",
     full_name: "Aurélia Nkounkou",
+    email: "aurelia.nkounkou@example.cg",
     avatar_url:
       "https://api.dicebear.com/9.x/initials/svg?seed=AN&backgroundColor=be185d",
     bio: "Data scientist, j'explore les données pour en extraire de la valeur.",
@@ -155,6 +159,7 @@ export const MOCK_PROFILES: Profile[] = [
     id: "mock-5",
     username: "chris-mabiala",
     full_name: "Chris Mabiala",
+    email: "chris.mabiala@example.cg",
     avatar_url:
       "https://api.dicebear.com/9.x/initials/svg?seed=CM&backgroundColor=d97706",
     bio: "Dev mobile, je crée des apps Android et iOS avec Flutter.",
