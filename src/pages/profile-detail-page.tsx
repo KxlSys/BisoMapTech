@@ -370,20 +370,22 @@ export function ProfileDetailPage() {
               <div className="relative">
                 <div className="absolute -left-[25px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-background shadow-[0_0_8px_rgba(78,222,163,0.5)]" />
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-semibold text-foreground">Développeur {ROLE_TYPE_LABELS[profile.role_type]}</span>
+                  <span className="text-xs font-semibold text-foreground">{ROLE_TYPE_LABELS[profile.role_type] || "Spécialiste tech"}</span>
                   <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0 text-[10px] text-primary">En poste</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">2021 – Présent &bull; Congo-Brazzaville</p>
                 <p className="mt-1 text-xs text-muted-foreground/70">
-                  Développement d'applications avec {profile.tech_stack.slice(0, 2).join(", ")}.
+                  {profile.tech_stack.length > 0
+                    ? `Travaille principalement avec ${profile.tech_stack.slice(0, 3).join(", ")}.`
+                    : "Stack en cours de formalisation."}
                 </p>
               </div>
               <div className="relative">
                 <div className="absolute -left-[25px] top-1 h-3 w-3 rounded-full border-2 border-white/30 bg-background" />
-                <div className="mb-1 text-xs font-semibold text-foreground">Formation Développement Web</div>
-                <p className="text-[11px] text-muted-foreground">2018 – 2021 &bull; Brazzaville</p>
+                <div className="mb-1 text-xs font-semibold text-foreground">Formation & expérience</div>
+                <p className="text-[11px] text-muted-foreground">2018 – 2021 &bull; {profile.city || "Brazzaville"}</p>
                 <p className="mt-1 text-xs text-muted-foreground/70">
-                  Apprentissage des fondamentaux du développement logiciel.
+                  Apprentissage des fondamentaux et premières expériences pro.
                 </p>
               </div>
             </div>

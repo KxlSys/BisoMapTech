@@ -10,6 +10,8 @@ import { useLocations } from "@/hooks/use-locations";
 import {
   ROLE_TYPE_LABELS,
   EXPERIENCE_LABELS,
+  DB_ROLE_TYPES,
+  TECH_CATEGORIES,
 } from "@/lib/constants";
 
 import { cn } from "@/lib/utils";
@@ -49,6 +51,7 @@ export function FilterPanel({
     setSearchQuery,
     setCity,
     setDépartement,
+    setTechStack,
     setRoleType,
     setExperienceLevel,
 
