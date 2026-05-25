@@ -5,23 +5,16 @@ function normalizeEnvValue(value: string | undefined) {
   return value.trim().replace(/^['\"]|['\"]$/g, "");
 }
 
-function readEnv(...keys: string[]) {
-  for (const key of keys) {
-    const value = normalizeEnvValue(import.meta.env[key]);
-    if (value) return value;
-  }
-  return "";
-}
-
-const supabaseUrl = readEnv(
-  "VITE_SUPABASE_URL",
-  "SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_URL"
+const supabaseUrl = normalizeEnvValue(
+  import.meta.env.VITE_SUPABASE_URL ||
+  import.meta.env.SUPABASE_URL ||
+  import.meta.env.NEXT_PUBLIC_SUPABASE_URL
 );
-const supabaseAnonKey = readEnv(
-  "VITE_SUPABASE_ANON_KEY",
-  "SUPABASE_ANON_KEY",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+
+const supabaseAnonKey = normalizeEnvValue(
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.SUPABASE_ANON_KEY ||
+  import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
 const isPlaceholderValue = (value: string) =>
