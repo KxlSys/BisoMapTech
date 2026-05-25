@@ -240,7 +240,7 @@ export function OnboardingStepper() {
             <span className="text-primary">Join the ecosystem.</span>
           </h1>
           <p className="mt-5 text-base leading-relaxed text-muted-foreground max-w-sm">
-            Positionnez-vous dans l'annuaire des talents tech congolais — dev, sysadmin,
+            Positionnez-vous dans l'annuaire des développeurs de la République du Congo — dev, sysadmin,
             cybersécurité, cloud, IA, mobile, embarqué, support IT et plus.
           </p>
         </div>
@@ -281,7 +281,7 @@ export function OnboardingStepper() {
               Rejoindre <span className="text-primary">l'écosystème</span>
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Positionnez-vous sur la cartographie des talents tech congolais.
+              Positionnez-vous sur la cartographie des développeurs de la République du Congo.
             </p>
             {draft && (
               <p className="mt-1 text-[11px] text-muted-foreground/70">

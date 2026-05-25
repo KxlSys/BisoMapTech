@@ -222,7 +222,7 @@ export function CongoMap({ profiles, onProfileClick, onMapReady, focusedProfileI
       className="h-full w-full rounded-lg border border-border"
       style={{ minHeight: "400px" }}
       role="application"
-      aria-label="Carte interactive des contributeurs tech au Congo-Brazzaville"
+      aria-label="Carte interactive des développeurs en République du Congo"
     />
   );
 }

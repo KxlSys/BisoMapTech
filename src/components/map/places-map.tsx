@@ -194,7 +194,7 @@ export function PlacesMap({ places, onMapReady, focusedPlaceId }: PlacesMapProps
       className="h-full w-full rounded-lg border border-border"
       style={{ minHeight: "400px" }}
       role="application"
-      aria-label="Carte interactive des lieux au Congo-Brazzaville"
+      aria-label="Carte interactive des lieux en République du Congo"
     />
   );
 }
