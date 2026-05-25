@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 
 import { useFilterStore } from "@/store/filter-store";
 
-import { CONGO_CITIES } from "@/lib/cities";
+import { useLocations } from "@/hooks/use-locations";
 
 import {
   ROLE_TYPE_LABELS,
   EXPERIENCE_LABELS,
-  département_OPTIONS,
 } from "@/lib/constants";
 
 import { cn } from "@/lib/utils";
@@ -55,6 +54,8 @@ export function FilterPanel({
 
     resetFilters,
   } = useFilterStore();
+
+  const { cities, departments } = useLocations();
 
   const hasActiveFilters =
     searchQuery ||
@@ -238,7 +239,7 @@ export function FilterPanel({
             Tous
           </button>
 
-          {département_OPTIONS.map((dep) => {
+          {departments.map((dep) => {
             const isActive = département === dep;
 
             return (
@@ -282,7 +283,7 @@ export function FilterPanel({
             Toutes
           </button>
 
-          {CONGO_CITIES.map((c) => {
+          {cities.map((c) => {
             const isActive = city === c.name;
 
             return (
