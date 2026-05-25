@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ArrowRight, Check, X, MapPin, Code, Camera } from "lucide-react";
+import {
+  Search,
+  ArrowRight,
+  Check,
+  X,
+  MapPin,
+  AlertTriangle,
+  RefreshCw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,69 +22,152 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuthStore } from "@/store/auth-store";
-import { updateProfile } from "@/lib/profile-service";
+import { upsertProfile } from "@/lib/profile-service";
 import { CONGO_CITIES, getCityCoordinates } from "@/lib/cities";
-import { TECH_OPTIONS, ROLE_TYPE_LABELS, EXPERIENCE_LABELS, DB_ROLE_TYPES } from "@/lib/constants";
+import {
+  TECH_CATEGORIES,
+  TECH_OPTIONS,
+  ROLE_TYPE_LABELS,
+  EXPERIENCE_LABELS,
+  DB_ROLE_TYPES,
+} from "@/lib/constants";
 import type { RoleType, ExperienceLevel } from "@/types";
+import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const TECH_CATEGORIES = [
-  {
-    label: "Frontend",
-    techs: ["React", "Vue.js", "Angular", "Next.js", "TypeScript", "Tailwind CSS"],
-  },
-  {
-    label: "Backend & Infrastructure",
-    techs: ["Node.js", "Python", "Django", "Go", "Docker", "AWS", "PostgreSQL"],
-  },
-  {
-    label: "Mobile",
-    techs: ["Flutter", "React Native", "Swift", "Kotlin"],
-  },
-  {
-    label: "Data & IA",
-    techs: ["Machine Learning", "Data Science", "Firebase", "Supabase"],
-  },
-];
+const DRAFT_KEY_PREFIX = "bisomap.onboarding.draft.";
+
+interface OnboardingDraft {
+  fullName: string;
+  bio: string;
+  city: string;
+  techStack: string[];
+  roleType: RoleType;
+  experienceLevel: ExperienceLevel;
+  openToCollaboration: boolean;
+  avatarUrl: string;
+}
 
 function isDbRoleType(value: string): value is (typeof DB_ROLE_TYPES)[number] {
   return DB_ROLE_TYPES.includes(value as (typeof DB_ROLE_TYPES)[number]);
 }
 
+function loadDraft(userId: string): Partial<OnboardingDraft> | null {
+  try {
+    const raw = localStorage.getItem(`${DRAFT_KEY_PREFIX}${userId}`);
+    if (!raw) return null;
+    return JSON.parse(raw) as Partial<OnboardingDraft>;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(userId: string, draft: OnboardingDraft) {
+  try {
+    localStorage.setItem(`${DRAFT_KEY_PREFIX}${userId}`, JSON.stringify(draft));
+  } catch {
+    // Quota / private mode — silent fail.
+  }
+}
+
+function clearDraft(userId: string) {
+  try {
+    localStorage.removeItem(`${DRAFT_KEY_PREFIX}${userId}`);
+  } catch {
+    // ignored
+  }
+}
+
 export function OnboardingStepper() {
-  const { user, profile, fetchProfile, setIsNewUser } = useAuthStore();
+  const { user, profile, fetchProfile, setProfile, setIsNewUser } = useAuthStore();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [techSearch, setTechSearch] = useState("");
+  const draftHydratedRef = useRef(false);
 
-  const [fullName, setFullName] = useState(profile?.full_name || "");
-  const [bio, setBio] = useState(profile?.bio || "");
-  const [city, setCity] = useState(profile?.city || "Brazzaville");
-  const [techStack, setTechStack] = useState<string[]>(profile?.tech_stack || []);
-  const [roleType, setRoleType] = useState<RoleType>(
-    profile?.role_type && isDbRoleType(profile.role_type) ? profile.role_type : "fullstack"
+  // Initial form state — pulls from the saved draft first (so a network blip
+  // doesn't lose the user's input), then falls back to the existing profile,
+  // then to sane defaults. Hydration runs once.
+  const draft = useMemo(() => (user ? loadDraft(user.id) : null), [user]);
+
+  const [fullName, setFullName] = useState(
+    draft?.fullName ?? profile?.full_name ?? ""
   );
+  const [bio, setBio] = useState(draft?.bio ?? profile?.bio ?? "");
+  const [city, setCity] = useState(draft?.city ?? profile?.city ?? "Brazzaville");
+  const [techStack, setTechStack] = useState<string[]>(
+    draft?.techStack ?? profile?.tech_stack ?? []
+  );
+  const [roleType, setRoleType] = useState<RoleType>(() => {
+    if (draft?.roleType && isDbRoleType(draft.roleType)) return draft.roleType;
+    if (profile?.role_type && isDbRoleType(profile.role_type)) return profile.role_type;
+    return "fullstack";
+  });
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(
-    profile?.experience_level || "junior"
+    draft?.experienceLevel ?? profile?.experience_level ?? "junior"
   );
-  const [openToCollaboration, setOpenToCollaboration] = useState(true);
+  const [openToCollaboration, setOpenToCollaboration] = useState(
+    draft?.openToCollaboration ?? profile?.open_to_collaboration ?? true
+  );
+  const [avatarUrl, setAvatarUrl] = useState(
+    draft?.avatarUrl ?? profile?.avatar_url ?? ""
+  );
+
+  // After the very first hydration, persist every change to localStorage.
+  useEffect(() => {
+    if (!user) return;
+    // Skip the very first effect tick so we don't immediately overwrite the
+    // freshly-loaded draft with the unchanged values.
+    if (!draftHydratedRef.current) {
+      draftHydratedRef.current = true;
+      return;
+    }
+    saveDraft(user.id, {
+      fullName,
+      bio,
+      city,
+      techStack,
+      roleType,
+      experienceLevel,
+      openToCollaboration,
+      avatarUrl,
+    });
+  }, [
+    user,
+    fullName,
+    bio,
+    city,
+    techStack,
+    roleType,
+    experienceLevel,
+    openToCollaboration,
+    avatarUrl,
+  ]);
 
   const filteredAllTechs = techSearch
-    ? TECH_OPTIONS.filter((t) => t.toLowerCase().includes(techSearch.toLowerCase()))
+    ? TECH_OPTIONS.filter((t) =>
+        t.toLowerCase().includes(techSearch.toLowerCase())
+      )
     : null;
 
+  const canSubmit = !!fullName.trim() && !!city && techStack.length > 0;
+
   async function handleComplete() {
-    if (!user || !fullName || !city || techStack.length === 0) {
+    if (!user) return;
+    if (!canSubmit) {
       toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const coords = getCityCoordinates(city);
-      await updateProfile(user.id, {
-        full_name: fullName,
-        bio,
+      // upsert (not update) so a fresh user without a row still saves.
+      await upsertProfile(user.id, {
+        full_name: fullName.trim(),
+        bio: bio.trim(),
         city,
         latitude: coords?.latitude || -4.2634,
         longitude: coords?.longitude || 15.2429,
@@ -84,14 +175,21 @@ export function OnboardingStepper() {
         experience_level: experienceLevel,
         tech_stack: techStack,
         open_to_collaboration: openToCollaboration,
+        avatar_url: avatarUrl,
       });
-      await fetchProfile(user.id);
+      const refreshed = await fetchProfile(user.id);
+      if (refreshed) setProfile(refreshed);
       setIsNewUser(false);
+      clearDraft(user.id);
       toast.success("Bienvenue sur BisoMapTech Map !");
       navigate("/");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erreur lors de la sauvegarde du profil";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la sauvegarde du profil";
       console.error("Erreur SQL update profiles (onboarding):", error);
+      setSubmitError(message);
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -110,29 +208,35 @@ export function OnboardingStepper() {
     <div className="flex min-h-screen">
       {/* ---- LEFT BRANDING PANEL (desktop only) ---- */}
       <div className="relative hidden lg:flex lg:w-5/12 flex-col justify-between overflow-hidden border-r border-white/10 p-12">
-        {/* Background glow */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute right-0 top-0 h-80 w-80 -translate-y-1/3 translate-x-1/3 rounded-full bg-primary/10 blur-[80px]" />
           <div className="absolute bottom-0 left-0 h-64 w-64 translate-y-1/3 -translate-x-1/3 rounded-full bg-primary/5 blur-[80px]" />
-          {/* Subtle grid pattern */}
           <div
             className="absolute inset-0 opacity-[0.04]"
-            style={{ backgroundImage: "radial-gradient(oklch(0.82 0.16 155) 1px, transparent 1px)", backgroundSize: "32px 32px" }}
+            style={{
+              backgroundImage:
+                "radial-gradient(oklch(0.82 0.16 155) 1px, transparent 1px)",
+              backgroundSize: "32px 32px",
+            }}
           />
         </div>
 
         <div className="relative z-10">
           <div className="mb-16 flex items-center gap-2 text-primary">
             <MapPin className="h-5 w-5" />
-            <span className="text-lg font-bold tracking-tight text-foreground">BisoMapTech</span>
+            <span className="text-lg font-bold tracking-tight text-foreground">
+              BisoMapTech
+            </span>
           </div>
 
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight">
-            Map your impact.<br />
+            Map your impact.
+            <br />
             <span className="text-primary">Join the ecosystem.</span>
           </h1>
           <p className="mt-5 text-base leading-relaxed text-muted-foreground max-w-sm">
-            Positionnez-vous dans l'annuaire des talents tech congolais. Construisez votre profil, valorisez votre stack et connectez-vous aux batisseurs de demain.
+            Positionnez-vous dans l'annuaire des talents tech congolais — dev, sysadmin,
+            cybersécurité, cloud, IA, mobile, embarqué, support IT et plus.
           </p>
         </div>
 
@@ -148,52 +252,62 @@ export function OnboardingStepper() {
             ))}
           </div>
           <p className="text-sm text-muted-foreground">
-            Rejoignez 2 400+ developpeurs &amp; ingenieurs
+            Rejoignez 2 400+ développeurs &amp; ingénieurs
           </p>
         </div>
       </div>
 
       {/* ---- RIGHT FORM PANEL ---- */}
       <div className="flex flex-1 items-start justify-center overflow-y-auto px-4 py-8 sm:px-8 lg:items-center">
-        {/* Ambient glow behind form */}
         <div className="pointer-events-none fixed left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[100px]" />
 
         <div className="relative z-10 w-full max-w-xl">
           {/* Mobile branding */}
           <div className="mb-8 flex items-center gap-2 text-primary lg:hidden">
             <MapPin className="h-5 w-5" />
-            <span className="text-base font-bold tracking-tight text-foreground">BisoMapTech</span>
+            <span className="text-base font-bold tracking-tight text-foreground">
+              BisoMapTech
+            </span>
           </div>
 
           {/* Form header */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">
-              Rejoindre <span className="text-primary">l'Ecosysteme</span>
+              Rejoindre <span className="text-primary">l'écosystème</span>
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Positionnez-vous sur la cartographie des talents tech congolais.
             </p>
+            {draft && (
+              <p className="mt-1 text-[11px] text-muted-foreground/70">
+                Brouillon restauré automatiquement.
+              </p>
+            )}
           </div>
 
           <div className="glass-panel space-y-6 rounded-2xl border border-white/10 p-6 sm:p-8">
-            {/* Photo avatar (decorative — GitHub avatar will be used) */}
-            <div className="flex flex-col items-center">
-              <div className="relative">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-white/8">
-                  <Camera className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Code className="h-3 w-3" />
-                </div>
+            {/* Avatar — real upload */}
+            {user && (
+              <div className="flex flex-col items-center">
+                <AvatarUploader
+                  userId={user.id}
+                  value={avatarUrl}
+                  fallbackText={fullName || profile?.full_name || profile?.username}
+                  caption={
+                    avatarUrl ? "Photo personnalisée" : "Importez ou utilisez votre photo GitHub"
+                  }
+                  onUploaded={(url) => setAvatarUrl(url)}
+                  onCleared={() => setAvatarUrl("")}
+                />
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Photo depuis GitHub
-              </p>
-            </div>
+            )}
 
             {/* Full name */}
             <div className="space-y-1.5">
-              <Label htmlFor="onb-name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <Label
+                htmlFor="onb-name"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
                 Nom complet
               </Label>
               <Input
@@ -205,10 +319,10 @@ export function OnboardingStepper() {
               />
             </div>
 
-            {/* Role */}
+            {/* Role — all 15 disciplines */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Role principal
+                Rôle principal
               </Label>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {DB_ROLE_TYPES.map((value) => (
@@ -236,7 +350,7 @@ export function OnboardingStepper() {
               </Label>
               <Select value={city} onValueChange={setCity}>
                 <SelectTrigger className="bg-white/5 border-white/10">
-                  <SelectValue placeholder="Selectionner votre ville..." />
+                  <SelectValue placeholder="Sélectionner votre ville..." />
                 </SelectTrigger>
                 <SelectContent>
                   {CONGO_CITIES.map((c) => (
@@ -251,16 +365,21 @@ export function OnboardingStepper() {
             {/* Bio */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="onb-bio" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <Label
+                  htmlFor="onb-bio"
+                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                >
                   Bio courte
                 </Label>
-                <span className="text-[11px] text-muted-foreground/60">{bio.length}/200</span>
+                <span className="text-[11px] text-muted-foreground/60">
+                  {bio.length}/200
+                </span>
               </div>
               <Textarea
                 id="onb-bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value.slice(0, 200))}
-                placeholder="Decrivez votre expertise et ce que vous cherchez..."
+                placeholder="Décrivez votre expertise et ce que vous cherchez..."
                 rows={3}
                 className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30 resize-none"
               />
@@ -275,7 +394,7 @@ export function OnboardingStepper() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher frameworks, langages..."
+                  placeholder="Rechercher : Linux, Cisco, Pentest, Python, AWS, Flutter..."
                   value={techSearch}
                   onChange={(e) => setTechSearch(e.target.value)}
                   className="bg-white/5 border-white/10 pl-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30"
@@ -299,23 +418,39 @@ export function OnboardingStepper() {
                 </div>
               )}
 
-              {/* Tech chips */}
+              {/* Tech chips — full taxonomy */}
               {filteredAllTechs ? (
-                <div className="flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">
+                <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
                   {filteredAllTechs.map((tech) => (
-                    <TechChip key={tech} tech={tech} selected={techStack.includes(tech)} onToggle={() => toggleTech(tech)} />
+                    <TechChip
+                      key={tech}
+                      tech={tech}
+                      selected={techStack.includes(tech)}
+                      onToggle={() => toggleTech(tech)}
+                    />
                   ))}
+                  {filteredAllTechs.length === 0 && (
+                    <p className="text-xs text-muted-foreground/70">
+                      Aucune technologie trouvée. Sélectionnez "Autre" comme rôle pour
+                      les profils atypiques.
+                    </p>
+                  )}
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="max-h-72 space-y-3 overflow-y-auto rounded-lg border border-white/10 bg-white/3 p-3">
                   {TECH_CATEGORIES.map((cat) => (
-                    <div key={cat.label}>
-                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                    <div key={cat.id}>
+                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                         {cat.label}
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {cat.techs.map((tech) => (
-                          <TechChip key={tech} tech={tech} selected={techStack.includes(tech)} onToggle={() => toggleTech(tech)} />
+                          <TechChip
+                            key={tech}
+                            tech={tech}
+                            selected={techStack.includes(tech)}
+                            onToggle={() => toggleTech(tech)}
+                          />
                         ))}
                       </div>
                     </div>
@@ -327,7 +462,7 @@ export function OnboardingStepper() {
             {/* Experience */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Niveau d'experience
+                Niveau d'expérience
               </Label>
               <div className="flex gap-2">
                 {Object.entries(EXPERIENCE_LABELS).map(([value, label]) => (
@@ -361,16 +496,66 @@ export function OnboardingStepper() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={cn("text-sm font-semibold", openToCollaboration ? "text-primary" : "text-foreground")}>
-                    Ouvert a la collaboration
+                  <p
+                    className={cn(
+                      "text-sm font-semibold",
+                      openToCollaboration ? "text-primary" : "text-foreground"
+                    )}
+                  >
+                    Ouvert à la collaboration
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Visible pour des opportunites de projet
+                    Visible pour des opportunités de projet
                   </p>
                 </div>
-                <Switch checked={openToCollaboration} onCheckedChange={setOpenToCollaboration} />
+                <Switch
+                  checked={openToCollaboration}
+                  onCheckedChange={setOpenToCollaboration}
+                />
               </div>
             </button>
+
+            {/* Validation summary — explicit so the user knows what's missing */}
+            {!canSubmit && (
+              <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-300">
+                {!fullName.trim() && <p>• Renseignez votre nom complet</p>}
+                {!city && <p>• Choisissez votre ville</p>}
+                {techStack.length === 0 && (
+                  <p>• Sélectionnez au moins une technologie</p>
+                )}
+              </div>
+            )}
+
+            {/* Submission error with retry */}
+            {submitError && (
+              <div
+                role="alert"
+                className="flex flex-col gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Sauvegarde impossible</p>
+                    <p className="mt-0.5 text-destructive/80">{submitError}</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Votre saisie est conservée localement, vous pouvez réessayer
+                  sans perdre vos données.
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleComplete}
+                  disabled={isSubmitting}
+                  className="self-start gap-1 border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Réessayer
+                </Button>
+              </div>
+            )}
 
             {/* Divider */}
             <div className="h-px bg-white/10" />
@@ -382,11 +567,11 @@ export function OnboardingStepper() {
                 onClick={() => navigate("/")}
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                Retour a la carte
+                Retour à la carte
               </button>
               <Button
                 onClick={handleComplete}
-                disabled={isSubmitting || !fullName || !city || techStack.length === 0}
+                disabled={isSubmitting || !canSubmit}
                 className="gap-2 bg-primary text-primary-foreground font-semibold shadow-[0_4px_20px_rgba(78,222,163,0.3)] hover:bg-primary/90 hover:shadow-[0_6px_28px_rgba(78,222,163,0.4)] disabled:opacity-40"
               >
                 {isSubmitting ? "Sauvegarde..." : "Initialiser le profil"}

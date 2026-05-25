@@ -10,14 +10,19 @@ interface AuthState {
   session: Session | null;
   profile: Profile | null;
   isLoading: boolean;
+  /** True once the initial profile fetch has resolved (success OR not-found). */
+  profileLoaded: boolean;
   isNewUser: boolean;
   unreadMessages: number;
   authError: string | null;
+  /** Last error encountered while fetching the profile (RLS, network, ...). */
+  profileError: string | null;
   initialize: () => Promise<void>;
   signInWithGitHub: () => Promise<void>;
   signInWithEmail: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
-  fetchProfile: (userId: string) => Promise<void>;
+  fetchProfile: (userId: string) => Promise<Profile | null>;
+  setProfile: (profile: Profile | null) => void;
   setIsNewUser: (value: boolean) => void;
   fetchUnreadMessages: () => Promise<void>;
 }
@@ -27,9 +32,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   profile: null,
   isLoading: true,
+  profileLoaded: false,
   isNewUser: false,
   unreadMessages: 0,
   authError: null,
+  profileError: null,
 
   initialize: async () => {
     try {
@@ -46,6 +53,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (session?.user) {
         await get().fetchProfile(session.user.id);
         await get().fetchUnreadMessages();
+      } else {
+        // No session — mark profile as "loaded" so guarded routes don't hang.
+        set({ profileLoaded: true });
       }
 
       authSubscription?.unsubscribe();
@@ -57,7 +67,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             await get().fetchUnreadMessages();
           })();
         } else {
-          set({ profile: null, unreadMessages: 0 });
+          set({ profile: null, unreadMessages: 0, profileLoaded: true });
         }
       }).data.subscription;
     } catch (error) {
@@ -70,6 +80,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         profile: null,
         unreadMessages: 0,
         isLoading: false,
+        profileLoaded: true,
         authError: message,
       });
     }
@@ -99,25 +110,67 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ user: null, session: null, profile: null, unreadMessages: 0 });
+    set({
+      user: null,
+      session: null,
+      profile: null,
+      unreadMessages: 0,
+      profileLoaded: true,
+      profileError: null,
+    });
   },
 
   fetchProfile: async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (data) {
-      set({ profile: data as Profile });
-      supabase
+    try {
+      const { data, error } = await supabase
         .from("profiles")
-        .update({ last_seen_at: new Date().toISOString() })
+        .select("*")
         .eq("id", userId)
-        .then(() => {});
+        .maybeSingle();
+
+      if (error) {
+        console.error("fetchProfile error:", error);
+        set({
+          profile: null,
+          profileLoaded: true,
+          profileError: error.message,
+        });
+        return null;
+      }
+
+      const profile = (data ?? null) as Profile | null;
+
+      set({
+        profile,
+        profileLoaded: true,
+        profileError: null,
+      });
+
+      if (profile) {
+        // Heartbeat: update last_seen_at without blocking the UI; failures
+        // are intentionally ignored.
+        supabase
+          .from("profiles")
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq("id", userId)
+          .then(() => {});
+      }
+
+      return profile;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Erreur de chargement du profil.";
+      console.error("fetchProfile threw:", error);
+      set({
+        profile: null,
+        profileLoaded: true,
+        profileError: message,
+      });
+      return null;
     }
   },
+
+  setProfile: (profile) => set({ profile, profileLoaded: true }),
 
   setIsNewUser: (value: boolean) => set({ isNewUser: value }),
 
@@ -125,12 +178,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const user = get().user;
     if (!user) return;
 
-    const { count } = await supabase
-      .from("messages")
-      .select("*", { count: "exact", head: true })
-      .eq("receiver_id", user.id)
-      .is("read_at", null);
+    try {
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("receiver_id", user.id)
+        .is("read_at", null);
 
-    set({ unreadMessages: count ?? 0 });
+      set({ unreadMessages: count ?? 0 });
+    } catch (error) {
+      // Non-blocking — keep previous count.
+      console.warn("fetchUnreadMessages failed:", error);
+    }
   },
 }));
