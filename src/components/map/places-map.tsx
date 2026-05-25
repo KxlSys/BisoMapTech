@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Place } from "@/types";
@@ -34,7 +34,7 @@ interface PlacesMapProps {
   focusedPlaceId?: string;
 }
 
-export function PlacesMap({ places, onMapReady, focusedPlaceId }: PlacesMapProps) {
+export const PlacesMap = React.memo(function PlacesMap({ places, onMapReady, focusedPlaceId }: PlacesMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
@@ -197,4 +197,4 @@ export function PlacesMap({ places, onMapReady, focusedPlaceId }: PlacesMapProps
       aria-label="Carte interactive des lieux en République du Congo"
     />
   );
-}
+});

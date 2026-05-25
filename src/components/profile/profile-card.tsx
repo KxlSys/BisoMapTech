@@ -1,3 +1,4 @@
+import React from "react";
 import { Link } from "react-router-dom";
 import { MapPin, ExternalLink, Handshake } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,10 +26,13 @@ function formatLastSeen(lastSeenAt?: string): string | null {
   return null;
 }
 
-export function ProfileCard({ profile, matchScore, onClick }: ProfileCardProps) {
+export const ProfileCard = React.memo(function ProfileCard({ profile, matchScore, onClick }: ProfileCardProps) {
   const lastSeen = formatLastSeen(profile.last_seen_at);
   const isOnline = lastSeen === "En ligne";
 
+  // ⚡ Bolt Performance Optimization
+  // Wrapped ProfileCard in React.memo to prevent unnecessary re-renders when the parent
+  // component (like MapPage or ContributorsPage) updates its state (e.g. from typing in the search bar).
   return (
     <Link to={`/contributeurs/${profile.username}`} onClick={onClick}>
       <div className={cn(
@@ -111,4 +115,4 @@ export function ProfileCard({ profile, matchScore, onClick }: ProfileCardProps) 
       </div>
     </Link>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Profile } from "@/types";
@@ -44,7 +44,7 @@ interface CongoMapProps {
   focusedProfileId?: string;
 }
 
-export function CongoMap({ profiles, onProfileClick, onMapReady, focusedProfileId }: CongoMapProps) {
+export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick, onMapReady, focusedProfileId }: CongoMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
@@ -225,4 +225,4 @@ export function CongoMap({ profiles, onProfileClick, onMapReady, focusedProfileI
       aria-label="Carte interactive des développeurs en République du Congo"
     />
   );
-}
+});
