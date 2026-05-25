@@ -117,9 +117,17 @@ export function ProfileEditPage() {
     if (!user) return;
     try {
       const coords = getCityCoordinates(data.city);
+      const metadata = user.user_metadata ?? {};
+      const username =
+        profile?.username ||
+        metadata.user_name ||
+        metadata.preferred_username ||
+        `user_${user.id.slice(0, 8)}`;
+
       // Use upsert: if a previous OAuth-callback insert silently failed, we
       // recover transparently instead of swallowing the save.
       await upsertProfile(user.id, {
+        username,
         full_name: data.full_name,
         bio: data.bio,
         city: data.city,
