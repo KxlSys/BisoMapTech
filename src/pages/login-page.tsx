@@ -40,7 +40,7 @@ export function LoginPage() {
             <span className="text-primary">tech congolais.</span>
           </h1>
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Rejoignez l'annuaire de référence des développeurs du Congo-Brazzaville. Collaborez, construisez et grandissez ensemble.
+            Rejoignez l'annuaire de référence des informaticiens de la République du Congo. Collaborez, construisez et grandissez ensemble.
           </p>
 
           <div className="mt-10 grid grid-cols-2 gap-3">
