@@ -199,3 +199,37 @@ export function getCityCoordinates(
       cityName.toLowerCase()
   );
 }
+
+/**
+ * Resolve the `cities.id` UUID for a given city name.
+ *
+ * The production schema has a `city_id` FK on `profiles`. We populate it
+ * (best-effort) when writing a profile so the relational link is preserved,
+ * but the app uses the denormalised `city` text + lat/lng for queries so
+ * a missing FK never blocks a save.
+ *
+ * Failures (RLS, network) resolve to `null` instead of throwing — the
+ * caller should treat the result as optional.
+ */
+export async function resolveCityId(cityName: string): Promise<string | null> {
+  if (!cityName) return null;
+  try {
+    // Lazy-import to avoid pulling supabase into bundles that only need the
+    // static city list.
+    const { supabase } = await import("@/lib/supabase");
+    const { data, error } = await supabase
+      .from("cities")
+      .select("id")
+      .ilike("name", cityName)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("resolveCityId failed:", error.message);
+      return null;
+    }
+    return (data?.id as string | undefined) ?? null;
+  } catch (err) {
+    console.warn("resolveCityId threw:", err);
+    return null;
+  }
+}

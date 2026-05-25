@@ -52,17 +52,24 @@ export interface Profile {
 
   username: string;
   full_name: string;
+  /** Authoritative email — set from the auth session, NOT NULL in prod. */
+  email: string;
 
   avatar_url: string;
   bio: string;
 
   city: string;
   département: Department;
+  /** Optional FK to `cities.id` — kept in sync with `city` text via the
+   *  alignment migration. The app reads city/lat/lng directly. */
+  city_id?: string | null;
 
   latitude: number;
   longitude: number;
 
   github_url: string;
+  /** Optional LinkedIn profile URL (column already exists in prod). */
+  linkedin_url?: string | null;
 
   tech_stack: string[];
 

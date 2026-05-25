@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth-store";
 import { upsertProfile, fetchProfileById } from "@/lib/profile-service";
-import { getCityCoordinates } from "@/lib/cities";
+import { getCityCoordinates, resolveCityId } from "@/lib/cities";
 import type { Profile } from "@/types";
 
 function readTokensFromHash() {
@@ -80,13 +80,18 @@ export function AuthCallbackPage() {
             metadata.preferred_username ||
             `user_${userId.slice(0, 8)}`;
           const cityCoords = getCityCoordinates("Brazzaville");
+          const cityId = await resolveCityId("Brazzaville");
 
           await upsertProfile(userId, {
             username,
+            // `email` is NOT NULL in production — always populate from the
+            // OAuth session to avoid the "null value violates NOT NULL" error.
+            email: session.user.email ?? metadata.email ?? "",
             full_name: metadata.full_name || metadata.name || username,
             avatar_url: metadata.avatar_url || "",
             bio: metadata.bio || "",
             city: "Brazzaville",
+            city_id: cityId,
             latitude: cityCoords?.latitude || -4.2634,
             longitude: cityCoords?.longitude || 15.2429,
             github_url: metadata.user_name

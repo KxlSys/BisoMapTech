@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useAuthStore } from "@/store/auth-store";
 import { upsertProfile } from "@/lib/profile-service";
-import { CONGO_CITIES, getCityCoordinates } from "@/lib/cities";
+import { CONGO_CITIES, getCityCoordinates, resolveCityId } from "@/lib/cities";
 import {
   TECH_CATEGORIES,
   TECH_OPTIONS,
@@ -164,11 +164,16 @@ export function OnboardingStepper() {
     setSubmitError(null);
     try {
       const coords = getCityCoordinates(city);
+      const cityId = await resolveCityId(city);
       // upsert (not update) so a fresh user without a row still saves.
       await upsertProfile(user.id, {
         full_name: fullName.trim(),
+        // `email` is NOT NULL in prod — re-supply from the auth session so
+        // a fresh insert (when no row exists yet) always succeeds.
+        email: user.email ?? "",
         bio: bio.trim(),
         city,
+        city_id: cityId,
         latitude: coords?.latitude || -4.2634,
         longitude: coords?.longitude || 15.2429,
         role_type: roleType,

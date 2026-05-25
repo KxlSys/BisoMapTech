@@ -30,7 +30,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/store/auth-store";
 import { upsertProfile } from "@/lib/profile-service";
-import { CONGO_CITIES, getCityCoordinates } from "@/lib/cities";
+import { CONGO_CITIES, getCityCoordinates, resolveCityId } from "@/lib/cities";
 import {
   TECH_CATEGORIES,
   ROLE_TYPE_LABELS,
@@ -56,6 +56,8 @@ const profileSchema = z.object({
     .min(1, "Sélectionnez au moins une technologie"),
   open_to_collaboration: z.boolean(),
   avatar_url: z.string(),
+  github_url: z.string(),
+  linkedin_url: z.string(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -87,6 +89,8 @@ export function ProfileEditPage() {
       tech_stack: [],
       open_to_collaboration: true,
       avatar_url: "",
+      github_url: "",
+      linkedin_url: "",
     },
   });
 
@@ -110,6 +114,8 @@ export function ProfileEditPage() {
       setValue("tech_stack", profile.tech_stack ?? []);
       setValue("open_to_collaboration", profile.open_to_collaboration ?? true);
       setValue("avatar_url", profile.avatar_url ?? "");
+      setValue("github_url", profile.github_url ?? "");
+      setValue("linkedin_url", profile.linkedin_url ?? "");
     }
   }, [user, profile, profileLoaded, navigate, setValue]);
 
@@ -117,12 +123,18 @@ export function ProfileEditPage() {
     if (!user) return;
     try {
       const coords = getCityCoordinates(data.city);
+      const cityId = await resolveCityId(data.city);
       // Use upsert: if a previous OAuth-callback insert silently failed, we
       // recover transparently instead of swallowing the save.
       await upsertProfile(user.id, {
         full_name: data.full_name,
+        // `email` is NOT NULL in prod. If a row already exists this is a
+        // no-op (we resend the same value from the auth session); on the
+        // upsert insert path it prevents the "null violates NOT NULL" error.
+        email: user.email ?? profile?.email ?? "",
         bio: data.bio,
         city: data.city,
+        city_id: cityId,
         latitude: coords?.latitude || 0,
         longitude: coords?.longitude || 0,
         role_type: data.role_type as RoleType,
@@ -130,6 +142,8 @@ export function ProfileEditPage() {
         tech_stack: data.tech_stack,
         open_to_collaboration: data.open_to_collaboration,
         avatar_url: data.avatar_url,
+        github_url: data.github_url,
+        linkedin_url: data.linkedin_url,
       });
       toast.success("Profil mis à jour avec succès");
       await fetchProfile(user.id);
@@ -482,6 +496,52 @@ export function ProfileEditPage() {
               </div>
             )}
           />
+        </section>
+
+        {/* External links */}
+        <section className="glass-panel rounded-2xl border border-white/10 p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <GitBranch className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Liens externes
+            </h2>
+          </div>
+          <div className="space-y-4">
+            <Controller
+              name="github_url"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label htmlFor="github_url" className="text-xs text-muted-foreground uppercase tracking-wider">
+                    GitHub
+                  </Label>
+                  <Input
+                    id="github_url"
+                    {...field}
+                    placeholder="https://github.com/votre-username"
+                    className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                  />
+                </div>
+              )}
+            />
+            <Controller
+              name="linkedin_url"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label htmlFor="linkedin_url" className="text-xs text-muted-foreground uppercase tracking-wider">
+                    LinkedIn
+                  </Label>
+                  <Input
+                    id="linkedin_url"
+                    {...field}
+                    placeholder="https://linkedin.com/in/votre-profil"
+                    className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                  />
+                </div>
+              )}
+            />
+          </div>
         </section>
 
         {/* Actions */}
