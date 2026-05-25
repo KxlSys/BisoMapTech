@@ -43,8 +43,27 @@ const supabaseAnonKey = anonKeyLookup.value;
 const isPlaceholderValue = (value: string) =>
   /^(changeme|placeholder|your[_-]?|example)/i.test(value);
 
+// Detect a very common misconfiguration: pasting the full REST endpoint
+// (e.g. https://xxx.supabase.co/rest/v1) instead of the project root URL.
+// supabase-js then appends /auth/v1/authorize on top → /rest/v1/auth/v1/authorize
+// which is routed through the PostgREST gateway and rejected with
+// {"message":"No API key found in request"} on OAuth flows.
+const urlHasUnexpectedPath = (() => {
+  if (!supabaseUrl) return false;
+  try {
+    const u = new URL(supabaseUrl);
+    const path = u.pathname.replace(/\/+$/, "");
+    return path.length > 0; // any non-root path is a problem
+  } catch {
+    return false;
+  }
+})();
+
 const isValidSupabaseUrl = (() => {
   if (!supabaseUrl || isPlaceholderValue(supabaseUrl)) {
+    return false;
+  }
+  if (urlHasUnexpectedPath) {
     return false;
   }
 
@@ -76,6 +95,7 @@ export const supabaseConfigStatus = {
   hasAnonKey: Boolean(supabaseAnonKey),
   isValidSupabaseUrl,
   isValidAnonKey,
+  urlHasUnexpectedPath,
   // Diagnostics that surface what was ACTUALLY baked into the bundle by Vite at build time.
   urlPreview: supabaseUrl || "(empty)",
   anonKeyPreview: maskKey(supabaseAnonKey),
@@ -87,6 +107,15 @@ export const supabaseConfigStatus = {
 // Always log once at startup so we can verify in production what the bundle contains.
 // URLs are public; the key is masked to avoid leaking the full value.
 console.info("[supabase-config]", supabaseConfigStatus);
+
+if (urlHasUnexpectedPath) {
+  console.error(
+    "[supabase-config] VITE_SUPABASE_URL contains a path (e.g. /rest/v1). " +
+      "Use only the project root, e.g. https://<ref>.supabase.co — supabase-js " +
+      "appends /auth/v1, /rest/v1 and /storage/v1 itself.",
+    { urlPreview: supabaseUrl }
+  );
+}
 
 if (!isSupabaseConfigured) {
   console.error(
