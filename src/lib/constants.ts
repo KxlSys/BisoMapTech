@@ -137,6 +137,16 @@ export const ROLE_TYPE_LABELS: Record<string, string> = {
   autre: "Autre",
 };
 
+export const DB_ROLE_TYPES = [
+  "frontend",
+  "backend",
+  "fullstack",
+  "data",
+  "devops",
+  "mobile",
+  "autre",
+] as const;
+
 // ======================================================
 // EXPERIENCE LABELS
 // ======================================================

@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/store/auth-store";
 import { updateProfile } from "@/lib/profile-service";
 import { CONGO_CITIES, getCityCoordinates } from "@/lib/cities";
-import { TECH_OPTIONS, ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
+import { TECH_OPTIONS, ROLE_TYPE_LABELS, EXPERIENCE_LABELS, DB_ROLE_TYPES } from "@/lib/constants";
 import type { RoleType, ExperienceLevel } from "@/types";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -30,23 +30,7 @@ const profileSchema = z.object({
   full_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères").max(50, "Le nom ne peut pas dépasser 50 caractères"),
   bio: z.string().max(500, "La bio ne peut pas dépasser 500 caractères"),
   city: z.string().min(1, "Veuillez sélectionner une ville"),
-  role_type: z.enum([
-    "frontend",
-    "backend",
-    "fullstack",
-    "mobile",
-    "data",
-    "devops",
-    "sysadmin",
-    "cybersecurite",
-    "support",
-    "design",
-    "hardware",
-    "product",
-    "enseignement",
-    "nocode",
-    "autre",
-  ]),
+  role_type: z.enum(DB_ROLE_TYPES),
   experience_level: z.enum(["junior", "mid", "senior"]),
   tech_stack: z.array(z.string()).min(1, "Sélectionnez au moins une technologie"),
   open_to_collaboration: z.boolean(),
@@ -113,8 +97,10 @@ export function ProfileEditPage() {
       });
       toast.success("Profil mis à jour avec succès");
       await fetchProfile(user.id);
-    } catch {
-      toast.error("Erreur lors de la sauvegarde du profil");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur lors de la sauvegarde du profil";
+      console.error("Erreur SQL update profiles (profile edit):", error);
+      toast.error(message);
     }
   }
 
@@ -265,9 +251,9 @@ export function ProfileEditPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(ROLE_TYPE_LABELS).map(([value, label]) => (
+                        {DB_ROLE_TYPES.map((value) => (
                           <SelectItem key={value} value={value}>
-                            {label}
+                            {ROLE_TYPE_LABELS[value]}
                           </SelectItem>
                         ))}
                       </SelectContent>
