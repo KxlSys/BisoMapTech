@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface ProfileCardProps {
   profile: Profile;
   matchScore?: number;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
 function formatLastSeen(lastSeenAt?: string): string | null {
@@ -24,12 +25,12 @@ function formatLastSeen(lastSeenAt?: string): string | null {
   return null;
 }
 
-export function ProfileCard({ profile, matchScore }: ProfileCardProps) {
+export function ProfileCard({ profile, matchScore, onClick }: ProfileCardProps) {
   const lastSeen = formatLastSeen(profile.last_seen_at);
   const isOnline = lastSeen === "En ligne";
 
   return (
-    <Link to={`/contributeurs/${profile.username}`}>
+    <Link to={`/contributeurs/${profile.username}`} onClick={onClick}>
       <div className={cn(
         "group rounded-xl border border-white/10 bg-white/5 p-3 transition-all",
         "hover:border-primary/30 hover:bg-white/8",
