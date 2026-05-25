@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, ArrowRight, Check, X, MapPin, Code, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,17 +50,54 @@ export function OnboardingStepper() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [techSearch, setTechSearch] = useState("");
 
-  const [fullName, setFullName] = useState(profile?.full_name || "");
-  const [bio, setBio] = useState(profile?.bio || "");
-  const [city, setCity] = useState(profile?.city || "Brazzaville");
-  const [techStack, setTechStack] = useState<string[]>(profile?.tech_stack || []);
-  const [roleType, setRoleType] = useState<RoleType>(
-    profile?.role_type && isDbRoleType(profile.role_type) ? profile.role_type : "fullstack"
-  );
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(
-    profile?.experience_level || "junior"
-  );
-  const [openToCollaboration, setOpenToCollaboration] = useState(true);
+  const DRAFT_KEY = `onboarding_draft_${user?.id}`;
+
+  const [fullName, setFullName] = useState(() => {
+    const draft = localStorage.getItem(`${DRAFT_KEY}_fullName`);
+    return draft !== null ? draft : (profile?.full_name || "");
+  });
+
+  const [bio, setBio] = useState(() => {
+    const draft = localStorage.getItem(`${DRAFT_KEY}_bio`);
+    return draft !== null ? draft : (profile?.bio || "");
+  });
+
+  const [city, setCity] = useState(() => {
+    const draft = localStorage.getItem(`${DRAFT_KEY}_city`);
+    return draft !== null ? draft : (profile?.city || "Brazzaville");
+  });
+
+  const [techStack, setTechStack] = useState<string[]>(() => {
+    const draft = localStorage.getItem(`${DRAFT_KEY}_techStack`);
+    return draft !== null ? JSON.parse(draft) : (profile?.tech_stack || []);
+  });
+
+  const [roleType, setRoleType] = useState<RoleType>(() => {
+    const draft = localStorage.getItem(`${DRAFT_KEY}_roleType`);
+    if (draft && isDbRoleType(draft)) return draft as RoleType;
+    return profile?.role_type && isDbRoleType(profile.role_type) ? profile.role_type : "fullstack";
+  });
+
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(() => {
+    const draft = localStorage.getItem(`${DRAFT_KEY}_experienceLevel`);
+    return (draft as ExperienceLevel) || profile?.experience_level || "junior";
+  });
+
+  const [openToCollaboration, setOpenToCollaboration] = useState(() => {
+    const draft = localStorage.getItem(`${DRAFT_KEY}_openToCollaboration`);
+    return draft !== null ? draft === "true" : true;
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    localStorage.setItem(`${DRAFT_KEY}_fullName`, fullName);
+    localStorage.setItem(`${DRAFT_KEY}_bio`, bio);
+    localStorage.setItem(`${DRAFT_KEY}_city`, city);
+    localStorage.setItem(`${DRAFT_KEY}_techStack`, JSON.stringify(techStack));
+    localStorage.setItem(`${DRAFT_KEY}_roleType`, roleType);
+    localStorage.setItem(`${DRAFT_KEY}_experienceLevel`, experienceLevel);
+    localStorage.setItem(`${DRAFT_KEY}_openToCollaboration`, String(openToCollaboration));
+  }, [user, fullName, bio, city, techStack, roleType, experienceLevel, openToCollaboration]);
 
   const filteredAllTechs = techSearch
     ? TECH_OPTIONS.filter((t) => t.toLowerCase().includes(techSearch.toLowerCase()))
@@ -87,6 +124,16 @@ export function OnboardingStepper() {
       });
       await fetchProfile(user.id);
       setIsNewUser(false);
+
+      // Nettoyer les brouillons dans localStorage
+      localStorage.removeItem(`${DRAFT_KEY}_fullName`);
+      localStorage.removeItem(`${DRAFT_KEY}_bio`);
+      localStorage.removeItem(`${DRAFT_KEY}_city`);
+      localStorage.removeItem(`${DRAFT_KEY}_techStack`);
+      localStorage.removeItem(`${DRAFT_KEY}_roleType`);
+      localStorage.removeItem(`${DRAFT_KEY}_experienceLevel`);
+      localStorage.removeItem(`${DRAFT_KEY}_openToCollaboration`);
+
       toast.success("Bienvenue sur BisoMapTech Map !");
       navigate("/");
     } catch (error) {

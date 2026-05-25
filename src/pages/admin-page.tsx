@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Shield, Send, UserPlus, UserMinus, Users, Building2, Handshake, Download, Search, TrendingUp, ArrowUpRight, TriangleAlert, Clock, GitCommitHorizontal, UserRoundPlus, Layers as Layers3, Flag, UserCheck, MapPin } from "lucide-react";
+import { Shield, Send, UserPlus, UserMinus, Users, Building2, Handshake, Download, Search, TrendingUp, ArrowUpRight, TriangleAlert, Clock, GitCommitHorizontal, UserRoundPlus, Layers as Layers3, Flag, UserCheck, MapPin, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +52,7 @@ export function AdminPage() {
         supabase.from("admin_invitations").select("*").order("created_at", { ascending: false }),
         supabase
           .from("reports")
-          .select("*, reporter:profiles!reporter_id(full_name)")
+          .select("*, reporter:profiles!reporter_id(full_name), reported:profiles!reported_id(full_name, username), message:messages!message_id(content)")
           .order("created_at", { ascending: false }),
         fetchPendingPlaces(),
       ]);
@@ -117,6 +117,16 @@ export function AdminPage() {
     } else {
       toast.success(status === "reviewed" ? "Signalement marqué comme traité" : "Signalement ignoré");
       setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, status } : r)));
+    }
+  }
+
+  async function handleDeleteMessage(messageId: string, reportId: string) {
+    const { error } = await supabase.from("messages").delete().eq("id", messageId);
+    if (error) {
+      toast.error("Erreur lors de la suppression du message");
+    } else {
+      toast.success("Message supprimé avec succès");
+      await handleUpdateReportStatus(reportId, "reviewed");
     }
   }
 
@@ -584,31 +594,59 @@ export function AdminPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-white/8 hover:bg-transparent">
-                  <TableHead className="pl-5 text-xs">Signalé par</TableHead>
-                  <TableHead className="text-xs">Motif</TableHead>
+                  <TableHead className="pl-5 text-xs">Date</TableHead>
+                  <TableHead className="text-xs">Signalé par</TableHead>
+                  <TableHead className="text-xs">Utilisateur signalé</TableHead>
+                  <TableHead className="text-xs">Motif & Contenu</TableHead>
                   <TableHead className="text-xs">Statut</TableHead>
-                  <TableHead className="text-xs">Date</TableHead>
                   <TableHead className="pr-5 text-right text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {reports.map((r) => (
                   <TableRow key={r.id} className="border-white/8 hover:bg-white/3">
-                    <TableCell className="pl-5 text-sm font-medium">
+                    <TableCell className="pl-5 text-xs text-muted-foreground">
+                      {new Date(r.created_at).toLocaleDateString("fr-FR")}
+                    </TableCell>
+                    <TableCell className="text-sm font-medium">
                       {r.reporter?.full_name ?? "—"}
                     </TableCell>
-                    <TableCell className="max-w-[220px] truncate text-xs text-muted-foreground">
-                      {r.reason}
+                    <TableCell className="text-xs">
+                      {r.reported ? (
+                        <div>
+                          <p className="font-semibold text-foreground">{r.reported.full_name}</p>
+                          <p className="text-[10px] text-muted-foreground">@{r.reported.username}</p>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-[320px] text-xs">
+                      <p className="font-semibold text-foreground">{r.reason}</p>
+                      {r.message && (
+                        <div className="mt-1.5 border-l-2 border-destructive/50 bg-white/3 pl-2 py-1 text-[11px] italic text-muted-foreground rounded-r-md max-w-xs whitespace-normal break-words">
+                          "{r.message.content}"
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <ReportStatusBadge status={r.status} />
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {new Date(r.created_at).toLocaleDateString("fr-FR")}
-                    </TableCell>
                     <TableCell className="pr-5 text-right">
                       {r.status === "pending" && (
-                        <div className="flex justify-end gap-1">
+                        <div className="flex justify-end gap-1.5">
+                          {r.message_id && r.message && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteMessage(r.message_id!, r.id)}
+                              className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10"
+                              title="Supprimer le message signalé"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Supprimer le message
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"

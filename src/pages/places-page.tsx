@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import type L from "leaflet";
-import { MapPin, Plus, Loader2, Locate } from "lucide-react";
+import { MapPin, Plus, Loader2, Locate, List, Map } from "lucide-react";
 import { PlacesMap } from "@/components/map/places-map";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { fetchPaginatedPlaces } from "@/lib/place-service";
 import { PLACE_CATEGORIES } from "@/lib/constants";
 import { CONGO_CITIES } from "@/lib/cities";
 import type { Place } from "@/types";
+import { cn } from "@/lib/utils";
 
 export function PlacesPage() {
   const { user } = useAuthStore();
@@ -26,6 +27,8 @@ export function PlacesPage() {
   const [search, setSearch] = useState("");
   const [city, setCity] = useState<string>("all");
   const [category, setCategory] = useState<string>("all");
+  const [mobileView, setMobileView] = useState<"map" | "list">("map");
+  const [focusedPlaceId, setFocusedPlaceId] = useState<string | undefined>(undefined);
   const leafletMapRef = useRef<L.Map | null>(null);
 
   const handleMapReady = useCallback((map: L.Map) => {
@@ -60,10 +63,26 @@ export function PlacesPage() {
     };
   }, [search, city, category]);
 
+  const lastPlacesLengthRef = useRef(places.length);
+
+  // Auto-focus a single place search result
+  useEffect(() => {
+    if (places.length === 1 && lastPlacesLengthRef.current !== 1) {
+      setFocusedPlaceId(places[0].id);
+    } else if (places.length === 0 || places.length > 1) {
+      setFocusedPlaceId(undefined);
+    }
+    lastPlacesLengthRef.current = places.length;
+  }, [places]);
+
   return (
     <div className="relative flex h-[calc(100vh-3.5rem)] overflow-hidden">
+      {/* ─────────────────── LEFT SIDEBAR ─────────────────── */}
       <aside
-        className="hidden md:flex md:w-[380px] md:shrink-0 md:flex-col border-r border-white/8 overflow-hidden"
+        className={cn(
+          "w-full md:w-[380px] md:shrink-0 flex-col border-r border-white/8 overflow-hidden transition-all duration-300",
+          mobileView === "list" ? "flex" : "hidden md:flex"
+        )}
         style={{ background: "oklch(0.13 0.022 235 / 85%)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}
       >
         <div className="flex-shrink-0 border-b border-white/8 px-6 py-5">
@@ -123,16 +142,21 @@ export function PlacesPage() {
           <ScrollArea className="flex-1">
             <div className="space-y-2 p-4">
               {places.slice(0, 30).map((p) => (
-                <Link
+                <a
                   key={p.id}
-                  to={`/lieux/${p.id}`}
-                  className="block rounded-xl border border-white/8 bg-white/5 px-4 py-3 hover:bg-white/8 transition-colors"
+                  href={`/lieux/${p.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setFocusedPlaceId(p.id);
+                    setMobileView("map");
+                  }}
+                  className="block rounded-xl border border-white/8 bg-white/5 px-4 py-3 hover:bg-white/8 transition-colors text-left"
                 >
                   <p className="text-sm font-semibold text-foreground">{p.name}</p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
                     {p.category} · {p.city || "—"}
                   </p>
-                </Link>
+                </a>
               ))}
               {places.length === 0 && !isLoading && (
                 <div className="py-8 text-center">
@@ -145,7 +169,13 @@ export function PlacesPage() {
         </div>
       </aside>
 
-      <section className="relative flex-1 overflow-hidden">
+      {/* ─────────────────── MAP AREA ─────────────────── */}
+      <section
+        className={cn(
+          "relative flex-1 overflow-hidden transition-all duration-300",
+          mobileView === "map" ? "flex flex-col" : "hidden md:flex md:flex-col"
+        )}
+      >
         <div className="absolute left-4 top-4 z-[1000] pointer-events-auto">
           <div className="glass-panel rounded-2xl border border-white/15 px-5 py-4 shadow-2xl hover:border-white/20 transition-colors">
             <h1 className="text-xl font-bold text-foreground leading-tight md:text-2xl">
@@ -188,7 +218,31 @@ export function PlacesPage() {
         )}
 
         <div className="h-full w-full">
-          <PlacesMap places={places} onMapReady={handleMapReady} />
+          <PlacesMap
+            places={places}
+            onMapReady={handleMapReady}
+            focusedPlaceId={focusedPlaceId}
+          />
+        </div>
+
+        {/* Mobile Map/List Toggle FAB */}
+        <div className="fixed bottom-6 left-1/2 z-[1000] -translate-x-1/2 md:hidden">
+          <Button
+            onClick={() => setMobileView(mobileView === "map" ? "list" : "map")}
+            className="glass-panel flex h-11 items-center gap-2 rounded-full border border-white/20 bg-black/75 px-5 text-xs font-bold text-foreground shadow-2xl backdrop-blur-xl hover:border-tertiary/40 hover:text-tertiary active:scale-95 transition-all"
+          >
+            {mobileView === "map" ? (
+              <>
+                <List className="h-4 w-4 text-tertiary" />
+                Voir la liste
+              </>
+            ) : (
+              <>
+                <Map className="h-4 w-4 text-tertiary" />
+                Voir la carte
+              </>
+            )}
+          </Button>
         </div>
       </section>
     </div>

@@ -148,6 +148,15 @@ export interface Report {
   reporter: {
     full_name: string;
   } | null;
+
+  reported?: {
+    full_name: string;
+    username: string;
+  } | null;
+
+  message?: {
+    content: string;
+  } | null;
 }
 
 export interface Place {

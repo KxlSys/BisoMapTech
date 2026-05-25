@@ -86,11 +86,21 @@ export function ProfileDetailPage() {
       content: messageContent.trim(),
     });
     if (error) {
-      toast.error("Erreur lors de l'envoi du message");
+      toast.error(error.message || "Erreur lors de l'envoi du message");
     } else {
+      const messageSent = messageContent.trim();
       toast.success("Message envoyé");
       setMessageContent("");
       setShowMessageInput(false);
+
+      // Déclencher de manière asynchrone l'Edge Function d'envoi d'email
+      supabase.functions.invoke("send-message-notification", {
+        body: {
+          sender_id: user.id,
+          receiver_id: profile.id,
+          content: messageSent,
+        },
+      }).catch((err) => console.error("Email notification error:", err));
     }
     setIsSendingMessage(false);
   }

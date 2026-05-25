@@ -177,10 +177,20 @@ export function MessagesPage() {
       content: newMessage.trim(),
     });
     if (error) {
-      toast.error("Erreur lors de l'envoi du message");
+      toast.error(error.message || "Erreur lors de l'envoi du message");
     } else {
+      const messageSent = newMessage.trim();
       setNewMessage("");
       await fetchMessages(selectedPartner);
+      
+      // Déclencher de manière asynchrone l'Edge Function d'envoi d'email
+      supabase.functions.invoke("send-message-notification", {
+        body: {
+          sender_id: user.id,
+          receiver_id: selectedPartner,
+          content: messageSent,
+        },
+      }).catch((err) => console.error("Email notification error:", err));
     }
     setIsSending(false);
   }

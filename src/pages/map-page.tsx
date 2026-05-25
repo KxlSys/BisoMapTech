@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ListFilter as Filter, X, ChevronRight, Plus, Minus, Locate, MapPin, Loader2 } from "lucide-react";
+import { ListFilter as Filter, X, ChevronRight, Plus, Minus, Locate, MapPin, Loader2, List, Map } from "lucide-react";
 import type L from "leaflet";
 import { CongoMap } from "@/components/map/congo-map";
 import { FilterPanel } from "@/components/filters/filter-panel";
@@ -9,10 +9,13 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useAuthStore } from "@/store/auth-store";
+import { cn } from "@/lib/utils";
 
 export function MapPage() {
   const { profiles, isLoading } = useFilteredProfiles({ pageSize: 200 });
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<"map" | "list">("map");
+  const [focusedProfileId, setFocusedProfileId] = useState<string | undefined>(undefined);
   const { user } = useAuthStore();
   const leafletMapRef = useRef<L.Map | null>(null);
 
@@ -20,14 +23,30 @@ export function MapPage() {
     leafletMapRef.current = map;
   }, []);
 
+  const lastProfilesLengthRef = useRef(profiles.length);
+
+  // Auto-focus a single search result
+  useEffect(() => {
+    if (profiles.length === 1 && lastProfilesLengthRef.current !== 1) {
+      setFocusedProfileId(profiles[0].id);
+    } else if (profiles.length === 0 || profiles.length > 1) {
+      setFocusedProfileId(undefined);
+    }
+    lastProfilesLengthRef.current = profiles.length;
+  }, [profiles]);
+
   return (
     /* Full viewport minus navbar height */
     <div className="relative flex h-[calc(100vh-3.5rem)] overflow-hidden">
 
       {/* ─────────────────── LEFT SIDEBAR ─────────────────── */}
-      <aside className="hidden md:flex md:w-[380px] md:shrink-0 md:flex-col border-r border-white/8 overflow-hidden"
-        style={{ background: "oklch(0.13 0.022 235 / 85%)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}>
-
+      <aside
+        className={cn(
+          "w-full md:w-[380px] md:shrink-0 flex-col border-r border-white/8 overflow-hidden transition-all duration-300",
+          mobileView === "list" ? "flex" : "hidden md:flex"
+        )}
+        style={{ background: "oklch(0.13 0.022 235 / 85%)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}
+      >
         {/* Sidebar header */}
         <div className="flex-shrink-0 border-b border-white/8 px-6 py-5">
           <div className="flex items-center gap-2">
@@ -53,7 +72,15 @@ export function MapPage() {
           <ScrollArea className="flex-1">
             <div className="space-y-2 p-4">
               {profiles.slice(0, 20).map((profile) => (
-                <ProfileCard key={profile.id} profile={profile} />
+                <ProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setFocusedProfileId(profile.id);
+                    setMobileView("map");
+                  }}
+                />
               ))}
               {profiles.length > 20 && (
                 <Link to="/contributeurs">
@@ -77,6 +104,7 @@ export function MapPage() {
           <Button
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-[0_4px_16px_oklch(0.82_0.16_155/25%)] active:scale-95"
             size="default"
+            onClick={() => setMobileView("map")}
           >
             Appliquer les Filtres
           </Button>
@@ -84,8 +112,12 @@ export function MapPage() {
       </aside>
 
       {/* ─────────────────── MAP AREA ─────────────────── */}
-      <section className="relative flex-1 overflow-hidden">
-
+      <section
+        className={cn(
+          "relative flex-1 overflow-hidden transition-all duration-300",
+          mobileView === "map" ? "flex flex-col" : "hidden md:flex md:flex-col"
+        )}
+      >
         {/* Floating map header — z-index > Leaflet's 400 */}
         <div className="absolute left-4 top-4 z-[1000] pointer-events-auto">
           <div className="glass-panel rounded-2xl border border-white/15 px-5 py-4 shadow-2xl hover:border-white/20 transition-colors">
@@ -167,7 +199,31 @@ export function MapPage() {
 
         {/* Map component — full fill */}
         <div className="h-full w-full">
-          <CongoMap profiles={profiles} onMapReady={handleMapReady} />
+          <CongoMap
+            profiles={profiles}
+            onMapReady={handleMapReady}
+            focusedProfileId={focusedProfileId}
+          />
+        </div>
+
+        {/* Mobile Map/List Toggle FAB */}
+        <div className="fixed bottom-6 left-1/2 z-[1000] -translate-x-1/2 md:hidden">
+          <Button
+            onClick={() => setMobileView(mobileView === "map" ? "list" : "map")}
+            className="glass-panel flex h-11 items-center gap-2 rounded-full border border-white/20 bg-black/75 px-5 text-xs font-bold text-foreground shadow-2xl backdrop-blur-xl hover:border-primary/40 hover:text-primary active:scale-95 transition-all"
+          >
+            {mobileView === "map" ? (
+              <>
+                <List className="h-4 w-4 text-primary" />
+                Voir la liste
+              </>
+            ) : (
+              <>
+                <Map className="h-4 w-4 text-primary" />
+                Voir la carte
+              </>
+            )}
+          </Button>
         </div>
       </section>
 
