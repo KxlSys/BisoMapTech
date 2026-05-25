@@ -9,23 +9,20 @@ function normalizeEnvValue(value: string | undefined) {
     .replace(/^['\"]|['\"]$/g, "");
 }
 
-type EnvLookup = { value: string; source: string };
-
-function readEnv(...keys: string[]): EnvLookup {
+function readEnv(...keys: string[]) {
   for (const key of keys) {
-    const raw = import.meta.env[key];
-    const value = normalizeEnvValue(raw);
-    if (value) return { value, source: key };
+    const value = normalizeEnvValue(import.meta.env[key]);
+    if (value) return value;
   }
-  return { value: "", source: "" };
+  return "";
 }
 
-const urlLookup = readEnv(
+const supabaseUrl = readEnv(
   "VITE_SUPABASE_URL",
   "SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_URL"
 );
-const anonKeyLookup = readEnv(
+const supabaseAnonKey = readEnv(
   "VITE_SUPABASE_ANON_KEY",
   "VITE_SUPABASE_PUBLISHABLE_KEY",
   "VITE_SUPABASE_KEY",
@@ -36,9 +33,6 @@ const anonKeyLookup = readEnv(
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   "NEXT_PUBLIC_SUPABASE_KEY"
 );
-
-const supabaseUrl = urlLookup.value;
-const supabaseAnonKey = anonKeyLookup.value;
 
 const isPlaceholderValue = (value: string) =>
   /^(changeme|placeholder|your[_-]?|example)/i.test(value);
@@ -70,8 +64,8 @@ const maskKey = (value: string) => {
 };
 
 export const supabaseConfigStatus = {
-  urlSource: urlLookup.source || "missing",
-  anonKeySource: anonKeyLookup.source || "missing",
+  urlSource: supabaseUrl ? "configured" : "missing",
+  anonKeySource: supabaseAnonKey ? "configured" : "missing",
   hasUrl: Boolean(supabaseUrl),
   hasAnonKey: Boolean(supabaseAnonKey),
   isValidSupabaseUrl,
