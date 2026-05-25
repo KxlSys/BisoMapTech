@@ -151,8 +151,16 @@ export function OnboardingStepper() {
     setSubmitError(null);
     try {
       const coords = getCityCoordinates(city);
+      const metadata = user.user_metadata ?? {};
+      const username =
+        profile?.username ||
+        metadata.user_name ||
+        metadata.preferred_username ||
+        `user_${user.id.slice(0, 8)}`;
+
       // upsert (not update) so a fresh user without a row still saves.
       await upsertProfile(user.id, {
+        username,
         full_name: fullName.trim(),
         bio: bio.trim(),
         city,
