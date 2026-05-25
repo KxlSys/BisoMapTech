@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -63,21 +63,7 @@ function loadDraft(userId: string): Partial<OnboardingDraft> | null {
   }
 }
 
-function saveDraft(userId: string, draft: OnboardingDraft) {
-  try {
-    localStorage.setItem(`${DRAFT_KEY_PREFIX}${userId}`, JSON.stringify(draft));
-  } catch {
-    // Quota / private mode — silent fail.
-  }
-}
 
-function clearDraft(userId: string) {
-  try {
-    localStorage.removeItem(`${DRAFT_KEY_PREFIX}${userId}`);
-  } catch {
-    // ignored
-  }
-}
 
 export function OnboardingStepper() {
   const { user, profile, fetchProfile, setProfile, setIsNewUser } = useAuthStore();
@@ -85,7 +71,7 @@ export function OnboardingStepper() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [techSearch, setTechSearch] = useState("");
-  const draftHydratedRef = useRef(false);
+
 
   // Initial form state — pulls from the saved draft first (so a network blip
   // doesn't lose the user's input), then falls back to the existing profile,
@@ -130,6 +116,11 @@ export function OnboardingStepper() {
     return draft !== null ? draft === "true" : true;
   });
 
+  const [avatarUrl, setAvatarUrl] = useState(() => {
+    const draft = localStorage.getItem(`${DRAFT_KEY}_avatarUrl`);
+    return draft !== null ? draft : (profile?.avatar_url || "");
+  });
+
   useEffect(() => {
     if (!user) return;
     localStorage.setItem(`${DRAFT_KEY}_fullName`, fullName);
@@ -139,7 +130,8 @@ export function OnboardingStepper() {
     localStorage.setItem(`${DRAFT_KEY}_roleType`, roleType);
     localStorage.setItem(`${DRAFT_KEY}_experienceLevel`, experienceLevel);
     localStorage.setItem(`${DRAFT_KEY}_openToCollaboration`, String(openToCollaboration));
-  }, [user, fullName, bio, city, techStack, roleType, experienceLevel, openToCollaboration]);
+    localStorage.setItem(`${DRAFT_KEY}_avatarUrl`, avatarUrl);
+  }, [user, fullName, bio, city, techStack, roleType, experienceLevel, openToCollaboration, avatarUrl]);
 
   const filteredAllTechs = techSearch
     ? TECH_OPTIONS.filter((t) =>
@@ -184,6 +176,7 @@ export function OnboardingStepper() {
       localStorage.removeItem(`${DRAFT_KEY}_roleType`);
       localStorage.removeItem(`${DRAFT_KEY}_experienceLevel`);
       localStorage.removeItem(`${DRAFT_KEY}_openToCollaboration`);
+      localStorage.removeItem(`${DRAFT_KEY}_avatarUrl`);
 
       toast.success("Bienvenue sur BisoMapTech Map !");
       navigate("/");

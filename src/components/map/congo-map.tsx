@@ -13,11 +13,6 @@ const TILE_ATTRIBUTION =
 const CONGO_CENTER: L.LatLngExpression = [-2.8, 15.2];
 const CONGO_ZOOM = 6;
 
-const CONGO_BOUNDS: L.LatLngBoundsExpression = [
-  [-5.1, 11.0],
-  [3.8, 18.7],
-];
-
 function createMarkerIcon(isCollaborating: boolean) {
   if (isCollaborating) {
     return L.divIcon({
