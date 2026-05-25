@@ -21,15 +21,15 @@ export function HeroSection({ totalContributors, profiles }: HeroSectionProps) {
         <div className="mx-auto max-w-2xl text-center">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            Congo-Brazzaville
+            République du Congo
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
-            La communaute tech
-            <span className="text-primary"> congolaise</span>
+            La carte des
+            <span className="text-primary"> talents tech</span>
           </h1>
           <p className="mt-3 text-sm text-muted-foreground md:text-base">
-            Decouvrez les developpeurs du Congo-Brazzaville,
-            trouvez des collaborateurs et construisez l'ecosysteme tech de demain.
+            Découvrez les talents tech en République du Congo,
+            trouvez des collaborateurs et construisez l'écosystème de demain.
           </p>
 
           {!user && (
