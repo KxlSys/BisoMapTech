@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Send, ArrowLeft, MessageSquare, Flag, Check, X, UserPlus, CheckCheck, Paperclip, Mic, ShieldAlert, ShieldCheck, Loader2, CornerUpLeft, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,6 +24,12 @@ import {
   decryptText,
   encryptFile,
   decryptFile,
+  backupPrivateKey,
+  restorePrivateKey,
+  exportPortableKey,
+  importPortableKey,
+  getLocalPublicKeyJWK,
+  publicKeysMatch,
 } from "@/lib/e2ee-service";
 import type { ConnectionWithProfiles } from "@/types";
 import { toast } from "sonner";
@@ -424,6 +431,22 @@ export function MessagesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileTypeToSend, setFileTypeToSend] = useState<"image" | "pdf">("image");
 
+  // States for E2EE Multi-Device Backup & Sync
+  const [e2eeSetupOpen, setE2eeSetupOpen] = useState(false);
+  const [e2eeRestoreOpen, setE2eeRestoreOpen] = useState(false);
+  const [e2eePassphrase, setE2eePassphrase] = useState("");
+  const [e2eePassphraseConfirm, setE2eePassphraseConfirm] = useState("");
+  const [e2eeRestorePassphrase, setE2eeRestorePassphrase] = useState("");
+  const [e2eeEncryptedKey, setE2eeEncryptedKey] = useState<string | null>(null);
+  const [e2eeSalt, setE2eeSalt] = useState<string | null>(null);
+  const [isProcessingE2EE, setIsProcessingE2EE] = useState(false);
+  // Transfert de clé d'appareil à appareil (récupération robuste)
+  const [e2eeImportKey, setE2eeImportKey] = useState("");
+  const [e2eeImportPassphrase, setE2eeImportPassphrase] = useState("");
+  const [e2eeOptionsOpen, setE2eeOptionsOpen] = useState(false);
+  const [e2eeExportPassphrase, setE2eeExportPassphrase] = useState("");
+  const [e2eeExportResult, setE2eeExportResult] = useState<string | null>(null);
+
   useEffect(() => {
     if (!user) {
       navigate("/login");
@@ -440,8 +463,7 @@ export function MessagesPage() {
       localStorage.removeItem("bisomap.last.active.chat");
     }
   }, [selectedPartner]);
-
-  // Auto-initialize E2EE cryptographic keys on login
+  // Auto-initialize or Restore E2EE cryptographic keys on login
   useEffect(() => {
     if (!user) return;
     
@@ -449,26 +471,61 @@ export function MessagesPage() {
       try {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("e2ee_public_key")
+          .select("e2ee_public_key, e2ee_encrypted_private_key, e2ee_private_key_salt")
           .eq("id", user.id)
           .maybeSingle();
 
+        if (profile?.e2ee_encrypted_private_key && profile?.e2ee_private_key_salt) {
+          setE2eeEncryptedKey(profile.e2ee_encrypted_private_key);
+          setE2eeSalt(profile.e2ee_private_key_salt);
+        }
+
+        const serverPublicKey = profile?.e2ee_public_key || null;
         const hasLocal = await hasE2EELocalKey();
 
-        // If no local key exists OR if the profile doesn't have a public key, we generate a new pair!
-        if (!hasLocal || !profile?.e2ee_public_key) {
-          const { publicKeyJWK } = await generateE2EEKeyPair();
-          await supabase
-            .from("profiles")
-            .update({ e2ee_public_key: publicKeyJWK })
-            .eq("id", user.id);
-          console.info("[E2EE] Clés initialisées avec succès.");
+        // Cas 1 — Aucune identité E2EE n'existe encore sur le serveur.
+        if (!serverPublicKey) {
+          if (!hasLocal) {
+            // Tout premier appareil de l'utilisateur : création initiale des clés.
+            setE2eeSetupOpen(true);
+          } else {
+            // On possède une clé locale mais le serveur a perdu la clé publique :
+            // on republie NOTRE clé publique locale (non destructif — ré-établit
+            // simplement l'identité à partir de la clé déjà présente sur l'appareil).
+            const localPub = await getLocalPublicKeyJWK();
+            if (localPub) {
+              await supabase
+                .from("profiles")
+                .update({ e2ee_public_key: localPub })
+                .eq("id", user.id);
+            }
+          }
+          return;
+        }
+
+        // Cas 2 — Une identité existe déjà sur le serveur.
+        // RÈGLE D'OR : on ne génère JAMAIS une nouvelle paire de clés ici, car cela
+        // écraserait la clé publique partagée et rendrait tout l'historique (et les
+        // futurs messages reçus sur les autres appareils) impossible à déchiffrer.
+        if (!hasLocal) {
+          // Cet appareil ne possède pas la clé privée → restauration / import requis.
+          setE2eeRestoreOpen(true);
+          return;
+        }
+
+        // Cas 3 — Une clé locale existe : on vérifie qu'elle correspond bien à
+        // l'identité publiée sur le serveur. Si elle diverge (clé obsolète issue
+        // d'une ancienne réinitialisation), on propose la récupération SANS rien écraser.
+        const localPub = await getLocalPublicKeyJWK();
+        if (localPub && !publicKeysMatch(localPub, serverPublicKey)) {
+          setE2eeRestoreOpen(true);
         }
       } catch (err) {
-        console.warn("[E2EE] Échec de l'initialisation automatique :", err);
+        console.warn("[E2EE] Échec de l'initialisation :", err);
       }
     })();
   }, [user]);
+
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -583,6 +640,205 @@ export function MessagesPage() {
       supabase.removeChannel(channel);
     };
   }, [user, selectedPartner]);
+
+  async function handleE2EESetup(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    if (e2eePassphrase.length < 6) {
+      toast.error("Le code PIN de récupération E2EE doit faire au moins 6 caractères.");
+      return;
+    }
+    if (e2eePassphrase !== e2eePassphraseConfirm) {
+      toast.error("Les mots de passe ne correspondent pas.");
+      return;
+    }
+
+    setIsProcessingE2EE(true);
+    try {
+      const { publicKeyJWK } = await generateE2EEKeyPair();
+      const { encryptedKeyBase64, saltBase64 } = await backupPrivateKey(e2eePassphrase);
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          e2ee_public_key: publicKeyJWK,
+          e2ee_encrypted_private_key: encryptedKeyBase64,
+          e2ee_private_key_salt: saltBase64,
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast.success("Messagerie Sécurisée initialisée !", {
+        description: "Votre phrase secrète protège votre historique sur tous vos appareils.",
+      });
+      setE2eeSetupOpen(false);
+      setE2eePassphrase("");
+      setE2eePassphraseConfirm("");
+      fetchAll();
+    } catch (err) {
+      console.error("[E2EE] Erreur lors de la configuration :", err);
+      toast.error("Impossible d'initialiser les clés E2EE.");
+    } finally {
+      setIsProcessingE2EE(false);
+    }
+  }
+
+  async function handleE2EERestore(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !e2eeEncryptedKey || !e2eeSalt) {
+      toast.error("Données de récupération manquantes sur le serveur.");
+      return;
+    }
+
+    setIsProcessingE2EE(true);
+    try {
+      const success = await restorePrivateKey(e2eeEncryptedKey, e2eeSalt, e2eeRestorePassphrase);
+
+      if (success) {
+        toast.success("Messagerie Sécurisée restaurée !", {
+          description: "Vos conversations passées ont été déchiffrées.",
+        });
+        setE2eeRestoreOpen(false);
+        setE2eeRestorePassphrase("");
+        fetchAll();
+      } else {
+        toast.error("Phrase de récupération incorrecte.");
+      }
+    } catch (err) {
+      console.error("[E2EE] Erreur de restauration :", err);
+      toast.error("Une erreur s'est produite lors de la restauration.");
+    } finally {
+      setIsProcessingE2EE(false);
+    }
+  }
+
+  // Importe la clé privée transférée depuis un autre appareil/navigateur déjà
+  // fonctionnel (chaîne portable "sel:iv:chiffré"). C'est le chemin de récupération
+  // le plus robuste : il ne dépend d'aucune sauvegarde serveur préalable.
+  async function handleE2EEImportFromDevice(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    const portable = e2eeImportKey.trim();
+    if (!portable) {
+      toast.error("Collez la clé exportée depuis votre autre appareil.");
+      return;
+    }
+
+    setIsProcessingE2EE(true);
+    try {
+      const ok = await importPortableKey(portable, e2eeImportPassphrase);
+      if (!ok) {
+        toast.error("Clé ou mot de passe invalide. Vérifiez le copier-coller et la phrase secrète.");
+        return;
+      }
+
+      // Garde-fou : la clé importée doit correspondre à l'identité publiée sur le serveur,
+      // sinon le déchiffrement échouera de toute façon. On prévient l'utilisateur.
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("e2ee_public_key, e2ee_encrypted_private_key")
+        .eq("id", user.id)
+        .maybeSingle();
+      const localPub = await getLocalPublicKeyJWK();
+      if (profile?.e2ee_public_key && localPub && !publicKeysMatch(localPub, profile.e2ee_public_key)) {
+        toast.error("Cette clé ne correspond pas à votre identité de messagerie.", {
+          description: "Importez la clé de l'appareil d'origine (celui qui lit déjà vos messages).",
+        });
+        return;
+      }
+
+      // Auto-réparation : si aucune sauvegarde serveur n'existe encore, on enregistre
+      // la chaîne portable (déjà chiffrée par la phrase secrète) pour que les futurs
+      // appareils puissent simplement « restaurer » sans transfert manuel.
+      if (!profile?.e2ee_encrypted_private_key) {
+        const [saltB64, ivB64, cipherB64] = portable.split(":");
+        if (saltB64 && ivB64 && cipherB64) {
+          const encryptedKeyBase64 = `${ivB64}:${cipherB64}`;
+          await supabase
+            .from("profiles")
+            .update({ e2ee_encrypted_private_key: encryptedKeyBase64, e2ee_private_key_salt: saltB64 })
+            .eq("id", user.id);
+          setE2eeEncryptedKey(encryptedKeyBase64);
+          setE2eeSalt(saltB64);
+        }
+      }
+
+      toast.success("Clé importée !", {
+        description: "Vos conversations sont à nouveau lisibles sur cet appareil.",
+      });
+      setE2eeRestoreOpen(false);
+      setE2eeImportKey("");
+      setE2eeImportPassphrase("");
+      if (selectedPartner) fetchMessages(selectedPartner);
+      fetchAll();
+    } catch (err) {
+      console.error("[E2EE] Échec de l'import de la clé :", err);
+      toast.error("Échec de l'import de la clé.");
+    } finally {
+      setIsProcessingE2EE(false);
+    }
+  }
+
+  // Exporte la clé privée de CET appareil sous forme de chaîne portable à transférer
+  // vers un autre navigateur, et (re)crée la sauvegarde serveur chiffrée par phrase
+  // secrète pour permettre la restauration automatique sur les futurs appareils.
+  async function handleE2EEExport(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    if (e2eeExportPassphrase.length < 6) {
+      toast.error("Choisissez un mot de passe d'au moins 6 caractères pour protéger la clé exportée.");
+      return;
+    }
+
+    setIsProcessingE2EE(true);
+    try {
+      const portable = await exportPortableKey(e2eeExportPassphrase);
+      setE2eeExportResult(portable);
+
+      // La chaîne portable "sel:iv:chiffré" contient déjà la sauvegarde serveur :
+      // on la réutilise telle quelle (aucune dérivation PBKDF2 supplémentaire).
+      const [saltB64, ivB64, cipherB64] = portable.split(":");
+      if (saltB64 && ivB64 && cipherB64) {
+        const encryptedKeyBase64 = `${ivB64}:${cipherB64}`;
+        await supabase
+          .from("profiles")
+          .update({ e2ee_encrypted_private_key: encryptedKeyBase64, e2ee_private_key_salt: saltB64 })
+          .eq("id", user.id);
+        setE2eeEncryptedKey(encryptedKeyBase64);
+        setE2eeSalt(saltB64);
+      }
+
+      toast.success("Clé exportée et sauvegardée.", {
+        description: "Copiez-la pour l'importer sur un autre appareil.",
+      });
+    } catch (err) {
+      console.error("[E2EE] Échec de l'export de la clé :", err);
+      toast.error("Impossible d'exporter la clé (clé locale absente sur cet appareil ?).");
+    } finally {
+      setIsProcessingE2EE(false);
+    }
+  }
+
+  async function handleE2EEReset() {
+    if (!user) return;
+    const confirm = window.confirm(
+      "⚠️ DANGER : Réinitialiser vos clés de messagerie créera un nouveau mot de passe de récupération. Vos anciennes conversations resteront chiffrées de manière permanente et définitive. Cette action est irréversible. Voulez-vous continuer ?"
+    );
+    if (!confirm) return;
+
+    setIsProcessingE2EE(true);
+    try {
+      setE2eeRestoreOpen(false);
+      setE2eeOptionsOpen(false);
+      setE2eeSetupOpen(true);
+      toast.info("Veuillez configurer vos nouvelles clés et phrase secrète.");
+    } catch (err) {
+      console.error("[E2EE] Erreur de réinitialisation :", err);
+    } finally {
+      setIsProcessingE2EE(false);
+    }
+  }
 
   async function fetchAll() {
     if (!user) return;
@@ -1218,6 +1474,23 @@ export function MessagesPage() {
                     <p className="text-[11px] text-muted-foreground">@{selectedConv.partnerUsername}</p>
                   </div>
                 </Link>
+                {selectedConv.partnerPublicKey && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setE2eeExportResult(null);
+                      setE2eeExportPassphrase("");
+                      setE2eeOptionsOpen(true);
+                    }}
+                    className="h-8 gap-1.5 border border-white/10 bg-white/5 text-xs text-muted-foreground hover:bg-white/8 hover:text-foreground shrink-0 mr-2"
+                    title="Options de sécurité E2EE (exporter / sauvegarder / réinitialiser les clés)"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="hidden sm:inline">Options de sécurité</span>
+                  </Button>
+                )}
               </div>
 
               {/* Messages */}
@@ -1604,6 +1877,277 @@ export function MessagesPage() {
           )}
         </div>
       </div>
+      {/* 🔐 E2EE SETUP MODAL (Initial setup) */}
+      {e2eeSetupOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="glass-panel w-full max-w-md rounded-3xl border border-white/15 p-6 shadow-2xl relative" style={{ background: "oklch(0.12 0.025 235 / 98%)" }}>
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+              <ShieldCheck className="h-6 w-6 text-primary" />
+            </div>
+
+            <h3 className="text-lg font-bold text-foreground leading-tight">
+              🔐 Configurer votre Messagerie Sécurisée
+            </h3>
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+              BisoMapTech utilise un **chiffrement de bout en bout (E2EE)** militaire. Vos messages sont chiffrés localement dans votre navigateur.
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+              Définissez un **Code PIN ou Mot de passe de récupération** pour synchroniser et déchiffrer votre historique sur vos autres appareils (Téléphone, PC, etc.).
+            </p>
+
+            <form onSubmit={handleE2EESetup} className="mt-5 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Mot de passe / Code PIN de récupération
+                </label>
+                <Input
+                  type="password"
+                  required
+                  placeholder="Minimum 6 caractères"
+                  value={e2eePassphrase}
+                  onChange={(e) => setE2eePassphrase(e.target.value)}
+                  className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Confirmer le mot de passe
+                </label>
+                <Input
+                  type="password"
+                  required
+                  placeholder="Saisissez à nouveau"
+                  value={e2eePassphraseConfirm}
+                  onChange={(e) => setE2eePassphraseConfirm(e.target.value)}
+                  className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isProcessingE2EE}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold gap-2 py-5 shadow-lg shadow-primary/20 active:scale-95 transition-all mt-2"
+              >
+                {isProcessingE2EE ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Génération des clés...
+                  </>
+                ) : (
+                  "Activer le chiffrement E2EE"
+                )}
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🔐 E2EE RECOVERY MODAL (New device/browser or divergent local key) */}
+      {e2eeRestoreOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="glass-panel w-full max-w-md rounded-3xl border border-white/15 p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto" style={{ background: "oklch(0.12 0.025 235 / 98%)" }}>
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+              <ShieldAlert className="h-6 w-6 text-primary" />
+            </div>
+
+            <h3 className="text-lg font-bold text-foreground leading-tight">
+              🔐 Récupération de votre messagerie chiffrée
+            </h3>
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+              Cet appareil ne possède pas encore votre clé privée. Récupérez-la pour déchiffrer votre historique — vos messages ne sont jamais réinitialisés.
+            </p>
+
+            {/* Option A — Restauration depuis la sauvegarde serveur (si elle existe) */}
+            {e2eeEncryptedKey && e2eeSalt && (
+              <form onSubmit={handleE2EERestore} className="mt-5 space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Option 1 — Mot de passe de récupération
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="Entrez votre phrase secrète ou PIN"
+                    value={e2eeRestorePassphrase}
+                    onChange={(e) => setE2eeRestorePassphrase(e.target.value)}
+                    className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isProcessingE2EE || !e2eeRestorePassphrase}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold gap-2 py-5 shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                >
+                  {isProcessingE2EE ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Déchiffrement en cours...
+                    </>
+                  ) : (
+                    "Restaurer depuis la sauvegarde"
+                  )}
+                </Button>
+              </form>
+            )}
+
+            {e2eeEncryptedKey && e2eeSalt && (
+              <div className="my-4 flex items-center gap-3">
+                <span className="h-px flex-1 bg-white/10" />
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">ou</span>
+                <span className="h-px flex-1 bg-white/10" />
+              </div>
+            )}
+
+            {/* Option B — Import direct depuis un autre appareil déjà fonctionnel */}
+            <form onSubmit={handleE2EEImportFromDevice} className="mt-3 space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {e2eeEncryptedKey && e2eeSalt ? "Option 2 — " : ""}Importer depuis un autre appareil
+                </label>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Sur l'appareil qui lit déjà vos messages, ouvrez « Options de sécurité » → « Exporter ma clé », puis collez la clé ci-dessous.
+                </p>
+                <Textarea
+                  placeholder="Collez ici la clé exportée (sel:iv:chiffré)"
+                  value={e2eeImportKey}
+                  onChange={(e) => setE2eeImportKey(e.target.value)}
+                  rows={3}
+                  className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30 font-mono text-[11px] break-all"
+                />
+                <Input
+                  type="password"
+                  placeholder="Mot de passe utilisé lors de l'export"
+                  value={e2eeImportPassphrase}
+                  onChange={(e) => setE2eeImportPassphrase(e.target.value)}
+                  className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={isProcessingE2EE || !e2eeImportKey.trim()}
+                className="w-full bg-emerald-600 text-white hover:bg-emerald-600/90 font-bold gap-2 py-5 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+              >
+                {isProcessingE2EE ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Import en cours...
+                  </>
+                ) : (
+                  "Importer ma clé"
+                )}
+              </Button>
+            </form>
+
+            <Button
+              type="button"
+              onClick={handleE2EEReset}
+              disabled={isProcessingE2EE}
+              variant="ghost"
+              className="mt-3 w-full text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              Aucune de ces options ? Réinitialiser les clés (perte de l'historique)
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 🔐 E2EE OPTIONS / EXPORT MODAL (Working device) */}
+      {e2eeOptionsOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="glass-panel w-full max-w-md rounded-3xl border border-white/15 p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto" style={{ background: "oklch(0.12 0.025 235 / 98%)" }}>
+            <button
+              type="button"
+              onClick={() => setE2eeOptionsOpen(false)}
+              className="absolute right-4 top-4 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Fermer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <ShieldCheck className="h-6 w-6 text-emerald-400" />
+            </div>
+
+            <h3 className="text-lg font-bold text-foreground leading-tight">
+              Options de sécurité E2EE
+            </h3>
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+              Transférez votre clé vers un autre navigateur ou téléphone pour y lire vos messages. Une sauvegarde chiffrée est aussi enregistrée pour une restauration automatique.
+            </p>
+
+            <form onSubmit={handleE2EEExport} className="mt-5 space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Mot de passe de protection de la clé
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Minimum 6 caractères"
+                  value={e2eeExportPassphrase}
+                  onChange={(e) => setE2eeExportPassphrase(e.target.value)}
+                  className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={isProcessingE2EE}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold gap-2 py-5 shadow-lg shadow-primary/20 active:scale-95 transition-all"
+              >
+                {isProcessingE2EE ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Export en cours...
+                  </>
+                ) : (
+                  "Exporter ma clé"
+                )}
+              </Button>
+            </form>
+
+            {e2eeExportResult && (
+              <div className="mt-4 space-y-2">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Votre clé exportée — copiez-la sur l'autre appareil
+                </label>
+                <Textarea
+                  readOnly
+                  value={e2eeExportResult}
+                  rows={3}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="bg-white/5 border-white/10 font-mono text-[11px] break-all"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full text-xs border border-white/10 bg-white/5 hover:bg-white/8"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(e2eeExportResult);
+                      toast.success("Clé copiée dans le presse-papiers.");
+                    } catch {
+                      toast.error("Copie impossible — sélectionnez et copiez manuellement.");
+                    }
+                  }}
+                >
+                  Copier la clé
+                </Button>
+              </div>
+            )}
+
+            <div className="my-4 h-px bg-white/10" />
+
+            <Button
+              type="button"
+              onClick={handleE2EEReset}
+              disabled={isProcessingE2EE}
+              variant="ghost"
+              className="w-full text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              Réinitialiser les clés (perte définitive de l'historique)
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

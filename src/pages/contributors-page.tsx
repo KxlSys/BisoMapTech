@@ -31,7 +31,7 @@ import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useFilterStore } from "@/store/filter-store";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 // Techs les plus utilisés dans l'écosystème tech congolais
 const QUICK_FILTERS = [

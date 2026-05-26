@@ -359,3 +359,208 @@ export async function decryptFile(
   // 6. Retourner le Blob restauré avec son type MIME d'origine
   return new Blob([decryptedFileBuffer], { type: originalMimeType });
 }
+
+// ============================================================
+// Sauvegarde / Restauration Zero-Knowledge de la Clé Privée
+// ============================================================
+
+/**
+ * Dérive une clé AES-GCM 256 bits à partir de la phrase secrète de l'utilisateur
+ * en utilisant PBKDF2 (100 000 itérations, SHA-256).
+ */
+async function deriveWrappingKey(passphrase: string, salt: ArrayBuffer): Promise<CryptoKey> {
+  const passphraseBytes = new TextEncoder().encode(passphrase);
+  
+  // 1. Importer le matériau de clé brut à partir de la phrase de passe
+  const baseKey = await window.crypto.subtle.importKey(
+    "raw",
+    passphraseBytes,
+    { name: "PBKDF2" },
+    false,
+    ["deriveBits", "deriveKey"]
+  );
+
+  // 2. Dériver la clé AES
+  return window.crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    baseKey,
+    {
+      name: "AES-GCM",
+      length: 256,
+    },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+/**
+ * Récupère la clé privée depuis IndexedDB, l'exporte en JWK,
+ * la chiffre en AES-GCM avec une clé dérivée de la phrase secrète,
+ * et renvoie la clé chiffrée (Base64) et le sel (Base64).
+ */
+export async function backupPrivateKey(passphrase: string): Promise<{ encryptedKeyBase64: string; saltBase64: string }> {
+  // 1. Récupérer la clé privée d'IndexedDB
+  const myPrivateKey = await getPrivateKey();
+  if (!myPrivateKey) {
+    throw new Error("Clé privée locale introuvable dans ce navigateur.");
+  }
+
+  // 2. Générer un sel aléatoire pour PBKDF2 (16 octets)
+  const salt = window.crypto.getRandomValues(new Uint8Array(16));
+
+  // 3. Dériver la clé de wrapping à partir de la phrase secrète et du sel
+  const wrappingKey = await deriveWrappingKey(passphrase, salt.buffer);
+
+  // 4. Exporter la clé privée E2EE en JWK
+  const privateKeyJWK = await window.crypto.subtle.exportKey("jwk", myPrivateKey);
+  const privateKeyBytes = new TextEncoder().encode(JSON.stringify(privateKeyJWK));
+
+  // 5. Chiffrer la clé exportée avec AES-GCM
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const encryptedBuffer = await window.crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv: iv,
+    },
+    wrappingKey,
+    privateKeyBytes
+  );
+
+  const ivBase64 = arrayBufferToBase64(iv.buffer);
+  const cipherBase64 = arrayBufferToBase64(encryptedBuffer);
+
+  return {
+    encryptedKeyBase64: `${ivBase64}:${cipherBase64}`,
+    saltBase64: arrayBufferToBase64(salt.buffer),
+  };
+}
+
+/**
+ * Déchiffre la clé privée sauvegardée à l'aide de la phrase secrète,
+ * puis la réimporte et l'enregistre de manière sécurisée dans IndexedDB.
+ */
+export async function restorePrivateKey(
+  encryptedKeyBase64: string,
+  saltBase64: string,
+  passphrase: string
+): Promise<boolean> {
+  try {
+    // 1. Extraire l'IV et le texte chiffré
+    const [ivBase64, cipherBase64] = encryptedKeyBase64.split(":");
+    if (!ivBase64 || !cipherBase64) {
+      throw new Error("Format de clé privée chiffrée invalide.");
+    }
+
+    const saltBuffer = base64ToArrayBuffer(saltBase64);
+    const ivBuffer = base64ToArrayBuffer(ivBase64);
+    const cipherBuffer = base64ToArrayBuffer(cipherBase64);
+
+    // 2. Dériver la clé de wrapping
+    const wrappingKey = await deriveWrappingKey(passphrase, saltBuffer);
+
+    // 3. Déchiffrer la clé privée
+    const decryptedBuffer = await window.crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: new Uint8Array(ivBuffer),
+      },
+      wrappingKey,
+      cipherBuffer
+    );
+
+    const privateKeyJWKString = new TextDecoder().decode(decryptedBuffer);
+    const privateKeyJWK = JSON.parse(privateKeyJWKString);
+
+    // 4. Importer la clé privée déchiffrée
+    const importedPrivateKey = await window.crypto.subtle.importKey(
+      "jwk",
+      privateKeyJWK,
+      {
+        name: "ECDH",
+        namedCurve: "P-256",
+      },
+      true,
+      ["deriveKey", "deriveBits"]
+    );
+
+    // 5. Enregistrer localement dans IndexedDB
+    await savePrivateKey(importedPrivateKey);
+    return true;
+  } catch (err) {
+    console.error("[E2EE] Échec du déchiffrement et de la restauration de la clé E2EE :", err);
+    return false;
+  }
+}
+
+// ============================================================
+// Identité : vérification de cohérence clé locale ↔ clé serveur
+// ============================================================
+
+/**
+ * Reconstruit la clé publique (JWK) à partir de la clé privée stockée localement.
+ * Le JWK d'une clé privée EC contient déjà les coordonnées publiques (x, y),
+ * ce qui permet de dériver la clé publique sans recalcul de point.
+ * Renvoie null si aucune clé locale n'est disponible ou si l'export échoue.
+ */
+export async function getLocalPublicKeyJWK(): Promise<string | null> {
+  const privateKey = await getPrivateKey();
+  if (!privateKey) return null;
+  try {
+    const jwk = (await window.crypto.subtle.exportKey("jwk", privateKey)) as JsonWebKey;
+    if (!jwk.x || !jwk.y) return null;
+    return JSON.stringify({ kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Compare deux clés publiques au format JWK par leurs coordonnées cryptographiques
+ * (kty, crv, x, y), en ignorant les champs annexes (ext, key_ops, use) dont l'ordre
+ * ou la présence peut varier selon la manière dont la clé a été exportée.
+ */
+export function publicKeysMatch(aJWK: string, bJWK: string): boolean {
+  try {
+    const a = JSON.parse(aJWK);
+    const b = JSON.parse(bJWK);
+    return a.kty === b.kty && a.crv === b.crv && a.x === b.x && a.y === b.y;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================
+// Transfert de clé d'appareil à appareil (chaîne portable)
+// ============================================================
+
+/**
+ * Exporte la clé privée locale sous forme d'une chaîne portable unique
+ * "sel:iv:chiffré", protégée par la phrase secrète (PBKDF2 + AES-GCM).
+ * À transférer manuellement vers un autre navigateur/appareil
+ * (copier-coller, QR code, etc.) — c'est le mécanisme de récupération le plus
+ * robuste car il ne dépend d'aucune sauvegarde serveur préalable.
+ */
+export async function exportPortableKey(passphrase: string): Promise<string> {
+  const { encryptedKeyBase64, saltBase64 } = await backupPrivateKey(passphrase);
+  // encryptedKeyBase64 = "iv:chiffré" ; on préfixe le sel → "sel:iv:chiffré"
+  return `${saltBase64}:${encryptedKeyBase64}`;
+}
+
+/**
+ * Importe une clé privée à partir d'une chaîne portable "sel:iv:chiffré"
+ * générée par exportPortableKey, la déchiffre avec la phrase secrète, puis
+ * l'enregistre dans l'IndexedDB local. Renvoie true en cas de succès.
+ */
+export async function importPortableKey(portable: string, passphrase: string): Promise<boolean> {
+  const parts = portable.trim().split(":");
+  if (parts.length !== 3) return false;
+  const [saltB64, ivB64, cipherB64] = parts;
+  if (!saltB64 || !ivB64 || !cipherB64) return false;
+  return restorePrivateKey(`${ivB64}:${cipherB64}`, saltB64, passphrase);
+}
+
