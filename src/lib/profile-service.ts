@@ -196,7 +196,7 @@ export async function syncGithubReposToDatabase(input: {
   let repos: GitHubRepo[] | null = null;
   let source: "cache" | "github" = "github";
 
-  if (shouldUseCache) {
+  if (shouldUseCache && cached) {
     repos = cached.repos;
     source = "cache";
   } else {
