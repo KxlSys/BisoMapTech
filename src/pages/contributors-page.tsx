@@ -29,21 +29,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FilterPanel } from "@/components/filters/filter-panel";
 import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useFilterStore } from "@/store/filter-store";
-import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
+import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS, CROSS_DOMAIN_TECHS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
-// Techs les plus utilisés dans l'écosystème tech congolais
-const QUICK_FILTERS = [
-  "React",
-  "JavaScript",
-  "Python",
-  "Flutter",
-  "Node.js",
-  "TypeScript",
-  "PHP",
-  "Vue.js",
-];
+// Suggestions de compétences couvrant tous les métiers de l'informatique
+// (dev, systèmes, cybersécurité, support, data, design…), pas uniquement le dev web.
+const QUICK_FILTERS = CROSS_DOMAIN_TECHS;
 
 function formatLastSeen(lastSeenAt?: string): string | null {
   if (!lastSeenAt) return null;
