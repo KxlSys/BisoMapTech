@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ListFilter as Filter, X, ChevronRight, Plus, Minus, Locate, MapPin, Loader2, List, Map } from "lucide-react";
 import type L from "leaflet";
+import type { Profile } from "@/types";
 import { CongoMap } from "@/components/map/congo-map";
 import { FilterPanel } from "@/components/filters/filter-panel";
 import { ProfileCard } from "@/components/profile/profile-card";
