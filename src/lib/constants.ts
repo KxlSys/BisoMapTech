@@ -5,15 +5,6 @@ import { CONGO_CITIES } from "@/lib/cities";
 
 // ======================================================
 // TECH CATEGORIES
-// ------------------------------------------------------
-// Source of truth for the technology taxonomy. The platform represents the
-// full Congolese tech ecosystem — not just web dev — so categories cover
-// systèmes & réseaux, cybersécurité, cloud, DevOps, IA/data, mobile,
-// embarqué, game dev, blockchain, support, no-code, etc.
-//
-// `TECH_OPTIONS` is derived from these categories so adding a tech in one
-// place automatically exposes it in onboarding, edit, filters, and profile
-// detail.
 // ======================================================
 
 export interface TechCategory {
@@ -329,11 +320,27 @@ export const TECH_CATEGORIES: readonly TechCategory[] = [
     description: "Utilitaires partagés à toutes les disciplines",
     techs: ["Git", "GitHub", "GitLab", "Bitbucket"],
   },
+  {
+    id: "vibecoding",
+    label: "Vibe Coding & IA",
+    description: "Développement assisté par IA, prompting, outils génératifs",
+    techs: [
+      "GitHub Copilot",
+      "Cursor",
+      "Windsurf",
+      "Bolt.new",
+      "v0",
+      "Claude Code",
+      "Lovable",
+      "Replit AI",
+      "Codeium",
+      "Tabnine",
+      "Prompt Engineering",
+      "LLM Integration",
+    ],
+  },
 ] as const;
 
-// Flatten into a single sorted+deduplicated list. The order of categories
-// is preserved within the deduped list so consumers that iterate in array
-// order (filter chips, onboarding) still see web/backend first.
 export const TECH_OPTIONS: readonly string[] = (() => {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -367,12 +374,10 @@ export const ROLE_TYPE_LABELS: Record<string, string> = {
   product: "Gestion de projet / Product",
   enseignement: "Enseignement / Formation",
   nocode: "No-code / Automatisation",
+  vibecoder: "Vibe-coder",
   autre: "Autre",
 };
 
-// All role types persisted in the database. Mirrors the CHECK constraint
-// added in 20260525120000_expand_taxonomy_and_storage.sql. Order is the one
-// we want to display in pickers (most common first).
 export const DB_ROLE_TYPES = [
   "fullstack",
   "frontend",
@@ -388,6 +393,7 @@ export const DB_ROLE_TYPES = [
   "product",
   "nocode",
   "enseignement",
+  "vibecoder",
   "autre",
 ] as const;
 

@@ -29,6 +29,7 @@ const ROLE_ICONS: Record<string, string> = {
   product: "PM",
   enseignement: "ED",
   nocode: "NC",
+  vibecoder: "VC",
   autre: "AU",
 };
 
@@ -97,7 +98,6 @@ export function FilterPanel({
         !compact && "glass-panel rounded-xl border border-white/10 p-4"
       )}
     >
-      {/* Header */}
       {!compact && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -126,7 +126,6 @@ export function FilterPanel({
         </div>
       )}
 
-      {/* Compact reset button */}
       {compact && hasActiveFilters && (
         <div className="flex justify-end">
           <Button
@@ -141,7 +140,6 @@ export function FilterPanel({
         </div>
       )}
 
-      {/* Barre de recherche — masquée si la page en fournit une */}
       {!hideSearch && (
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -154,7 +152,6 @@ export function FilterPanel({
         </div>
       )}
 
-      {/* Accordion 1: Type de rôle */}
       <div className="border border-white/8 rounded-xl bg-white/5 overflow-hidden transition-all duration-200">
         <button
           onClick={() => setIsRoleOpen(!isRoleOpen)}
@@ -208,7 +205,6 @@ export function FilterPanel({
         )}
       </div>
 
-      {/* Accordion 2: Niveau d'expérience */}
       <div className="border border-white/8 rounded-xl bg-white/5 overflow-hidden transition-all duration-200">
         <button
           onClick={() => setIsLevelOpen(!isLevelOpen)}
@@ -260,7 +256,6 @@ export function FilterPanel({
         )}
       </div>
 
-      {/* Accordion 3: Localisation */}
       <div className="border border-white/8 rounded-xl bg-white/5 overflow-hidden transition-all duration-200">
         <button
           onClick={() => setIsLocationOpen(!isLocationOpen)}
