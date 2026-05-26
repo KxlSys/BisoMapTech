@@ -35,6 +35,7 @@ import type { Profile, Project, ProjectMatch, ConnectionWithProfiles } from "@/t
 import type { User } from "@supabase/supabase-js";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -441,7 +442,20 @@ function ProjetsTab({
       }
       setIsLoading(false);
     });
-  }, [profile]);
+
+    if (user) {
+      // Charger les intérêts réels depuis la table project_members
+      supabase
+        .from("project_members")
+        .select("project_id")
+        .eq("profile_id", user.id)
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setInterested(new Set(data.map((d) => d.project_id)));
+          }
+        });
+    }
+  }, [profile, user]);
 
   const displayList: { project: Project; score?: number; reasons?: string[] }[] =
     profile && projectMatches.length > 0
@@ -478,14 +492,58 @@ function ProjetsTab({
             reasons={reasons}
             isLoggedIn={!!user}
             isInterested={interested.has(project.id)}
-            onInterest={() => {
-              if (!user) return;
-              setInterested((prev) => {
-                const next = new Set(prev);
-                if (next.has(project.id)) next.delete(project.id);
-                else next.add(project.id);
-                return next;
-              });
+            onInterest={async () => {
+              if (!user) {
+                toast.error("Veuillez vous connecter pour exprimer votre intérêt.");
+                return;
+              }
+
+              const isCurrentlyInterested = interested.has(project.id);
+              if (isCurrentlyInterested) {
+                // Quitter le groupe de projet
+                const { error } = await supabase
+                  .from("project_members")
+                  .delete()
+                  .eq("project_id", project.id)
+                  .eq("profile_id", user.id);
+
+                if (!error) {
+                  setInterested((prev) => {
+                    const next = new Set(prev);
+                    next.delete(project.id);
+                    return next;
+                  });
+                  toast.success("Vous n'êtes plus inscrit à ce projet.");
+                } else {
+                  toast.error("Impossible de se désinscrire.");
+                }
+              } else {
+                // Rejoindre le groupe de projet comme collaborateur
+                const { error } = await supabase
+                  .from("project_members")
+                  .insert({
+                    project_id: project.id,
+                    profile_id: user.id,
+                    role: "collaborator"
+                  });
+
+                if (!error) {
+                  setInterested((prev) => {
+                    const next = new Set(prev);
+                    next.add(project.id);
+                    return next;
+                  });
+                  toast.success("Vous avez rejoint le groupe de projet !", {
+                    description: "Retrouvez la discussion d'équipe sous l'onglet Groupes de Projets dans vos Messages.",
+                  });
+                } else {
+                  if (error.code === "PGRST116" || error.message?.includes("relation")) {
+                    toast.error("La base de données n'a pas encore été configurée pour le chat de groupe.");
+                  } else {
+                    toast.error("Impossible de rejoindre le projet.");
+                  }
+                }
+              }
             }}
           />
         ))}
