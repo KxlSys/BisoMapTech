@@ -55,7 +55,7 @@ function formatLastSeen(lastSeenAt?: string): string | null {
   return null;
 }
 
-function ProfileCard({ profile }: { profile: Profile }) {
+const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Profile }) {
   const lastSeen = formatLastSeen(profile.last_seen_at);
 
   return (
@@ -151,13 +151,27 @@ function ProfileCard({ profile }: { profile: Profile }) {
       </article>
     </Link>
   );
-}
+});
 
 export function ContributorsPage() {
   const { profiles, isLoading, total, page, totalPages, setPage } =
     useFilteredProfiles({ pageSize: 18 });
   const { techStack, searchQuery, setTechStack, setSearchQuery } = useFilterStore();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (localSearch !== searchQuery) {
+        setSearchQuery(localSearch);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [localSearch, searchQuery, setSearchQuery]);
 
   if (isLoading && page === 1) {
     return (
