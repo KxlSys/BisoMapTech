@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Send, ArrowLeft, MessageSquare, Flag, Check, X, UserPlus, CheckCheck, Paperclip, Mic, ShieldAlert, ShieldCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -804,7 +804,7 @@ export function MessagesPage() {
 
         {/* ── Conversations sidebar ── */}
         <div className={cn(
-          "flex flex-col border-r border-white/8",
+          "flex flex-col border-r border-white/8 h-full overflow-hidden",
           selectedPartner ? "hidden md:flex" : "flex"
         )}>
           <ScrollArea className="flex-1">
@@ -919,7 +919,7 @@ export function MessagesPage() {
 
         {/* ── Chat panel ── */}
         <div className={cn(
-          "flex flex-col",
+          "flex flex-col h-full overflow-hidden",
           selectedPartner ? "flex" : "hidden md:flex"
         )}>
           {selectedPartner && selectedConv ? (
@@ -934,29 +934,34 @@ export function MessagesPage() {
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <Avatar className="h-8 w-8 border border-white/15">
-                  <AvatarImage src={selectedConv.partnerAvatar} />
-                  <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
-                    {selectedConv.partnerName.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-semibold text-foreground truncate">{selectedConv.partnerName}</p>
-                    {selectedConv.partnerPublicKey ? (
-                      <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400 border border-emerald-500/20" title="Chiffrement de bout en bout (E2EE) activé">
-                        <ShieldCheck className="h-3 w-3 shrink-0" />
-                        E2EE
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-amber-400 border border-amber-500/20" title="Chiffrement standard SSL/TLS en cours">
-                        <ShieldAlert className="h-3 w-3 shrink-0" />
-                        Standard
-                      </span>
-                    )}
+                <Link
+                  to={`/contributeurs/${selectedConv.partnerUsername}`}
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity min-w-0 flex-1"
+                >
+                  <Avatar className="h-8 w-8 border border-white/15 shrink-0">
+                    <AvatarImage src={selectedConv.partnerAvatar} />
+                    <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
+                      {selectedConv.partnerName.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-foreground truncate">{selectedConv.partnerName}</p>
+                      {selectedConv.partnerPublicKey ? (
+                        <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400 border border-emerald-500/20" title="Chiffrement de bout en bout (E2EE) activé">
+                          <ShieldCheck className="h-3 w-3 shrink-0" />
+                          E2EE
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-amber-400 border border-amber-500/20" title="Chiffrement standard SSL/TLS en cours">
+                          <ShieldAlert className="h-3 w-3 shrink-0" />
+                          Standard
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">@{selectedConv.partnerUsername}</p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">@{selectedConv.partnerUsername}</p>
-                </div>
+                </Link>
               </div>
 
               {/* Messages */}
