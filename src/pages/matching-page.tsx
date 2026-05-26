@@ -33,7 +33,7 @@ import {
 import { MOCK_PROFILES } from "@/lib/mock-data";
 import type { Profile, Project, ProjectMatch, ConnectionWithProfiles } from "@/types";
 import type { User } from "@supabase/supabase-js";
-import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
+import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS, DB_ROLE_TYPES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -46,15 +46,12 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
+// Built from the canonical role list so every discipline on the platform
+// (systèmes, cybersécurité, support, design, hardware…) is filterable — not
+// just the web/app dev roles.
 const ROLE_FILTER_OPTIONS = [
   { value: "all", label: "Tous" },
-  { value: "frontend", label: "Frontend" },
-  { value: "backend", label: "Backend" },
-  { value: "fullstack", label: "Fullstack" },
-  { value: "mobile", label: "Mobile" },
-  { value: "data", label: "Data" },
-  { value: "devops", label: "DevOps" },
-  { value: "design", label: "Design" },
+  ...DB_ROLE_TYPES.map((value) => ({ value, label: ROLE_TYPE_LABELS[value] })),
 ];
 
 const PRIORITY_STYLE: Record<string, string> = {
