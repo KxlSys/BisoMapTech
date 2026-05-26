@@ -228,28 +228,19 @@ export interface Place {
   updated_at: string;
 }
 
-export type ProjectType = "Startup" | "Public" | "ONG" | "Personnel";
-
-export interface Project {
-  id: string;
-  title: string;
-  description: string;
-  tech_stack: string[];
-  budget?: string;
-  duration?: string;
-  collab_mode?: string;
-  open_to_collaboration: boolean;
-  location?: string;
-  project_type?: ProjectType;
-  priority?: string;
-  author_id: string;
-  author?: Pick<Profile, "id" | "username" | "full_name" | "avatar_url">;
-  created_at: string;
-  updated_at: string;
+export interface ProjectMember {
+  project_id: string;
+  profile_id: string;
+  role: 'owner' | 'collaborator';
+  joined_at: string;
+  profile?: Profile;
 }
 
-export interface ProjectMatch {
-  project: Project;
-  score: number;
-  reasons: string[];
+export interface ProjectMessage {
+  id: string;
+  project_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  sender?: Profile;
 }
