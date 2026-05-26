@@ -11,6 +11,8 @@ import {
   Code,
   Briefcase,
   GitBranch,
+  Globe,
+  ExternalLink,
   Image as ImageIcon,
   AlertTriangle,
 } from "lucide-react";
@@ -41,6 +43,13 @@ import type { RoleType, ExperienceLevel, Repository } from "@/types";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { toast } from "sonner";
 
+function extractGithubUsername(githubUrl?: string | null): string | null {
+  if (!githubUrl) return null;
+  const clean = githubUrl.replace(/\/+$/, "");
+  const parts = clean.split("/");
+  return parts[parts.length - 1] || null;
+}
+
 const profileSchema = z.object({
   full_name: z
     .string()
@@ -55,6 +64,13 @@ const profileSchema = z.object({
     .min(1, "Sélectionnez au moins une technologie"),
   open_to_collaboration: z.boolean(),
   avatar_url: z.string(),
+  github_url: z
+    .string()
+    .refine(
+      (v) => !v || /^https?:\/\/github\.com\/.+/.test(v),
+      "URL GitHub invalide (ex : https://github.com/votre-pseudo)"
+    )
+    .optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -86,6 +102,7 @@ export function ProfileEditPage() {
       tech_stack: [],
       open_to_collaboration: true,
       avatar_url: "",
+      github_url: "",
     },
   });
 
@@ -93,6 +110,9 @@ export function ProfileEditPage() {
   const bio = watch("bio");
   const avatarUrl = watch("avatar_url");
   const fullName = watch("full_name");
+  const githubUrl = watch("github_url");
+
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     if (!user && profileLoaded) {
@@ -109,6 +129,7 @@ export function ProfileEditPage() {
       setValue("tech_stack", profile.tech_stack ?? []);
       setValue("open_to_collaboration", profile.open_to_collaboration ?? true);
       setValue("avatar_url", profile.avatar_url ?? "");
+      setValue("github_url", profile.github_url ?? "");
     }
   }, [user, profile, profileLoaded, navigate, setValue]);
 
@@ -137,6 +158,7 @@ export function ProfileEditPage() {
         tech_stack: data.tech_stack,
         open_to_collaboration: data.open_to_collaboration,
         avatar_url: data.avatar_url,
+        github_url: data.github_url ?? "",
       });
       toast.success("Profil mis à jour avec succès");
       await fetchProfile(user.id);
@@ -161,17 +183,23 @@ export function ProfileEditPage() {
   }, [profile?.id]);
 
   async function handleSyncRepos() {
-    if (!profile?.username) return;
-    const result = await syncGithubReposToDatabase({
-      githubUsername: profile.username,
-      profileId: profile.id,
-    });
-    if (result.ok) {
-      toast.success("Repos GitHub synchronisés", {
-        description: `${result.synced} repo(s) récupéré(s) (${result.source === "cache" ? "cache" : "GitHub"}).`,
+    const githubUsername = extractGithubUsername(githubUrl || profile?.github_url);
+    if (!githubUsername) return;
+    setIsSyncing(true);
+    try {
+      const result = await syncGithubReposToDatabase({
+        githubUsername,
+        profileId: profile!.id,
       });
-    } else {
-      toast.error(result.message);
+      if (result.ok) {
+        toast.success("Repos GitHub synchronisés", {
+          description: `${result.synced} repo(s) récupéré(s) (${result.source === "cache" ? "cache" : "GitHub"}).`,
+        });
+      } else {
+        toast.error(result.message);
+      }
+    } finally {
+      setIsSyncing(false);
     }
   }
 
@@ -222,7 +250,7 @@ export function ProfileEditPage() {
       setPinnedProjects(await fetchPinnedProjects(profile.id));
       toast.success("Projet ajouté");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Impossible d’ajouter ce projet");
+      toast.error(err instanceof Error ? err.message : "Impossible d'ajouter ce projet");
     }
   }
 
@@ -287,13 +315,24 @@ export function ProfileEditPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:pb-8">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-          Mon Profil
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Mettez à jour vos informations pour apparaître sur la carte.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+            Mon Profil
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Mettez à jour vos informations pour apparaître sur la carte.
+          </p>
+        </div>
+        {profile.username && (
+          <Link
+            to={`/contributeurs/${profile.username}`}
+            className="shrink-0 flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Voir mon profil
+          </Link>
+        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -536,10 +575,55 @@ export function ProfileEditPage() {
           )}
         </section>
 
-        {/* Preferences */}
+        {/* GitHub */}
         <section className="glass-panel rounded-2xl border border-white/10 p-5">
           <div className="mb-4 flex items-center gap-2">
             <GitBranch className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              GitHub
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            <Controller
+              name="github_url"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label htmlFor="githubUrl" className="text-xs text-muted-foreground uppercase tracking-wider">
+                    URL du profil GitHub
+                  </Label>
+                  <Input
+                    id="githubUrl"
+                    {...field}
+                    placeholder="https://github.com/votre-pseudo"
+                    className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                  />
+                  {errors.github_url && (
+                    <p className="text-xs text-destructive">{errors.github_url.message}</p>
+                  )}
+                </div>
+              )}
+            />
+
+            {(githubUrl || profile.github_url) && (
+              <Button
+                type="button"
+                onClick={handleSyncRepos}
+                disabled={isSyncing}
+                className="gap-2 border border-white/15 bg-white/5 hover:bg-white/8 hover:border-white/25 text-foreground disabled:opacity-60"
+              >
+                <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+                {isSyncing ? "Synchronisation..." : "Synchroniser mes repos GitHub"}
+              </Button>
+            )}
+          </div>
+        </section>
+
+        {/* Projets */}
+        <section className="glass-panel rounded-2xl border border-white/10 p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Globe className="h-4 w-4 text-primary" />
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Projets (site web)
             </h2>
@@ -590,25 +674,13 @@ export function ProfileEditPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                onClick={handleAddPinnedProject}
-                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-              >
-                Ajouter ce projet
-              </Button>
-              {profile.username && (
-                <Button
-                  type="button"
-                  onClick={handleSyncRepos}
-                  className="gap-2 border border-white/15 bg-white/5 hover:bg-white/8 hover:border-white/25 text-foreground"
-                >
-                  <GitBranch className="h-4 w-4" />
-                  Synchroniser mes repos GitHub
-                </Button>
-              )}
-            </div>
+            <Button
+              type="button"
+              onClick={handleAddPinnedProject}
+              className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+            >
+              Ajouter ce projet
+            </Button>
 
             {pinnedProjects.length > 0 && (
               <div className="mt-2 space-y-2">
