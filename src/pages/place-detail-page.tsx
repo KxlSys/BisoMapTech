@@ -59,31 +59,25 @@ export function PlaceDetailPage() {
       setIsLoading(true);
       setFetchError(false);
       try {
-        const { data, error } = await supabase
-          .from("places")
-          .select("*")
-          .eq("id", id)
-          .maybeSingle();
+        const baseQuery = supabase.from("places").select("*").eq("id", id);
+        const { data, error } = await (
+          isAdmin ? baseQuery : baseQuery.eq("status", "approved")
+        ).maybeSingle();
 
         if (error) throw error;
 
         if (!cancelled) {
           const p = data as Place | null;
-          // Non-admin users cannot view pending or rejected places
-          if (p && p.status !== "approved" && !isAdmin) {
-            setPlace(null);
-          } else {
-            setPlace(p);
-            if (p) {
-              const { data: related } = await supabase
-                .from("places")
-                .select("id,name,category,city")
-                .eq("status", "approved")
-                .or(`category.eq.${p.category},city.eq.${p.city ?? ""}`)
-                .neq("id", p.id)
-                .limit(4);
-              if (!cancelled) setRelatedPlaces((related ?? []) as Place[]);
-            }
+          setPlace(p);
+          if (p) {
+            const { data: related } = await supabase
+              .from("places")
+              .select("id,name,category,city")
+              .eq("status", "approved")
+              .or(`category.eq.${p.category},city.eq.${p.city ?? ""}`)
+              .neq("id", p.id)
+              .limit(4);
+            if (!cancelled) setRelatedPlaces((related ?? []) as Place[]);
           }
         }
       } catch {

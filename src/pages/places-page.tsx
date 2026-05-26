@@ -62,6 +62,7 @@ export function PlacesPage() {
   const [category, setCategory] = useState<string>("all");
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
   const [focusedPlaceId, setFocusedPlaceId] = useState<string | undefined>(undefined);
+  const [retryTick, setRetryTick] = useState(0);
   const leafletMapRef = useRef<L.Map | null>(null);
 
   const hasActiveFilters = search !== "" || city !== "all" || category !== "all";
@@ -105,7 +106,7 @@ export function PlacesPage() {
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [search, city, category]);
+  }, [search, city, category, retryTick]);
 
   const lastPlacesLengthRef = useRef(places.length);
 
@@ -228,7 +229,10 @@ export function PlacesPage() {
                   <AlertCircle className="mx-auto h-6 w-6 text-destructive/70" />
                   <p className="text-sm text-muted-foreground">{fetchError}</p>
                   <button
-                    onClick={resetFilters}
+                    onClick={() => {
+                      resetFilters();
+                      setRetryTick((v) => v + 1);
+                    }}
                     className="text-xs text-tertiary hover:underline"
                   >
                     Réessayer

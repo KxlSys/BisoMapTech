@@ -39,7 +39,6 @@ export async function fetchPaginatedPlaces(params: {
   if (category && category !== "all") query = query.eq("category", category);
 
   const { data, count, error } = await query
-    .order("created_at", { ascending: false })
     .order("name", { ascending: true })
     .range(from, to);
 

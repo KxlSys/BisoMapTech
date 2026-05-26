@@ -107,7 +107,7 @@ export function PlaceCreatePage() {
       const latitude = data.latitude ?? coords?.latitude ?? 0;
       const longitude = data.longitude ?? coords?.longitude ?? 0;
 
-      const newId = await createPlace({
+      await createPlace({
         name: data.name,
         category: data.category,
         description: data.description ?? "",
@@ -122,7 +122,7 @@ export function PlaceCreatePage() {
       });
 
       toast.success("Lieu proposé ! Il sera visible après validation.");
-      navigate(`/lieux/${newId}`);
+      navigate("/lieux");
     } catch {
       toast.error("Erreur lors de la proposition du lieu");
     }
@@ -140,7 +140,7 @@ export function PlaceCreatePage() {
           Proposer un lieu
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Les lieux proposés sont vérifiés avant publication. Vous serez redirigé vers la fiche après envoi.
+          Les lieux proposés sont vérifiés avant publication.
         </p>
       </div>
 
@@ -227,7 +227,7 @@ export function PlaceCreatePage() {
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Adresse / repère</Label>
                   <Input {...field} placeholder="Ex: Avenue…, quartier… ou repère visible" className="bg-white/5 border-white/10" />
                   <p className="text-[11px] text-muted-foreground/60">
-                    À Brazzaville, décrivez un repère visible (ex : "En face du marché Total Poto-Poto")
+                    À Brazzaville, décrivez un repère visible (ex : « En face du marché Total Poto-Poto »)
                   </p>
                   {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}
                 </div>
