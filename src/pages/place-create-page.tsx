@@ -1,9 +1,8 @@
-import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, MapPin, Save } from "lucide-react";
+import { ArrowLeft, MapPin, Save, LogIn } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -74,20 +73,40 @@ export function PlaceCreatePage() {
 
   const description = watch("description");
 
-  useEffect(() => {
-    if (!user) navigate("/login");
-  }, [user, navigate]);
+  // Synchronous auth gate — no useEffect flash
+  if (!user) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:pb-8">
+        <Link to="/lieux" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" />
+          Retour
+        </Link>
+        <div className="mt-12 flex flex-col items-center gap-4 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+            <MapPin className="h-7 w-7 text-tertiary" />
+          </div>
+          <h1 className="text-xl font-bold text-foreground">Proposer un lieu</h1>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Connectez-vous pour soumettre un espace tech, coworking, incubateur ou autre lieu utile à la communauté.
+          </p>
+          <Link to="/login">
+            <Button className="gap-2 bg-tertiary text-background hover:bg-tertiary/90 font-semibold">
+              <LogIn className="h-4 w-4" />
+              Se connecter
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   async function onSubmit(data: PlaceFormOutput) {
-    if (!user) return;
     try {
       const coords = getCityCoordinates(data.city);
-      const lat = data.latitude ? Number(data.latitude) : undefined;
-      const lon = data.longitude ? Number(data.longitude) : undefined;
-      const latitude = lat ?? coords?.latitude ?? 0;
-      const longitude = lon ?? coords?.longitude ?? 0;
+      const latitude = data.latitude ?? coords?.latitude ?? 0;
+      const longitude = data.longitude ?? coords?.longitude ?? 0;
 
-      await createPlace({
+      const newId = await createPlace({
         name: data.name,
         category: data.category,
         description: data.description ?? "",
@@ -101,14 +120,12 @@ export function PlaceCreatePage() {
         created_by: user.id,
       });
 
-      toast.success("Lieu proposé. Il sera validé avant d’apparaître sur la carte.");
-      navigate("/lieux");
+      toast.success("Lieu proposé ! Il sera visible après validation.");
+      navigate(`/lieux/${newId}`);
     } catch {
       toast.error("Erreur lors de la proposition du lieu");
     }
   }
-
-  if (!user) return null;
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-24 pt-6 md:pb-8">
@@ -122,7 +139,7 @@ export function PlaceCreatePage() {
           Proposer un lieu
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Les lieux proposés sont vérifiés avant publication.
+          Les lieux proposés sont vérifiés avant publication. Vous serez redirigé vers la fiche après envoi.
         </p>
       </div>
 
@@ -207,7 +224,10 @@ export function PlaceCreatePage() {
               render={({ field }) => (
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Adresse / repère</Label>
-                  <Input {...field} placeholder="Ex: Avenue…, quartier…" className="bg-white/5 border-white/10" />
+                  <Input {...field} placeholder="Ex: Avenue…, quartier… ou repère visible" className="bg-white/5 border-white/10" />
+                  <p className="text-[11px] text-muted-foreground/60">
+                    À Brazzaville, décrivez un repère visible (ex : "En face du marché Total Poto-Poto")
+                  </p>
                   {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}
                 </div>
               )}
@@ -219,11 +239,11 @@ export function PlaceCreatePage() {
               render={({ field }) => (
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Description (optionnel)</Label>
-                  <Textarea {...field} rows={3} placeholder="Ce qu’on y trouve, horaires, etc." className="bg-white/5 border-white/10 resize-none" />
+                  <Textarea {...field} rows={3} placeholder="Ce qu'on y trouve, horaires, ambiance…" className="bg-white/5 border-white/10 resize-none" />
                   <div className="flex items-center justify-between">
                     {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
                     <p className="ml-auto text-xs text-muted-foreground/60">
-                      {description?.length || 0}/500
+                      {(description ?? "").length}/500
                     </p>
                   </div>
                 </div>
@@ -251,7 +271,7 @@ export function PlaceCreatePage() {
               render={({ field }) => (
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">WhatsApp</Label>
-                  <Input {...field} placeholder="Ex: +242..." className="bg-white/5 border-white/10" />
+                  <Input {...field} placeholder="Ex: +242... (si différent)" className="bg-white/5 border-white/10" />
                 </div>
               )}
             />
@@ -270,8 +290,13 @@ export function PlaceCreatePage() {
         </section>
 
         <section className="glass-panel rounded-2xl border border-white/10 p-5">
-          <p className="mb-4 text-sm font-semibold text-foreground">Position (optionnel)</p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="mb-1">
+            <p className="text-sm font-semibold text-foreground">Position précise (optionnel)</p>
+            <p className="text-xs text-muted-foreground/70 mt-0.5">
+              Laissez vide pour utiliser automatiquement les coordonnées de la ville sélectionnée.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 mt-4">
             <Controller
               name="latitude"
               control={control}
@@ -307,14 +332,21 @@ export function PlaceCreatePage() {
           </div>
         </section>
 
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full gap-2 bg-tertiary text-background hover:bg-tertiary/90 font-semibold"
-        >
-          <Save className="h-4 w-4" />
-          {isSubmitting ? "Envoi..." : "Envoyer pour validation"}
-        </Button>
+        <div className="flex gap-3">
+          <Link to="/lieux" className="flex-shrink-0">
+            <Button type="button" variant="ghost" className="border border-white/10 bg-white/5 hover:bg-white/8">
+              Annuler
+            </Button>
+          </Link>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-1 gap-2 bg-tertiary text-background hover:bg-tertiary/90 font-semibold"
+          >
+            <Save className="h-4 w-4" />
+            {isSubmitting ? "Envoi en cours…" : "Envoyer pour validation"}
+          </Button>
+        </div>
       </form>
     </div>
   );
