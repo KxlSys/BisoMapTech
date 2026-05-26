@@ -69,6 +69,42 @@ interface ComputedStats {
 
 // ── computeStats ───────────────────────────────────────────────────────────
 
+// Smart, non-dev-centric grouping of every role_type in the DB into
+// broader categories. Categories without any matching profile are omitted
+// at render time, so the panel adapts to the real population mix.
+const ROLE_CATEGORY_MAP: Record<string, string> = {
+  // Développement (toutes les filières "code")
+  frontend: "Développeurs",
+  backend: "Développeurs",
+  fullstack: "Développeurs",
+  mobile: "Développeurs",
+  devops: "Développeurs",
+  sysadmin: "Développeurs",
+  cybersecurite: "Développeurs",
+  vibecoder: "Développeurs",
+  // Data, hardware et support tech
+  data: "Data & Tech",
+  hardware: "Data & Tech",
+  support: "Data & Tech",
+  // Design / Produit
+  design: "Design & Produit",
+  product: "Design & Produit",
+  // Enseignants
+  enseignement: "Enseignants",
+  // No-code / autres profils (étudiants & rôles non listés tombent ici)
+  nocode: "Autres profils",
+  autre: "Autres profils",
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Développeurs: "bg-primary",
+  "Data & Tech": "bg-chart-2",
+  "Design & Produit": "bg-chart-3",
+  Enseignants: "bg-chart-4",
+  Administrateurs: "bg-chart-5",
+  "Autres profils": "bg-chart-5",
+};
+
 function computeStats(profiles: RawProfile[]): ComputedStats {
   const total = profiles.length;
   if (total === 0) {
@@ -89,32 +125,23 @@ function computeStats(profiles: RawProfile[]): ComputedStats {
   const roleCounts: Record<string, number> = {};
   for (const p of profiles)
     roleCounts[p.role_type] = (roleCounts[p.role_type] || 0) + 1;
-  const webCount =
-    (roleCounts.frontend || 0) +
-    (roleCounts.backend || 0) +
-    (roleCounts.fullstack || 0);
-  const roles = [
-    {
-      label: "Web / Fullstack",
-      pct: Math.round((webCount / total) * 100),
-      color: "bg-primary",
-    },
-    {
-      label: "Data & IA",
-      pct: Math.round(((roleCounts.data || 0) / total) * 100),
-      color: "bg-chart-2",
-    },
-    {
-      label: "Mobile",
-      pct: Math.round(((roleCounts.mobile || 0) / total) * 100),
-      color: "bg-chart-3",
-    },
-    {
-      label: "DevOps / Cloud",
-      pct: Math.round(((roleCounts.devops || 0) / total) * 100),
-      color: "bg-chart-4",
-    },
-  ].filter((r) => r.pct > 0);
+
+  // Regroupement dynamique : agrège tous les role_type connus dans des
+  // catégories plus larges, n'affiche que celles ayant au moins 1 profil
+  // et trie par population décroissante.
+  const categoryCounts: Record<string, number> = {};
+  for (const [rt, count] of Object.entries(roleCounts)) {
+    const category = ROLE_CATEGORY_MAP[rt] ?? "Autres profils";
+    categoryCounts[category] = (categoryCounts[category] || 0) + count;
+  }
+  const roles = Object.entries(categoryCounts)
+    .map(([label, count]) => ({
+      label,
+      pct: Math.round((count / total) * 100),
+      color: CATEGORY_COLORS[label] ?? "bg-chart-5",
+    }))
+    .filter((r) => r.pct > 0)
+    .sort((a, b) => b.pct - a.pct);
 
   const expCounts: Record<string, number> = {};
   for (const p of profiles)
@@ -298,12 +325,20 @@ const ROADMAP_PLANNED = [
 
 const TEAM = [
   {
-    name: "Kalel Damba",
+    name: "Kxl Sys",
     role: "Fondateur & Lead Dev",
     avatar:
-      "https://api.dicebear.com/9.x/initials/svg?seed=KD&backgroundColor=0d9488",
-    github: "https://github.com/kaleldamba",
+      "https://api.dicebear.com/9.x/initials/svg?seed=KS&backgroundColor=0d9488",
+    github: "https://github.com/KxlSys",
     bio: "Ingénieur fullstack, architecte de l'écosystème BisoMapTech.",
+  },
+  {
+    name: "Dr Smoke",
+    role: "Co Fondateur & Lead Dev",
+    avatar:
+      "https://api.dicebear.com/9.x/initials/svg?seed=DS&backgroundColor=2563eb",
+    github: "https://github.com/BlackAngel242",
+    bio: "Architecte de l'écosystème BisoMapTech.",
   },
   {
     name: "Contributeurs Core",
@@ -559,9 +594,9 @@ export function AboutPage() {
               {(data.roles.length > 0
                 ? data.roles.slice(0, 3)
                 : [
-                    { label: "Web / Fullstack", pct: 0, color: "bg-primary" },
-                    { label: "Data & IA", pct: 0, color: "bg-chart-2" },
-                    { label: "Mobile", pct: 0, color: "bg-chart-3" },
+                    { label: "Développeurs", pct: 0, color: "bg-primary" },
+                    { label: "Enseignants", pct: 0, color: "bg-chart-4" },
+                    { label: "Autres profils", pct: 0, color: "bg-chart-5" },
                   ]
               ).map(({ label, pct }, i) => {
                 const style = ROLE_PANEL_STYLES[i] ?? ROLE_PANEL_STYLES[0];
@@ -600,7 +635,7 @@ export function AboutPage() {
                 {isLoading ? "..." : `${data.total.toLocaleString()}+`}
               </p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Développeurs Actifs Cartographiés
+                Membres Actifs Cartographiés
               </p>
             </div>
           </div>
@@ -1294,14 +1329,18 @@ export function AboutPage() {
               Partage BisoMapTech dans ton réseau, organise des sessions de
               découverte, aide la communauté à grandir.
             </p>
-            <a href="mailto:contact@bisomaptech.com">
+            <a
+              href="https://github.com/KxlSys/BisoMapTech/discussions"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Button
                 variant="ghost"
                 size="sm"
                 className="w-full gap-2 border border-white/10 bg-white/5 hover:bg-white/8"
               >
-                <Mail className="h-3.5 w-3.5" aria-hidden="true" />
-                Nous contacter
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                Rejoindre les discussions
               </Button>
             </a>
           </div>
@@ -1362,14 +1401,7 @@ export function AboutPage() {
           </div>
           <div className="space-y-3">
             <a
-              href="mailto:contact@bisomaptech.com"
-              className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
-            >
-              <Mail className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              contact@bisomaptech.com
-            </a>
-            <a
-              href="https://github.com/kaleldamba/bisomaptech"
+              href="https://github.com/KxlSys/BisoMapTech"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
@@ -1378,7 +1410,7 @@ export function AboutPage() {
                 className="h-4 w-4 shrink-0 text-primary"
                 aria-hidden="true"
               />
-              github.com/kaleldamba/bisomaptech
+              github.com/KxlSys/BisoMapTech
               <ExternalLink className="ml-auto h-3.5 w-3.5" aria-hidden="true" />
             </a>
           </div>
