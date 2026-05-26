@@ -32,7 +32,7 @@ import { useFilterStore } from "@/store/filter-store";
 import type { SortBy } from "@/store/filter-store";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { Profile } from "@/types";
 
 // Techs les plus utilisés dans l'écosystème tech congolais
@@ -63,7 +63,7 @@ function formatLastSeen(lastSeenAt?: string): string | null {
   return null;
 }
 
-function ProfileCard({ profile }: { profile: Profile }) {
+const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Profile }) {
   const lastSeen = formatLastSeen(profile.last_seen_at);
 
   return (
@@ -159,7 +159,7 @@ function ProfileCard({ profile }: { profile: Profile }) {
       </article>
     </Link>
   );
-}
+});
 
 export function ContributorsPage() {
   const { profiles, isLoading, total, page, totalPages, setPage } =
@@ -167,6 +167,20 @@ export function ContributorsPage() {
   const { techStack, searchQuery, sortBy, setTechStack, setSearchQuery, setSortBy } =
     useFilterStore();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (localSearch !== searchQuery) {
+        setSearchQuery(localSearch);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [localSearch, searchQuery, setSearchQuery]);
 
   if (isLoading && page === 1) {
     return (
@@ -208,8 +222,8 @@ export function ContributorsPage() {
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Rechercher par nom, compétence..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
           className="bg-white/5 border-white/10 pl-10 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30"
         />
       </div>

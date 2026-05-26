@@ -27,6 +27,12 @@ export function MapPage() {
     leafletMapRef.current = map;
   }, []);
 
+  const handleProfileClick = useCallback((profile: Profile, e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setFocusedProfileId(profile.id);
+    setMobileView("map");
+  }, []);
+
   const lastProfilesLengthRef = useRef(profiles.length);
 
   // Auto-focus a single search result
@@ -79,11 +85,7 @@ export function MapPage() {
                 <ProfileCard
                   key={profile.id}
                   profile={profile}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setFocusedProfileId(profile.id);
-                    setMobileView("map");
-                  }}
+                  onClick={handleProfileClick}
                 />
               ))}
               {listProfiles.length > 20 && (
