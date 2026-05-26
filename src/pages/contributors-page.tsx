@@ -5,14 +5,6 @@ import {
   Handshake,
   ChevronLeft,
   ChevronRight,
-<<<<<<< HEAD
-<<<<<<< HEAD
-  GitBranch,
-=======
->>>>>>> f9a0372 (fix(contributors): icone Github inexistante dans lucide-react - SVG inline)
-=======
-  GitBranch,
->>>>>>> 5ed523a (fix(build): corriger erreurs TS qui cassaient le build Vercel)
   SlidersHorizontal,
 } from "lucide-react";
 import type { Profile } from "@/types";
@@ -41,7 +33,6 @@ import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
-<<<<<<< HEAD
 // Techs les plus utilisés dans l'écosystème tech congolais
 const QUICK_FILTERS = [
   "React",
@@ -152,11 +143,7 @@ function ProfileCard({ profile }: { profile: Profile }) {
                 className="text-muted-foreground/60 hover:text-primary transition-colors"
                 aria-label="Voir profil GitHub"
               >
-<<<<<<< HEAD
-                <GitBranch className="h-4 w-4" />
-=======
                 <GithubIcon className="h-4 w-4" />
->>>>>>> f9a0372 (fix(contributors): icone Github inexistante dans lucide-react - SVG inline)
               </a>
             )}
           </div>
@@ -165,9 +152,6 @@ function ProfileCard({ profile }: { profile: Profile }) {
     </Link>
   );
 }
-=======
-const QUICK_FILTERS = TECH_OPTIONS.slice(0, 8);
->>>>>>> 5ed523a (fix(build): corriger erreurs TS qui cassaient le build Vercel)
 
 export function ContributorsPage() {
   const { profiles, isLoading, total, page, totalPages, setPage } =

@@ -29,5 +29,21 @@ export async function createProject(
     .single();
 
   if (error) throw error;
-  return data as Project;
+
+  const project = data as Project;
+
+  // Inscrire automatiquement le créateur comme propriétaire (owner) du groupe de projet
+  try {
+    await supabase
+      .from("project_members")
+      .insert({
+        project_id: project.id,
+        profile_id: authorId,
+        role: "owner"
+      });
+  } catch (memberError) {
+    console.warn("Échec d'inscription automatique du créateur dans project_members :", memberError);
+  }
+
+  return project;
 }

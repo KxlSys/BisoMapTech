@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { TECH_OPTIONS } from "@/lib/constants";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { createProject } from "@/lib/project-service";
 
 const BUDGET_OPTIONS = [
   "< 500$ / mois",
@@ -63,15 +64,36 @@ export function ProjectNewPage() {
       toast.error("Titre et description sont requis.");
       return;
     }
+    if (!user) {
+      toast.error("Vous devez être connecté pour publier un projet.");
+      return;
+    }
     setIsSubmitting(true);
-    // Simulate async submission
-    await new Promise((r) => setTimeout(r, 800));
-    setIsSubmitting(false);
-    toast.success("Projet publié ! Les talents correspondants seront notifiés.", {
-      description: `"${title}" est désormais visible dans le moteur de matching.`,
-      duration: 5000,
-    });
-    navigate("/matching?vue=projets");
+    try {
+      await createProject(user.id, {
+        title: title.trim(),
+        description: description.trim(),
+        tech_stack: techStack,
+        budget: budget || undefined,
+        duration: duration || undefined,
+        collab_mode: collab,
+        open_to_collaboration: openToCollab,
+        location: collab === "Remote" ? "Remote" : "Congo",
+        project_type: "Personnel",
+        priority: "Actif"
+      });
+
+      toast.success("Projet publié ! Les talents correspondants seront notifiés.", {
+        description: `"${title}" est désormais visible dans le moteur de matching.`,
+        duration: 5000,
+      });
+      navigate("/matching?vue=projets");
+    } catch (error) {
+      console.error("Erreur lors de la création du projet :", error);
+      toast.error("Impossible de publier le projet. Veuillez réessayer.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   // Not logged in — show auth gate
