@@ -101,6 +101,7 @@ export function PlaceCreatePage() {
   }
 
   async function onSubmit(data: PlaceFormOutput) {
+    if (!user) return;
     try {
       const coords = getCityCoordinates(data.city);
       const latitude = data.latitude ?? coords?.latitude ?? 0;
