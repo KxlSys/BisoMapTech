@@ -109,7 +109,7 @@ BisoMapTech/
 ```mermaid
 graph TD
     A[Utilisateur / Navigateur] -->|Auth JWT| B[Supabase Auth]
-    A -->|Requêtes REST / Realtime| C[Supabase Database\nPostgreSQL + RLS]
+    A -->|Requêtes REST / Realtime| C[Supabase Database<br/>PostgreSQL + RLS]
     A -->|Upload fichiers chiffrés| D[Supabase Storage]
     A -->|Appels SDK| E[Edge Functions Deno]
     E -->|Email| F[Service SMTP]
@@ -230,10 +230,10 @@ L'ajout de profil se fait directement depuis l'application :
 
 ```mermaid
 flowchart LR
-    A[Fork le dépôt] --> B[Créer une branche\nfeat/ma-fonctionnalite]
-    B --> C[Développer\n+ Tests]
-    C --> D[npm run typecheck\nnpm run build\nnpm run test]
-    D --> E[Ouvrir une Pull Request\nvers main]
+    A[Fork le dépôt] --> B[Créer une branche<br/>feat/ma-fonctionnalite]
+    B --> C[Développer<br/>+ Tests]
+    C --> D[npm run typecheck<br/>npm run build<br/>npm run test]
+    D --> E[Ouvrir une Pull Request<br/>vers main]
     E --> F[Review & Merge ✅]
 ```
 
