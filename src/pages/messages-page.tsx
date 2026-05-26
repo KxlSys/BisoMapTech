@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { VoiceMessage } from "@/components/messages/voice-message";
 import { useAuthStore } from "@/store/auth-store";
 import { supabase } from "@/lib/supabase";
 import {
@@ -128,9 +129,10 @@ function buildConversations(
 interface AttachmentRendererProps {
   message: Message;
   partnerPublicKey?: string;
+  isMine?: boolean;
 }
 
-function AttachmentRenderer({ message, partnerPublicKey }: AttachmentRendererProps) {
+function AttachmentRenderer({ message, partnerPublicKey, isMine }: AttachmentRendererProps) {
   const [decryptedUrl, setDecryptedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -244,12 +246,8 @@ function AttachmentRenderer({ message, partnerPublicKey }: AttachmentRendererPro
 
   if (message.attachment_type === "voice") {
     return (
-      <div className="mt-1.5 flex flex-col gap-1 rounded-xl border border-white/10 bg-white/5 p-2.5 min-w-[240px]">
-        <div className="flex items-center gap-2">
-          <Mic className="h-4 w-4 text-primary shrink-0 animate-pulse" />
-          <span className="text-[11px] font-semibold text-foreground">Message vocal sécurisé</span>
-        </div>
-        <audio src={decryptedUrl} controls className="w-full mt-1.5 h-8 bg-transparent" />
+      <div className="mt-1.5">
+        <VoiceMessage src={decryptedUrl} isMine={isMine} />
       </div>
     );
   }
@@ -1630,6 +1628,7 @@ export function MessagesPage() {
                                       <AttachmentRenderer
                                         message={msg}
                                         partnerPublicKey={selectedConv?.partnerPublicKey}
+                                        isMine={isMine}
                                       />
                                     )}
                                   </>
