@@ -190,17 +190,24 @@
   font-family: 'Geist', system-ui, sans-serif;
 }
 
-  /* Custom scrollbar — minimal dark */
+  /* Custom scrollbar — premium dark */
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.30 0.04 155);
-    border-radius: 4px;
+    background: oklch(0.30 0.04 155 / 65%);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 }
 
