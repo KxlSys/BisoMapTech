@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
+import { countIncomingRequests } from "@/lib/connection-service";
 import type { Profile } from "@/types";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -14,6 +15,7 @@ interface AuthState {
   profileLoaded: boolean;
   isNewUser: boolean;
   unreadMessages: number;
+  pendingRequests: number;
   authError: string | null;
   /** Last error encountered while fetching the profile (RLS, network, ...). */
   profileError: string | null;
@@ -25,6 +27,7 @@ interface AuthState {
   setProfile: (profile: Profile | null) => void;
   setIsNewUser: (value: boolean) => void;
   fetchUnreadMessages: () => Promise<void>;
+  fetchPendingRequests: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -35,6 +38,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   profileLoaded: false,
   isNewUser: false,
   unreadMessages: 0,
+  pendingRequests: 0,
   authError: null,
   profileError: null,
 
@@ -53,6 +57,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (session?.user) {
         await get().fetchProfile(session.user.id);
         await get().fetchUnreadMessages();
+        await get().fetchPendingRequests();
       } else {
         // No session — mark profile as "loaded" so guarded routes don't hang.
         set({ profileLoaded: true });
@@ -65,9 +70,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           (async () => {
             await get().fetchProfile(session.user.id);
             await get().fetchUnreadMessages();
+            await get().fetchPendingRequests();
           })();
         } else {
-          set({ profile: null, unreadMessages: 0, profileLoaded: true });
+          set({ profile: null, unreadMessages: 0, pendingRequests: 0, profileLoaded: true });
         }
       }).data.subscription;
     } catch (error) {
@@ -79,6 +85,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         session: null,
         profile: null,
         unreadMessages: 0,
+        pendingRequests: 0,
         isLoading: false,
         profileLoaded: true,
         authError: message,
@@ -115,6 +122,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       session: null,
       profile: null,
       unreadMessages: 0,
+      pendingRequests: 0,
       profileLoaded: true,
       profileError: null,
     });
@@ -189,6 +197,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       // Non-blocking — keep previous count.
       console.warn("fetchUnreadMessages failed:", error);
+    }
+  },
+
+  fetchPendingRequests: async () => {
+    const user = get().user;
+    if (!user) return;
+
+    try {
+      set({ pendingRequests: await countIncomingRequests(user.id) });
+    } catch (error) {
+      // Non-blocking — keep previous count.
+      console.warn("fetchPendingRequests failed:", error);
     }
   },
 }));
