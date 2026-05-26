@@ -227,3 +227,20 @@ export interface Place {
   created_at: string;
   updated_at: string;
 }
+
+export interface ProjectMember {
+  project_id: string;
+  profile_id: string;
+  role: 'owner' | 'collaborator';
+  joined_at: string;
+  profile?: Profile;
+}
+
+export interface ProjectMessage {
+  id: string;
+  project_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  sender?: Profile;
+}

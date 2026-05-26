@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Send, ArrowLeft, MessageSquare, Flag, Check, X, UserPlus, CheckCheck, Paperclip, Mic, ShieldAlert, ShieldCheck, Loader2, CornerUpLeft, Edit2 } from "lucide-react";
+import { Send, ArrowLeft, MessageSquare, Flag, Check, X, UserPlus, CheckCheck, Paperclip, Mic, ShieldAlert, ShieldCheck, Loader2, CornerUpLeft, Edit2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,13 @@ import {
   partnerOf,
 } from "@/lib/connection-service";
 import { fetchProfileById, fetchProfileByUsername } from "@/lib/profile-service";
+import {
+  fetchUserProjectGroups,
+  fetchProjectMessages,
+  sendProjectMessage,
+  fetchProjectMembers,
+  type ProjectGroup
+} from "@/lib/project-chat-service";
 import {
   hasE2EELocalKey,
   generateE2EEKeyPair,
@@ -56,6 +63,7 @@ interface Message {
   reply_to_id?: string | null;
   edited_at?: string | null;
   reactions?: Array<{ emoji: string; user_id: string }> | null;
+  sender?: any;
 }
 
 interface Conversation {
@@ -407,6 +415,9 @@ export function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [requests, setRequests] = useState<ConnectionWithProfiles[]>([]);
   const [connectedPartnerIds, setConnectedPartnerIds] = useState<string[]>([]);
+  const [projectGroups, setProjectGroups] = useState<ProjectGroup[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("bisomap.last.active.chat");
@@ -547,6 +558,13 @@ export function MessagesPage() {
   }, [selectedPartner]);
 
   useEffect(() => {
+    if (selectedProject && user) {
+      fetchProjectMessagesData(selectedProject);
+      fetchProjectMembers(selectedProject).then(setProjectMembers).catch(() => {});
+    }
+  }, [selectedProject]);
+
+  useEffect(() => {
     if (!user || !selectedPartner) return;
     const conv = conversations.find((c) => c.partnerId === selectedPartner);
     if (!conv || conv.partnerUsername) return;
@@ -605,25 +623,42 @@ export function MessagesPage() {
     // re-subscribe (deps change / remount) could hit an already-joined channel
     // and throw "cannot add postgres_changes callbacks after subscribe()".
     const topic = `messages-realtime-${user.id}-${Math.random().toString(36).slice(2)}`;
-    const channel = supabase
-      .channel(topic)
-      .on(
+    let channel = supabase.channel(topic);
+
+    channel = channel.on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `receiver_id=eq.${user.id}`,
+      },
+      async () => {
+        await fetchAll();
+        if (selectedPartner) {
+          await fetchMessages(selectedPartner);
+          markAsRead(selectedPartner);
+        }
+        useAuthStore.getState().fetchUnreadMessages();
+      }
+    );
+
+    if (selectedProject) {
+      channel = channel.on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
-          table: "messages",
-          filter: `receiver_id=eq.${user.id}`,
+          table: "project_messages",
+          filter: `project_id=eq.${selectedProject}`,
         },
         async () => {
-          await fetchAll();
-          if (selectedPartner) {
-            await fetchMessages(selectedPartner);
-            markAsRead(selectedPartner);
-          }
-          useAuthStore.getState().fetchUnreadMessages();
+          await fetchProjectMessagesData(selectedProject);
         }
-      )
+      );
+    }
+
+    channel = channel
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "connections", filter: `requester_id=eq.${user.id}` },
@@ -639,7 +674,7 @@ export function MessagesPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, selectedPartner]);
+  }, [user, selectedPartner, selectedProject]);
 
   async function handleE2EESetup(e: React.FormEvent) {
     e.preventDefault();
@@ -843,7 +878,7 @@ export function MessagesPage() {
   async function fetchAll() {
     if (!user) return;
     try {
-      const [conns, msgsRes, reqs] = await Promise.all([
+      const [conns, msgsRes, reqs, groups] = await Promise.all([
         listAcceptedConnections(user.id),
         supabase
           .from("messages")
@@ -851,6 +886,7 @@ export function MessagesPage() {
           .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
           .order("created_at", { ascending: false }),
         listIncomingRequests(user.id),
+        fetchUserProjectGroups(user.id),
       ]);
 
       const rawMsgs = (msgsRes.data || []) as Message[];
@@ -878,6 +914,7 @@ export function MessagesPage() {
 
       setConversations(buildConversations(conns, decryptedMsgs, user.id));
       setRequests(reqs);
+      setProjectGroups(groups);
       setConnectedPartnerIds(
         conns
           .map((c) => partnerOf(user.id, c)?.id)
@@ -888,6 +925,16 @@ export function MessagesPage() {
       console.warn("fetchAll (messages) failed:", err);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function fetchProjectMessagesData(projectId: string) {
+    if (!user) return;
+    try {
+      const msgs = await fetchProjectMessages(projectId);
+      setMessages(msgs as any);
+    } catch (err) {
+      console.error("Failed to fetch project messages:", err);
     }
   }
 
@@ -957,7 +1004,21 @@ export function MessagesPage() {
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     const content = newMessage.trim();
-    if (!content || !selectedPartner || !user) return;
+    if (!content || !user) return;
+    if (selectedProject) {
+      setIsSending(true);
+      try {
+        await sendProjectMessage(selectedProject, user.id, content);
+        setNewMessage("");
+        await fetchProjectMessagesData(selectedProject);
+      } catch (err) {
+        toast.error("Erreur lors de l'envoi du message de groupe.");
+      } finally {
+        setIsSending(false);
+      }
+      return;
+    }
+    if (!selectedPartner) return;
     if (!connectedPartnerIds.includes(selectedPartner)) {
       toast.error("Vous devez être connecté à ce membre pour répondre.");
       return;
@@ -1299,7 +1360,11 @@ export function MessagesPage() {
   }
 
   const selectedConv = conversations.find((c) => c.partnerId === selectedPartner);
-  const canReply = Boolean(selectedPartner && connectedPartnerIds.includes(selectedPartner));
+  const activeProjectGroup = projectGroups.find((g) => g.project_id === selectedProject);
+  const canReply = Boolean(
+    (selectedPartner && connectedPartnerIds.includes(selectedPartner)) ||
+    selectedProject
+  );
   const lastSentMsg = messages.filter((m) => m.sender_id === user.id).at(-1);
 
   return (
@@ -1317,7 +1382,7 @@ export function MessagesPage() {
         {/* ── Conversations sidebar ── */}
         <div className={cn(
           "flex flex-col border-r border-white/8 h-full overflow-hidden",
-          selectedPartner ? "hidden md:flex" : "flex"
+          (selectedPartner || selectedProject) ? "hidden md:flex" : "flex"
         )}>
           <ScrollArea className="flex-1">
             {/* Incoming connection requests */}
@@ -1364,9 +1429,53 @@ export function MessagesPage() {
               </div>
             )}
 
+            {/* Project groups list */}
+            {projectGroups.length > 0 && (
+              <div className="border-b border-white/8 p-2">
+                <p className="flex items-center gap-1.5 px-2 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Users className="h-3.5 w-3.5" />
+                  Groupes de Projets ({projectGroups.length})
+                </p>
+                <div className="space-y-0.5">
+                  {projectGroups.map((group) => {
+                    const isSelected = selectedProject === group.project_id;
+                    return (
+                      <button
+                        key={group.project_id}
+                        onClick={() => {
+                          setSelectedProject(group.project_id);
+                          setSelectedPartner(null); // Clear direct chat
+                        }}
+                        className={cn(
+                          "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all",
+                          isSelected
+                            ? "bg-primary/10 border border-primary/30"
+                            : "hover:bg-white/5 border border-transparent"
+                        )}
+                      >
+                        <div className="relative shrink-0">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20 text-primary font-bold">
+                            {group.project?.title?.charAt(0).toUpperCase() || "P"}
+                          </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {group.project?.title || "Projet"}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {group.role === "owner" ? "Créateur" : "Collaborateur"}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="flex-shrink-0 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Conversations
+                Discussions Directes
               </p>
             </div>
 
@@ -1385,7 +1494,10 @@ export function MessagesPage() {
                 {conversations.map((conv) => (
                   <button
                     key={conv.partnerId}
-                    onClick={() => setSelectedPartner(conv.partnerId)}
+                    onClick={() => {
+                      setSelectedPartner(conv.partnerId);
+                      setSelectedProject(null);
+                    }}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all",
                       selectedPartner === conv.partnerId
@@ -1432,7 +1544,7 @@ export function MessagesPage() {
         {/* ── Chat panel ── */}
         <div className={cn(
           "flex flex-col h-full overflow-hidden",
-          selectedPartner ? "flex" : "hidden md:flex"
+          (selectedPartner || selectedProject) ? "flex" : "hidden md:flex"
         )}>
           {selectedPartner && selectedConv ? (
             <>
@@ -1862,15 +1974,125 @@ export function MessagesPage() {
                 </Button>
               </form>
             </>
+          ) : selectedProject && activeProjectGroup ? (
+            <>
+              {/* Chat header for Project */}
+              <div className="flex flex-shrink-0 items-center gap-3 border-b border-white/8 px-4 py-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 hover:bg-white/5 md:hidden"
+                  onClick={() => setSelectedProject(null)}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary font-bold">
+                    {activeProjectGroup.project?.title?.charAt(0).toUpperCase() || "P"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {activeProjectGroup.project?.title}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Chat de Groupe · {projectMembers.length} membre(s)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Messages of Project */}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+                {messages.length === 0 ? (
+                  <div className="flex h-full flex-col items-center justify-center py-12 text-center">
+                    <p className="text-sm text-muted-foreground">Aucun message dans ce groupe. Dites bonjour !</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {messages.map((msg) => {
+                      const isMine = msg.sender_id === user.id;
+                      const senderProfile = msg.sender;
+                      return (
+                        <div
+                          key={msg.id}
+                          className={cn(
+                            "flex gap-2 rounded-xl p-1",
+                            isMine ? "justify-end" : "justify-start"
+                          )}
+                        >
+                          {!isMine && (
+                            <Avatar className="h-7 w-7 shrink-0 mt-1 border border-white/10" title={senderProfile?.full_name || "Utilisateur"}>
+                              <AvatarImage src={senderProfile?.avatar_url} />
+                              <AvatarFallback className="bg-primary/20 text-primary text-[10px] font-semibold">
+                                {(senderProfile?.full_name || senderProfile?.username || "U").charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                          <div className={cn("flex flex-col max-w-[75%]", isMine ? "items-end" : "items-start")}>
+                            {!isMine && senderProfile && (
+                              <span className="text-[10px] font-semibold text-primary mb-0.5 ml-1">
+                                {senderProfile.full_name || senderProfile.username}
+                              </span>
+                            )}
+                            <div className={cn(
+                              "w-full rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap break-words break-all leading-snug",
+                              isMine
+                                ? "rounded-tr-sm bg-primary text-primary-foreground"
+                                : "rounded-tl-sm bg-white/8 border border-white/10 text-foreground"
+                            )}>
+                              <p>{renderMessageContent(msg.content)}</p>
+                              {extractLinks(msg.content).map((url, i) => (
+                                <LinkPreview key={i} url={url} />
+                              ))}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground/60 mt-1 px-1">
+                              {new Date(msg.created_at).toLocaleTimeString("fr-FR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Input of Project */}
+              <form
+                onSubmit={handleSend}
+                className="flex flex-shrink-0 items-center gap-2 border-t border-white/8 p-3 bg-slate-950/20 rounded-b-2xl"
+              >
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Votre message de groupe..."
+                  maxLength={MAX_MESSAGE_LENGTH}
+                  disabled={!canReply}
+                  readOnly={isSending}
+                  className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!newMessage.trim() || isSending || !canReply}
+                  className="h-9 w-9 shrink-0 p-0 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
+            </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
                 <MessageSquare className="h-7 w-7 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">Sélectionnez une conversation</p>
+                <p className="text-sm font-semibold text-foreground">Sélectionnez une discussion</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Choisissez un contact à gauche pour afficher la conversation.
+                  Choisissez une conversation directe ou un groupe de projet à gauche pour commencer.
                 </p>
               </div>
             </div>
