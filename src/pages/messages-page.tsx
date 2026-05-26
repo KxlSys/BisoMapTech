@@ -1254,17 +1254,18 @@ export function MessagesPage() {
                       return (
                         <div key={msg.id} id={`msg-${msg.id}`} className={cn("group flex gap-2 transition-colors duration-500 rounded-xl p-1", isMine ? "justify-end" : "justify-start")}>
                           {!isMine && (
-                            <Avatar className="h-6 w-6 shrink-0 mt-1 border border-white/10">
+                            <Avatar className="h-7 w-7 shrink-0 mt-1 border border-white/10">
                               <AvatarImage src={selectedConv.partnerAvatar} />
-                              <AvatarFallback className="bg-primary/20 text-primary text-[10px]">
+                              <AvatarFallback className="bg-primary/20 text-primary text-[10px] font-semibold">
                                 {selectedConv.partnerName.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
                           )}
-                          <div className={cn("flex flex-col relative", isMine ? "items-end" : "items-start")}>
-                            <div className={cn("relative group/bubble flex items-center max-w-[75%]", isMine ? "justify-end" : "justify-start")}>
+                          {/* max-w-[75%] sur la colonne → limite TOUTES les bulles y compris les longues */}
+                          <div className={cn("flex flex-col relative max-w-[75%]", isMine ? "items-end" : "items-start")}>
+                            <div className={cn("relative group/bubble flex items-center w-full", isMine ? "justify-end" : "justify-start")}>
                               <div className={cn(
-                                "min-w-[8ch] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap break-words leading-snug",
+                                "w-full min-w-[8ch] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap break-words break-all leading-snug",
                                 isMine
                                   ? "rounded-tr-sm bg-primary text-primary-foreground"
                                   : "rounded-tl-sm bg-white/8 border border-white/10 text-foreground"
@@ -1405,7 +1406,7 @@ export function MessagesPage() {
                             {/* Active Reactions list */}
                             {msg.reactions && msg.reactions.length > 0 && (
                               <div className={cn(
-                                "flex flex-wrap gap-1 mt-1 max-w-[280px]",
+                                "flex flex-wrap gap-1 mt-1 w-full",
                                 isMine ? "justify-end" : "justify-start"
                               )}>
                                 {Array.from(new Set(msg.reactions.map((r) => r.emoji))).map((emoji) => {
