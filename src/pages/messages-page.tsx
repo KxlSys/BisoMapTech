@@ -276,6 +276,120 @@ function renderMessageContent(content: string) {
   });
 }
 
+interface LinkPreviewData {
+  title?: string;
+  description?: string;
+  image?: string;
+  logo?: string;
+  url: string;
+  publisher?: string;
+}
+
+function extractLinks(content: string): string[] {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  if (!content) return [];
+  const matches = content.match(urlRegex);
+  return matches ? Array.from(new Set(matches)) : [];
+}
+
+function LinkPreview({ url }: { url: string }) {
+  const [data, setData] = useState<LinkPreviewData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+        if (!res.ok) throw new Error();
+        const json = await res.json();
+        if (active && json.status === "success" && json.data.title) {
+          setData({
+            title: json.data.title,
+            description: json.data.description,
+            image: json.data.image?.url,
+            logo: json.data.logo?.url,
+            url: json.data.url || url,
+            publisher: json.data.publisher || new URL(url).hostname.replace("www.", "")
+          });
+        }
+      } catch {
+        if (active) {
+          setData({
+            url,
+            title: new URL(url).hostname.replace("www.", ""),
+            publisher: new URL(url).hostname.replace("www.", "")
+          });
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [url]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-black/10 p-2.5 mt-2 animate-pulse max-w-[340px] text-left">
+        <div className="h-10 w-10 shrink-0 rounded bg-white/5" />
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="h-3 w-2/3 rounded bg-white/5" />
+          <div className="h-2.5 w-full rounded bg-white/5" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!data || !data.title) return null;
+
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        window.open(data.url, "_blank", "noopener,noreferrer");
+      }}
+      className="flex flex-col gap-0 rounded-xl border border-white/10 bg-black/20 overflow-hidden mt-2 max-w-[340px] hover:bg-black/35 transition-all hover:scale-[1.01] cursor-pointer select-none text-left"
+    >
+      {data.image && (
+        <div className="h-28 w-full overflow-hidden border-b border-white/5 bg-black/20">
+          <img
+            src={data.image}
+            alt={data.title}
+            className="h-full w-full object-cover opacity-90"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+            }}
+          />
+        </div>
+      )}
+      <div className="p-2.5 flex flex-col gap-1 min-w-0">
+        <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground font-semibold uppercase tracking-wider">
+          {data.logo && (
+            <img
+              src={data.logo}
+              alt=""
+              className="h-3 w-3 rounded-full shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          )}
+          <span>{data.publisher}</span>
+        </div>
+        <p className="text-xs font-bold text-foreground line-clamp-1 truncate">{data.title}</p>
+        {data.description && (
+          <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed mt-0.5">
+            {data.description}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function MessagesPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -1136,33 +1250,47 @@ export function MessagesPage() {
                                 {editingMessageId === msg.id ? (
                                   <form
                                     onSubmit={(e) => handleSaveEdit(e, msg)}
-                                    className="flex flex-col gap-2 min-w-[200px]"
+                                    className="flex flex-col gap-2 min-w-[240px] max-w-full"
                                   >
-                                    <Input
+                                    <textarea
                                       value={editingText}
                                       onChange={(e) => setEditingText(e.target.value)}
-                                      className="bg-black/30 border-white/20 focus:border-primary focus:ring-1 focus:ring-primary/30 text-sm h-8"
+                                      rows={Math.min(6, Math.max(2, editingText.split("\n").length))}
+                                      className="w-full bg-black/40 border border-white/15 rounded-xl p-2 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 resize-none font-sans leading-relaxed text-left"
                                       autoFocus
                                       maxLength={MAX_MESSAGE_LENGTH}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                          e.preventDefault();
+                                          handleSaveEdit(e, msg);
+                                        }
+                                      }}
                                     />
-                                    <div className="flex justify-end gap-1.5">
-                                      <Button
+                                    <div className="flex justify-end gap-1.5 mt-0.5">
+                                      <button
                                         type="button"
-                                        variant="ghost"
-                                        size="sm"
                                         onClick={() => setEditingMessageId(null)}
-                                        className="h-6 text-[10px] px-2 hover:bg-white/5 text-muted-foreground"
+                                        className={cn(
+                                          "px-3 py-1 text-xs font-semibold rounded-lg transition-colors",
+                                          isMine 
+                                            ? "text-primary-foreground/80 hover:bg-black/10" 
+                                            : "text-muted-foreground hover:bg-white/5"
+                                        )}
                                       >
                                         Annuler
-                                      </Button>
-                                      <Button
+                                      </button>
+                                      <button
                                         type="submit"
-                                        size="sm"
                                         disabled={!editingText.trim() || isSending}
-                                        className="h-6 text-[10px] px-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                                        className={cn(
+                                          "px-3 py-1 text-xs font-bold rounded-lg transition-all",
+                                          isMine 
+                                            ? "bg-white text-primary hover:bg-white/90" 
+                                            : "bg-primary text-primary-foreground hover:bg-primary/90"
+                                        )}
                                       >
                                         Enregistrer
-                                      </Button>
+                                      </button>
                                     </div>
                                   </form>
                                 ) : (
@@ -1195,7 +1323,12 @@ export function MessagesPage() {
                                       </div>
                                     )}
                                     {!msg.content.startsWith("[Fichier joint:") && (
-                                      <p>{renderMessageContent(msg.content)}</p>
+                                      <div className="flex flex-col gap-1">
+                                        <p>{renderMessageContent(msg.content)}</p>
+                                        {extractLinks(msg.content).map((url, i) => (
+                                          <LinkPreview key={i} url={url} />
+                                        ))}
+                                      </div>
                                     )}
                                     {msg.attachment_url && (
                                       <AttachmentRenderer
