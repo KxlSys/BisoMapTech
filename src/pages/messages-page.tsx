@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Send, ArrowLeft, MessageSquare, Flag, Check, X, UserPlus, CheckCheck, Paperclip, Mic, ShieldAlert, ShieldCheck, Loader2 } from "lucide-react";
+import { Send, ArrowLeft, MessageSquare, Flag, Check, X, UserPlus, CheckCheck, Paperclip, Mic, ShieldAlert, ShieldCheck, Loader2, CornerUpLeft, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,6 +46,9 @@ interface Message {
   attachment_name?: string | null;
   attachment_iv?: string | null;
   attachment_key?: string | null;
+  reply_to_id?: string | null;
+  edited_at?: string | null;
+  reactions?: Array<{ emoji: string; user_id: string }> | null;
 }
 
 interface Conversation {
@@ -247,6 +250,32 @@ function AttachmentRenderer({ message, partnerPublicKey }: AttachmentRendererPro
   return null;
 }
 
+const EMOJIS = ["👍", "❤️", "😂", "🙏"];
+
+function renderMessageContent(content: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  if (!content) return "";
+  
+  const parts = content.split(urlRegex);
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline hover:text-primary/80 break-all font-semibold"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 export function MessagesPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -268,6 +297,10 @@ export function MessagesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
 
   // States for audio recording and file uploads
   const [isRecording, setIsRecording] = useState(false);
@@ -544,6 +577,9 @@ export function MessagesPage() {
       sender_id: user.id,
       receiver_id: selectedPartner,
     };
+    if (replyingTo) {
+      payload.reply_to_id = replyingTo.id;
+    }
 
     if (conv?.partnerPublicKey) {
       try {
@@ -571,6 +607,7 @@ export function MessagesPage() {
       }
     } else {
       setNewMessage("");
+      setReplyingTo(null);
       await fetchMessages(selectedPartner);
 
       // Fire-and-forget email notification (non-blocking).
@@ -579,6 +616,86 @@ export function MessagesPage() {
           body: { sender_id: user.id, receiver_id: selectedPartner, content: conv?.partnerPublicKey ? "🔒 [Message chiffré]" : content },
         })
         .catch((err) => console.error("Email notification error:", err));
+    }
+    setIsSending(false);
+  }
+
+  async function toggleReaction(msg: Message, emoji: string) {
+    if (!user) return;
+    
+    let currentReactions = [...(msg.reactions || [])];
+    const existingIdx = currentReactions.findIndex(
+      (r) => r.emoji === emoji && r.user_id === user.id
+    );
+
+    if (existingIdx > -1) {
+      currentReactions.splice(existingIdx, 1);
+    } else {
+      currentReactions.push({ emoji, user_id: user.id });
+    }
+
+    const { error } = await supabase
+      .from("messages")
+      .update({ reactions: currentReactions })
+      .eq("id", msg.id);
+
+    if (error) {
+      toast.error("Impossible de modifier la réaction.");
+    } else {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === msg.id ? { ...m, reactions: currentReactions } : m))
+      );
+    }
+  }
+
+  async function handleSaveEdit(e: React.FormEvent, msg: Message) {
+    e.preventDefault();
+    const content = editingText.trim();
+    if (!content || !selectedPartner || !user) return;
+
+    const isTooOld = new Date().getTime() - new Date(msg.created_at).getTime() > 60 * 60 * 1000;
+    if (isTooOld) {
+      toast.error("Impossible de modifier un message après 1 heure.");
+      setEditingMessageId(null);
+      return;
+    }
+
+    setIsSending(true);
+    const conv = conversations.find((c) => c.partnerId === selectedPartner);
+
+    let finalContent = content;
+    let finalIv = msg.encryption_iv || null;
+    let finalIsEncrypted = msg.is_encrypted || false;
+
+    if (conv?.partnerPublicKey) {
+      try {
+        const { cipherText, iv } = await encryptText(content, conv.partnerPublicKey);
+        finalContent = cipherText;
+        finalIsEncrypted = true;
+        finalIv = iv;
+      } catch (err) {
+        toast.error("Échec du chiffrement du message modifié.");
+        setIsSending(false);
+        return;
+      }
+    }
+
+    const { error } = await supabase
+      .from("messages")
+      .update({
+        content: finalContent,
+        is_encrypted: finalIsEncrypted,
+        encryption_iv: finalIv,
+        edited_at: new Date().toISOString(),
+      })
+      .eq("id", msg.id);
+
+    if (error) {
+      toast.error("Erreur lors de la modification : " + error.message);
+    } else {
+      toast.success("Message modifié !");
+      setEditingMessageId(null);
+      await fetchMessages(selectedPartner);
     }
     setIsSending(false);
   }
@@ -742,6 +859,9 @@ export function MessagesPage() {
         attachment_type: type,
         attachment_name: file.name,
       };
+      if (replyingTo) {
+        payload.reply_to_id = replyingTo.id;
+      }
 
       if (conv?.partnerPublicKey) {
         const { cipherText, iv } = await encryptText(`[Fichier joint: ${file.name}]`, conv.partnerPublicKey);
@@ -994,8 +1114,9 @@ export function MessagesPage() {
                     {messages.map((msg) => {
                       const isMine = msg.sender_id === user.id;
                       const isLastSent = msg.id === lastSentMsg?.id;
+                      const repliedMsg = msg.reply_to_id ? messages.find(m => m.id === msg.reply_to_id) : null;
                       return (
-                        <div key={msg.id} className={cn("group flex gap-2", isMine ? "justify-end" : "justify-start")}>
+                        <div key={msg.id} id={`msg-${msg.id}`} className={cn("group flex gap-2 transition-colors duration-500 rounded-xl p-1", isMine ? "justify-end" : "justify-start")}>
                           {!isMine && (
                             <Avatar className="h-6 w-6 shrink-0 mt-1 border border-white/10">
                               <AvatarImage src={selectedConv.partnerAvatar} />
@@ -1004,24 +1125,163 @@ export function MessagesPage() {
                               </AvatarFallback>
                             </Avatar>
                           )}
-                          <div className={cn("flex flex-col", isMine ? "items-end" : "items-start")}>
-                            <div className={cn(
-                              "max-w-[75%] min-w-[8ch] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap break-words leading-snug",
-                              isMine
-                                ? "rounded-tr-sm bg-primary text-primary-foreground"
-                                : "rounded-tl-sm bg-white/8 border border-white/10 text-foreground"
-                            )}>
-                              {!msg.content.startsWith("[Fichier joint:") && (
-                                <p>{msg.content}</p>
-                              )}
-                              {msg.attachment_url && (
-                                <AttachmentRenderer
-                                  message={msg}
-                                  partnerPublicKey={selectedConv?.partnerPublicKey}
-                                />
+                          <div className={cn("flex flex-col relative", isMine ? "items-end" : "items-start")}>
+                            <div className={cn("relative group/bubble flex items-center max-w-[75%]", isMine ? "justify-end" : "justify-start")}>
+                              <div className={cn(
+                                "min-w-[8ch] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap break-words leading-snug",
+                                isMine
+                                  ? "rounded-tr-sm bg-primary text-primary-foreground"
+                                  : "rounded-tl-sm bg-white/8 border border-white/10 text-foreground"
+                              )}>
+                                {editingMessageId === msg.id ? (
+                                  <form
+                                    onSubmit={(e) => handleSaveEdit(e, msg)}
+                                    className="flex flex-col gap-2 min-w-[200px]"
+                                  >
+                                    <Input
+                                      value={editingText}
+                                      onChange={(e) => setEditingText(e.target.value)}
+                                      className="bg-black/30 border-white/20 focus:border-primary focus:ring-1 focus:ring-primary/30 text-sm h-8"
+                                      autoFocus
+                                      maxLength={MAX_MESSAGE_LENGTH}
+                                    />
+                                    <div className="flex justify-end gap-1.5">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setEditingMessageId(null)}
+                                        className="h-6 text-[10px] px-2 hover:bg-white/5 text-muted-foreground"
+                                      >
+                                        Annuler
+                                      </Button>
+                                      <Button
+                                        type="submit"
+                                        size="sm"
+                                        disabled={!editingText.trim() || isSending}
+                                        className="h-6 text-[10px] px-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                                      >
+                                        Enregistrer
+                                      </Button>
+                                    </div>
+                                  </form>
+                                ) : (
+                                  <>
+                                    {repliedMsg && (
+                                      <div
+                                        onClick={() => {
+                                          const el = document.getElementById(`msg-${repliedMsg.id}`);
+                                          if (el) {
+                                            el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                            el.classList.add("bg-primary/20");
+                                            setTimeout(() => el.classList.remove("bg-primary/20"), 1000);
+                                          }
+                                        }}
+                                        className={cn(
+                                          "cursor-pointer mb-1.5 rounded-lg border-l-2 px-2.5 py-1 text-[11px] leading-normal transition-all max-w-full select-none truncate hover:opacity-85",
+                                          isMine
+                                            ? "border-primary-foreground/40 bg-black/15 text-primary-foreground/80"
+                                            : "border-primary bg-white/5 text-muted-foreground"
+                                        )}
+                                      >
+                                        <p className="font-bold text-[10px]">
+                                          {repliedMsg.sender_id === user.id ? "Vous" : selectedConv?.partnerName}
+                                        </p>
+                                        <p className="truncate mt-0.5">
+                                          {repliedMsg.content.startsWith("[Fichier joint:")
+                                            ? repliedMsg.attachment_name || "Pièce jointe"
+                                            : repliedMsg.content}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {!msg.content.startsWith("[Fichier joint:") && (
+                                      <p>{renderMessageContent(msg.content)}</p>
+                                    )}
+                                    {msg.attachment_url && (
+                                      <AttachmentRenderer
+                                        message={msg}
+                                        partnerPublicKey={selectedConv?.partnerPublicKey}
+                                      />
+                                    )}
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Hover Actions Bar */}
+                              {!editingMessageId && (
+                                <div className={cn(
+                                  "absolute -top-8 opacity-0 group-hover/bubble:opacity-100 transition-opacity flex items-center gap-1 rounded-full bg-slate-900 border border-white/10 px-2 py-1 shadow-lg z-10 backdrop-blur-sm",
+                                  isMine ? "right-2" : "left-2"
+                                )}>
+                                  <div className="flex gap-1 border-r border-white/10 pr-1.5 mr-0.5">
+                                    {EMOJIS.map((emoji) => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => toggleReaction(msg, emoji)}
+                                        className="hover:scale-125 transition-transform active:scale-95 text-xs px-0.5"
+                                      >
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <button
+                                    onClick={() => setReplyingTo(msg)}
+                                    className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
+                                    title="Répondre"
+                                  >
+                                    <CornerUpLeft className="h-3.5 w-3.5" />
+                                  </button>
+                                  {isMine && !msg.attachment_url && (new Date().getTime() - new Date(msg.created_at).getTime() < 60 * 60 * 1000) && (
+                                    <button
+                                      onClick={() => {
+                                        setEditingMessageId(msg.id);
+                                        setEditingText(msg.content);
+                                      }}
+                                      className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors"
+                                      title="Modifier"
+                                    >
+                                      <Edit2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </div>
+
+                            {/* Active Reactions list */}
+                            {msg.reactions && msg.reactions.length > 0 && (
+                              <div className={cn(
+                                "flex flex-wrap gap-1 mt-1 max-w-[280px]",
+                                isMine ? "justify-end" : "justify-start"
+                              )}>
+                                {Array.from(new Set(msg.reactions.map((r) => r.emoji))).map((emoji) => {
+                                  const usersReacted = msg.reactions!.filter((r) => r.emoji === emoji);
+                                  const hasIReacted = usersReacted.some((r) => r.user_id === user.id);
+                                  return (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => toggleReaction(msg, emoji)}
+                                      className={cn(
+                                        "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border transition-all active:scale-95",
+                                        hasIReacted
+                                          ? "bg-primary/20 border-primary text-primary"
+                                          : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/8"
+                                      )}
+                                      title={`${usersReacted.length} réaction(s)`}
+                                    >
+                                      <span>{emoji}</span>
+                                      <span>{usersReacted.length}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+
                             <div className="flex items-center gap-1.5 mt-1 px-1">
+                              {msg.edited_at && (
+                                <span className="text-[9px] text-muted-foreground/50 font-medium italic" title={`Modifié le ${new Date(msg.edited_at).toLocaleString()}`}>
+                                  (Modifié)
+                                </span>
+                              )}
                               <p className="text-[10px] text-muted-foreground/60">
                                 {new Date(msg.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                               </p>
@@ -1057,9 +1317,35 @@ export function MessagesPage() {
               </div>
 
               {/* Input */}
+              {replyingTo && (
+                <div className="flex items-center justify-between bg-white/5 border-l-2 border-primary px-3 py-2 text-xs rounded-t-xl gap-2 select-none border-t border-x border-white/8 shrink-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-primary">
+                      En réponse à {replyingTo.sender_id === user.id ? "vous-même" : selectedConv?.partnerName}
+                    </p>
+                    <p className="truncate text-muted-foreground mt-0.5">
+                      {replyingTo.content.startsWith("[Fichier joint:")
+                        ? replyingTo.attachment_name || "Pièce jointe"
+                        : replyingTo.content}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setReplyingTo(null)}
+                    className="h-6 w-6 p-0 hover:bg-white/5 text-muted-foreground hover:text-foreground shrink-0"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
               <form
                 onSubmit={handleSend}
-                className="flex flex-shrink-0 items-center gap-2 border-t border-white/8 p-3"
+                className={cn(
+                  "flex flex-shrink-0 items-center gap-2 border-t border-white/8 p-3 bg-slate-950/20",
+                  replyingTo && "rounded-b-2xl border-t-0"
+                )}
               >
                 {/* Hidden file input */}
                 <input
