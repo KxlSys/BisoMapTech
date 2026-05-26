@@ -75,7 +75,7 @@ export function MapPage() {
           </div>
           <ScrollArea className="flex-1">
             <div className="space-y-2 p-4 pb-8">
-              {listProfiles.slice(0, 20).map((profile) => (
+              {profiles.slice(0, 20).map((profile) => (
                 <ProfileCard
                   key={profile.id}
                   profile={profile}
