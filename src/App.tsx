@@ -1,5 +1,6 @@
 import { useEffect, lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { MapPin } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Spinner } from "@/components/ui/spinner";
 import { AppErrorBoundary } from "@/components/error/app-error-boundary";
@@ -129,6 +130,26 @@ function LoadingFallback() {
   );
 }
 
+function NotFoundPage() {
+  return (
+    <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 pb-24 pt-16 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+        <MapPin className="h-7 w-7 text-muted-foreground/40" />
+      </div>
+      <h1 className="text-xl font-bold text-foreground">Page introuvable</h1>
+      <p className="text-sm text-muted-foreground">
+        Cette adresse n'existe pas ou a été déplacée.
+      </p>
+      <Link
+        to="/"
+        className="mt-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-foreground hover:bg-white/8 transition-colors"
+      >
+        Retour à l'accueil
+      </Link>
+    </div>
+  );
+}
+
 export default function App() {
   const { initialize, isLoading, authError } = useAuthStore();
 
@@ -219,6 +240,7 @@ export default function App() {
               <Route path="/auth/callback" element={<AuthCallbackPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
         </Suspense>
