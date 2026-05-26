@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { MapPin, ExternalLink, ArrowLeft, GitBranch, Star, GitFork, Calendar, Code as Code2, Activity, ChevronRight, Flame, Zap } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,17 +29,26 @@ function getSkillLevel(tech: string) {
   return SKILL_LEVELS[tech] ?? { label: "Connu", pct: 55 };
 }
 
-function generateHeatmap() {
+function generateHeatmap(seed: string) {
+  let x = 0;
+  for (let i = 0; i < seed.length; i++) {
+    x = (x * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  const next = () => {
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    return x >>> 0;
+  };
+
   const cells: { week: number; day: number; level: number }[] = [];
   for (let week = 0; week < 26; week++) {
     for (let day = 0; day < 7; day++) {
-      cells.push({ week, day, level: Math.floor(Math.random() * 5) });
+      cells.push({ week, day, level: next() % 5 });
     }
   }
   return cells;
 }
-
-const HEATMAP_CELLS = generateHeatmap();
 
 export function ProfileDetailPage() {
   const { username } = useParams<{ username: string }>();
@@ -48,6 +57,11 @@ export function ProfileDetailPage() {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("biographie");
+
+  const heatmapCells = useMemo(() => {
+    const seed = profile?.id || username || "anonymous";
+    return generateHeatmap(seed);
+  }, [profile?.id, username]);
 
   useEffect(() => {
     async function fetchData() {
@@ -243,7 +257,7 @@ export function ProfileDetailPage() {
                 {Array.from({ length: 26 }).map((_, week) => (
                   <div key={week} className="flex flex-col gap-0.5">
                     {Array.from({ length: 7 }).map((_, day) => {
-                      const cell = HEATMAP_CELLS.find(c => c.week === week && c.day === day);
+                      const cell = heatmapCells.find(c => c.week === week && c.day === day);
                       const level = cell?.level ?? 0;
                       return (
                         <div
@@ -280,6 +294,9 @@ export function ProfileDetailPage() {
                 <span>Plus</span>
               </div>
             </div>
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              Indicateur visuel (bêta) : ce graphique donne une tendance, pas une mesure exacte.
+            </p>
           </div>
 
           {/* Professional Journey */}
