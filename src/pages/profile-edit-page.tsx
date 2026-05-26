@@ -598,7 +598,7 @@ export function ProfileEditPage() {
               >
                 Ajouter ce projet
               </Button>
-              {profile.github_url && (
+              {profile.username && (
                 <Button
                   type="button"
                   onClick={handleSyncRepos}

@@ -180,11 +180,18 @@ export async function syncGithubReposToDatabase(input: {
   const etagKey = `bisomap.github.repos.etag.${username}`;
 
   const now = Date.now();
-  const cachedRaw = localStorage.getItem(cacheKey);
-  const cached = cachedRaw ? (JSON.parse(cachedRaw) as { ts: number; repos: GitHubRepo[] }) : null;
+  let cached: { ts: number; repos: GitHubRepo[] } | null = null;
+  let cachedEtag = "";
+  try {
+    const cachedRaw = localStorage.getItem(cacheKey);
+    cached = cachedRaw ? (JSON.parse(cachedRaw) as { ts: number; repos: GitHubRepo[] }) : null;
+    cachedEtag = localStorage.getItem(etagKey) || "";
+  } catch {
+    cached = null;
+    cachedEtag = "";
+  }
 
   const shouldUseCache = cached && now - cached.ts < GITHUB_CACHE_TTL_MS;
-  const cachedEtag = localStorage.getItem(etagKey) || "";
 
   let repos: GitHubRepo[] | null = null;
   let source: "cache" | "github" = "github";
@@ -193,16 +200,21 @@ export async function syncGithubReposToDatabase(input: {
     repos = cached.repos;
     source = "cache";
   } else {
-    const res = await fetch(
-      `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=30&sort=updated&direction=desc`,
-      {
-        headers: {
-          Accept: "application/vnd.github+json",
-          "User-Agent": "BisoMapTech",
-          ...(cachedEtag ? { "If-None-Match": cachedEtag } : {}),
-        },
-      }
-    );
+    let res: Response;
+    try {
+      res = await fetch(
+        `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=30&sort=updated&direction=desc`,
+        {
+          headers: {
+            Accept: "application/vnd.github+json",
+            "User-Agent": "BisoMapTech",
+            ...(cachedEtag ? { "If-None-Match": cachedEtag } : {}),
+          },
+        }
+      );
+    } catch {
+      return { ok: false, message: "Connexion instable. Impossible de contacter GitHub." };
+    }
 
     if (res.status === 304 && cached) {
       repos = cached.repos;
@@ -220,8 +232,12 @@ export async function syncGithubReposToDatabase(input: {
     } else {
       const etag = res.headers.get("etag");
       repos = (await res.json()) as GitHubRepo[];
-      localStorage.setItem(cacheKey, JSON.stringify({ ts: now, repos }));
-      if (etag) localStorage.setItem(etagKey, etag);
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: now, repos }));
+        if (etag) localStorage.setItem(etagKey, etag);
+      } catch {
+        // cache non disponible (mode privé / quota)
+      }
       source = "github";
     }
   }
