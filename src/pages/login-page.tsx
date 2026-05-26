@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { GitBranch, MapPin, Users, Code, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth-store";
@@ -8,11 +8,20 @@ import { usePlatformStats } from "@/hooks/use-platform-stats";
 export function LoginPage() {
   const { signInWithGitHub, user } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const platformStats = usePlatformStats();
 
   useEffect(() => {
     if (user) navigate("/");
   }, [user, navigate]);
+
+  function handleSignIn() {
+    const next = searchParams.get("next");
+    if (next) {
+      sessionStorage.setItem("auth.returnTo", next);
+    }
+    signInWithGitHub();
+  }
 
   if (user) return null;
 
@@ -99,7 +108,7 @@ export function LoginPage() {
           <div className="glass-panel space-y-5 rounded-2xl border border-white/10 p-6">
             {/* GitHub CTA */}
             <Button
-              onClick={signInWithGitHub}
+              onClick={handleSignIn}
               size="lg"
               className="w-full gap-2.5 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-[0_4px_20px_oklch(0.82_0.16_155/30%)]"
             >

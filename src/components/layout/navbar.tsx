@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Map, MapPin, Handshake, Shield, LogIn, LogOut, MessageSquare, User, Info } from "lucide-react";
+import { Map, MapPin, Handshake, Shield, LogIn, LogOut, MessageSquare, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -138,7 +138,7 @@ export function Navbar() {
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 z-[1100]">
+                <DropdownMenuContent align="end" className="w-48">
                   {profile && (
                     <DropdownMenuItem asChild>
                       <Link to={`/contributeurs/${profile.username}`}>Mon profil</Link>
@@ -156,7 +156,7 @@ export function Navbar() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
-                    Se deconnecter
+                    Se déconnecter
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -195,7 +195,7 @@ export function Navbar() {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 z-[1100]">
+              <DropdownMenuContent align="end" className="w-48">
                 {profile && (
                   <DropdownMenuItem asChild>
                     <Link to={`/contributeurs/${profile.username}`}>Mon profil</Link>
@@ -204,10 +204,16 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link to="/profil/edit">Modifier mon profil</Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/messages">
+                    Messages
+                    {messagesBadge > 0 && ` (${messagesBadge})`}
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Se deconnecter
+                  Se déconnecter
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -273,8 +279,8 @@ export function Navbar() {
             to="/login"
             className="flex flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors"
           >
-            <User className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Profil</span>
+            <LogIn className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Connexion</span>
           </Link>
         )}
       </nav>

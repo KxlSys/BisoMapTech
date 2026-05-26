@@ -116,7 +116,7 @@ export function ProfileEditPage() {
 
   useEffect(() => {
     if (!user && profileLoaded) {
-      navigate("/");
+      navigate("/login", { replace: true });
       return;
     }
     if (profile) {
@@ -161,7 +161,9 @@ export function ProfileEditPage() {
         github_url: data.github_url ?? "",
       });
       toast.success("Profil mis à jour avec succès");
-      await fetchProfile(user.id);
+      const refreshed = await fetchProfile(user.id);
+      if (refreshed) setProfile(refreshed);
+      navigate(`/contributeurs/${username}`);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Erreur lors de la sauvegarde du profil";

@@ -73,9 +73,6 @@ export function OnboardingStepper() {
   const [techSearch, setTechSearch] = useState("");
 
 
-  // Initial form state — pulls from the saved draft first (so a network blip
-  // doesn't lose the user's input), then falls back to the existing profile,
-  // then to sane defaults. Hydration runs once.
   const draft = useMemo(() => (user ? loadDraft(user.id) : null), [user]);
 
   const DRAFT_KEY = `onboarding_draft_${user?.id}`;
@@ -158,7 +155,6 @@ export function OnboardingStepper() {
         metadata.preferred_username ||
         `user_${user.id.slice(0, 8)}`;
 
-      // upsert (not update) so a fresh user without a row still saves.
       await upsertProfile(user.id, {
         username,
         full_name: fullName.trim(),
@@ -176,7 +172,6 @@ export function OnboardingStepper() {
       if (refreshed) setProfile(refreshed);
       setIsNewUser(false);
 
-      // Nettoyer les brouillons dans localStorage
       localStorage.removeItem(`${DRAFT_KEY}_fullName`);
       localStorage.removeItem(`${DRAFT_KEY}_bio`);
       localStorage.removeItem(`${DRAFT_KEY}_city`);
@@ -186,8 +181,8 @@ export function OnboardingStepper() {
       localStorage.removeItem(`${DRAFT_KEY}_openToCollaboration`);
       localStorage.removeItem(`${DRAFT_KEY}_avatarUrl`);
 
-      toast.success("Bienvenue sur BisoMapTech Map !");
-      navigate("/");
+      toast.success("Bienvenue sur BisoMapTech !");
+      navigate(`/contributeurs/${username}`, { replace: true });
     } catch (error) {
       const message =
         error instanceof Error
@@ -211,7 +206,6 @@ export function OnboardingStepper() {
 
   return (
     <div className="flex min-h-screen">
-      {/* ---- LEFT BRANDING PANEL (desktop only) ---- */}
       <div className="relative hidden lg:flex lg:w-5/12 flex-col justify-between overflow-hidden border-r border-white/10 p-12">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute right-0 top-0 h-80 w-80 -translate-y-1/3 translate-x-1/3 rounded-full bg-primary/10 blur-[80px]" />
@@ -240,8 +234,7 @@ export function OnboardingStepper() {
             <span className="text-primary">Join the ecosystem.</span>
           </h1>
           <p className="mt-5 text-base leading-relaxed text-muted-foreground max-w-sm">
-            Positionnez-vous dans l'annuaire des développeurs de la République du Congo — dev, sysadmin,
-            cybersécurité, cloud, IA, mobile, embarqué, support IT et plus.
+            Positionnez-vous dans l'annuaire des développeurs de la République du Congo.
           </p>
         </div>
 
@@ -262,12 +255,10 @@ export function OnboardingStepper() {
         </div>
       </div>
 
-      {/* ---- RIGHT FORM PANEL ---- */}
       <div className="flex flex-1 items-start justify-center overflow-y-auto px-4 py-8 sm:px-8 lg:items-center">
         <div className="pointer-events-none fixed left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[100px]" />
 
         <div className="relative z-10 w-full max-w-xl">
-          {/* Mobile branding */}
           <div className="mb-8 flex items-center gap-2 text-primary lg:hidden">
             <MapPin className="h-5 w-5" />
             <span className="text-base font-bold tracking-tight text-foreground">
@@ -275,7 +266,6 @@ export function OnboardingStepper() {
             </span>
           </div>
 
-          {/* Form header */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">
               Rejoindre <span className="text-primary">l'écosystème</span>
@@ -291,7 +281,6 @@ export function OnboardingStepper() {
           </div>
 
           <div className="glass-panel space-y-6 rounded-2xl border border-white/10 p-6 sm:p-8">
-            {/* Avatar — real upload */}
             {user && (
               <div className="flex flex-col items-center">
                 <AvatarUploader
@@ -307,7 +296,6 @@ export function OnboardingStepper() {
               </div>
             )}
 
-            {/* Full name */}
             <div className="space-y-1.5">
               <Label
                 htmlFor="onb-name"
@@ -324,7 +312,6 @@ export function OnboardingStepper() {
               />
             </div>
 
-            {/* Role — all 15 disciplines */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Rôle principal
@@ -348,7 +335,6 @@ export function OnboardingStepper() {
               </div>
             </div>
 
-            {/* City */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Localisation
@@ -367,7 +353,6 @@ export function OnboardingStepper() {
               </Select>
             </div>
 
-            {/* Bio */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label
@@ -390,7 +375,6 @@ export function OnboardingStepper() {
               />
             </div>
 
-            {/* Tech stack */}
             <div className="space-y-3">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Technologies
@@ -406,7 +390,6 @@ export function OnboardingStepper() {
                 />
               </div>
 
-              {/* Selected stack */}
               {techStack.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {techStack.map((tech) => (
@@ -423,7 +406,6 @@ export function OnboardingStepper() {
                 </div>
               )}
 
-              {/* Tech chips — full taxonomy */}
               {filteredAllTechs ? (
                 <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
                   {filteredAllTechs.map((tech) => (
@@ -436,8 +418,7 @@ export function OnboardingStepper() {
                   ))}
                   {filteredAllTechs.length === 0 && (
                     <p className="text-xs text-muted-foreground/70">
-                      Aucune technologie trouvée. Sélectionnez "Autre" comme rôle pour
-                      les profils atypiques.
+                      Aucune technologie trouvée.
                     </p>
                   )}
                 </div>
@@ -464,7 +445,6 @@ export function OnboardingStepper() {
               )}
             </div>
 
-            {/* Experience */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Niveau d'expérience
@@ -488,7 +468,6 @@ export function OnboardingStepper() {
               </div>
             </div>
 
-            {/* Collaboration */}
             <button
               type="button"
               onClick={() => setOpenToCollaboration(!openToCollaboration)}
@@ -520,7 +499,6 @@ export function OnboardingStepper() {
               </div>
             </button>
 
-            {/* Validation summary — explicit so the user knows what's missing */}
             {!canSubmit && (
               <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-300">
                 {!fullName.trim() && <p>• Renseignez votre nom complet</p>}
@@ -531,7 +509,6 @@ export function OnboardingStepper() {
               </div>
             )}
 
-            {/* Submission error with retry */}
             {submitError && (
               <div
                 role="alert"
@@ -562,10 +539,8 @@ export function OnboardingStepper() {
               </div>
             )}
 
-            {/* Divider */}
             <div className="h-px bg-white/10" />
 
-            {/* Actions */}
             <div className="flex items-center justify-between">
               <button
                 type="button"
