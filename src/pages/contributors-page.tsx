@@ -14,8 +14,8 @@ import {
   GitBranch,
 >>>>>>> 5ed523a (fix(build): corriger erreurs TS qui cassaient le build Vercel)
   SlidersHorizontal,
-  ArrowUpDown,
 } from "lucide-react";
+import { Profile } from "@/types";
 
 // Inline GitHub icon (lucide-react ne fournit pas `Github`)
 const GithubIcon = ({ className }: { className?: string }) => (
@@ -37,7 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FilterPanel } from "@/components/filters/filter-panel";
 import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useFilterStore } from "@/store/filter-store";
-import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS, TECH_OPTIONS } from "@/lib/constants";
+import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -52,12 +52,6 @@ const QUICK_FILTERS = [
   "TypeScript",
   "PHP",
   "Vue.js",
-];
-
-const SORT_OPTIONS: { value: SortBy; label: string }[] = [
-  { value: "default", label: "Tous" },
-  { value: "available_first", label: "Disponibles d'abord" },
-  { value: "recent", label: "Récemment actifs" },
 ];
 
 function formatLastSeen(lastSeenAt?: string): string | null {
@@ -267,75 +261,7 @@ export function ContributorsPage() {
           {/* Talent grid — large cards on desktop, list-style on mobile */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {profiles.map((profile) => (
-              <Link key={profile.id} to={`/contributeurs/${profile.username}`}>
-                <article className="glass-panel group relative rounded-xl border border-white/10 p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_8px_24px_rgba(78,222,163,0.08)] active:scale-[0.99]">
-                  {/* Ambient glow */}
-                  <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-primary/6 blur-xl transition-colors group-hover:bg-primary/12" />
-
-                  {/* Header */}
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    {/* Avatar with online dot */}
-                    <div className="relative shrink-0">
-                      <Avatar className="h-14 w-14 border-2 border-white/15">
-                        <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                        <AvatarFallback className="bg-primary/20 text-primary text-lg font-semibold">
-                          {profile.full_name?.charAt(0) || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      {profile.open_to_collaboration && (
-                        <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-background">
-                          <span className="relative flex h-2.5 w-2.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Name + role */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="truncate text-sm font-bold leading-tight text-foreground group-hover:text-primary transition-colors">
-                        {profile.full_name}
-                      </h3>
-                      <p className="mt-0.5 text-sm font-medium text-primary">
-                        {ROLE_TYPE_LABELS[profile.role_type]}
-                      </p>
-                      <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{profile.city || "Congo"}</span>
-                      </div>
-                    </div>
-
-                    {/* Experience badge */}
-                    <Badge
-                      variant="outline"
-                      className="shrink-0 border-white/10 bg-white/5 text-[10px] text-muted-foreground"
-                    >
-                      {EXPERIENCE_LABELS[profile.experience_level]}
-                    </Badge>
-                  </div>
-
-                  {/* Tech chips */}
-                  <div className="flex flex-wrap gap-1.5 border-t border-white/10 pt-3">
-                    {profile.tech_stack.slice(0, 3).map((tech) => (
-                      <span
-                        key={tech}
-                        className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-muted-foreground"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                    {profile.tech_stack.length > 3 && (
-                      <span className="self-center text-[11px] text-muted-foreground">
-                        +{profile.tech_stack.length - 3}
-                      </span>
-                    )}
-                    {profile.github_url && (
-                      <GitBranch className="ml-auto h-3.5 w-3.5 self-center text-muted-foreground/30" />
-                    )}
-                  </div>
-                </article>
-              </Link>
+              <ProfileCard key={profile.id} profile={profile} />
             ))}
 
             {profiles.length === 0 && !isLoading && (
