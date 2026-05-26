@@ -199,7 +199,7 @@ export function ContributorsPage() {
       <div className="relative mb-4">
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Rechercher par nom, competence..."
+          placeholder="Rechercher par nom, compétence..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="bg-white/5 border-white/10 pl-10 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30"
@@ -251,7 +251,7 @@ export function ContributorsPage() {
             {profiles.length === 0 && !isLoading && (
               <div className="col-span-full py-20 text-center">
                 <Handshake className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
-                <p className="font-semibold text-muted-foreground">Aucun contributeur trouve</p>
+                <p className="font-semibold text-muted-foreground">Aucun contributeur trouvé</p>
                 <p className="mt-1 text-sm text-muted-foreground/60">Essayez de modifier vos filtres</p>
               </div>
             )}
@@ -268,7 +268,7 @@ export function ContributorsPage() {
                 className="gap-1 border border-white/10 bg-white/5 hover:bg-white/8 disabled:opacity-30"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Precedent
+                Précédent
               </Button>
               <span className="text-xs text-muted-foreground">
                 {page} / {totalPages}
@@ -321,7 +321,7 @@ export function ContributorsPage() {
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={() => setMobileFilterOpen(false)}
               >
-                Voir {profiles.length} resultat{profiles.length !== 1 ? "s" : ""}
+                Voir {profiles.length} résultat{profiles.length !== 1 ? "s" : ""}
               </Button>
             </div>
           </div>
