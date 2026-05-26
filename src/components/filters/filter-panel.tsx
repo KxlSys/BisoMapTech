@@ -147,7 +147,7 @@ export function FilterPanel({
           placeholder="Rechercher nom, compétence..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-white/5 border-white/10 pl-8 h-9 text-xs placeholder:text-muted-foreground/60 focus-visible:ring-primary/30"
+          className="bg-white/5 border-white/10 pl-8 h-9 text-sm placeholder:text-muted-foreground/60 focus-visible:ring-primary/30"
         />
       </div>
 
@@ -158,7 +158,7 @@ export function FilterPanel({
           className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors text-left"
         >
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Type de rôle
             </span>
             {roleType && (
@@ -191,10 +191,10 @@ export function FilterPanel({
                         : "border-white/5 bg-white/5 text-muted-foreground hover:border-white/15 hover:bg-white/8 hover:text-foreground"
                     )}
                   >
-                    <span className="text-[9px] font-bold">
+                    <span className="text-[10px] font-bold">
                       {ROLE_ICONS[value]}
                     </span>
-                    <span className="text-[9px] leading-tight truncate w-full px-0.5">
+                    <span className="text-[10px] leading-tight truncate w-full px-0.5">
                       {label}
                     </span>
                   </button>
@@ -212,7 +212,7 @@ export function FilterPanel({
           className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors text-left"
         >
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Niveau d'expérience
             </span>
             {experienceLevel && (
@@ -242,7 +242,7 @@ export function FilterPanel({
                     key={value}
                     onClick={() => setExperienceLevel(isActive ? "" : value)}
                     className={cn(
-                      "flex-1 rounded-lg border py-1.5 text-[10px] font-medium transition-all text-center",
+                      "flex-1 rounded-lg border py-1.5 text-[11px] font-medium transition-all text-center",
                       isActive
                         ? "border-primary/60 bg-primary/15 text-primary"
                         : "border-white/5 bg-white/5 text-muted-foreground hover:border-white/15 hover:bg-white/8 hover:text-foreground"
