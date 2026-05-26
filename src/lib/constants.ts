@@ -420,14 +420,20 @@ export const EXPERIENCE_LABELS: Record<string, string> = {
 // ======================================================
 
 export const PLACE_CATEGORIES = [
+  "Espace Tech",
+  "Coworking",
+  "Incubateur / Accélérateur",
+  "Formation / Bootcamp",
+  "Fab Lab",
+  "Café",
   "Restaurant",
   "Marché",
-  "Café",
   "Pharmacie",
   "Hôpital",
   "École / Université",
-  "Espace Tech",
-  "Incubateur",
+  "Opérateur Télécoms",
+  "Cybercafé / Point Internet",
+  "ONG Tech",
   "Autre",
 ] as const;
 
