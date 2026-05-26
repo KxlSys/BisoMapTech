@@ -283,6 +283,7 @@ export async function updateProfile(
     return false;
   }
 
+  triggerGithubSync(updates.github_url, userId);
   return true;
 }
 
@@ -317,6 +318,28 @@ export async function upsertProfile(
     .upsert(payload, { onConflict: "id" });
 
   if (error) throw error;
+
+  triggerGithubSync(patch.github_url, userId);
+}
+
+function triggerGithubSync(githubUrl: string | undefined, userId: string) {
+  if (!githubUrl) return;
+  const githubUsername = githubUrl.replace(/\/+$/, "").split("/").pop();
+  if (!githubUsername) return;
+
+  supabase.functions
+    .invoke("sync-github-repos", {
+      body: { username: githubUsername, profile_id: userId },
+    })
+    .then(({ error }) => {
+      if (!error) return;
+      if (typeof window === "undefined") return;
+      return syncGithubReposToDatabase({ githubUsername, profileId: userId }).then(() => {});
+    })
+    .catch(() => {
+      if (typeof window === "undefined") return;
+      syncGithubReposToDatabase({ githubUsername, profileId: userId }).then(() => {});
+    });
 }
 
 // ============================================================
