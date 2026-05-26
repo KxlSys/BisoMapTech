@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConnection } from "@/hooks/use-connection";
+import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface ConnectionActionsProps {
@@ -60,7 +61,7 @@ export function ConnectionActions({
       await action();
       toast.success(success);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Une erreur est survenue");
+      toast.error(getErrorMessage(err));
     }
   }
 

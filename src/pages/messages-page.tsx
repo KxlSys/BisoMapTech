@@ -18,7 +18,7 @@ import {
 import { fetchProfileByUsername } from "@/lib/profile-service";
 import type { ConnectionWithProfiles } from "@/types";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -297,7 +297,7 @@ export function MessagesPage() {
       }
       await fetchAll();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Une erreur est survenue");
+      toast.error(getErrorMessage(err));
     }
   }
 
