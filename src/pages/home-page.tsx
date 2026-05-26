@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Users, MapPin, ArrowRight } from "lucide-react";
+import { Users, MapPin, ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function HomePage() {
@@ -14,6 +14,12 @@ export function HomePage() {
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
           Deux cartes dans une seule app : les talents (communauté) et les lieux utiles.
         </p>
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-muted-foreground">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <p className="leading-relaxed">
+            Pour limiter le spam, les messages privés sont possibles uniquement après acceptation d’une demande de connexion.
+          </p>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
