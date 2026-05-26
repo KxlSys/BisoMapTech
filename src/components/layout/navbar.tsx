@@ -224,14 +224,8 @@ export function Navbar() {
 
       {/* Mobile bottom navigation */}
       {showBottomNav && (
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-stretch border-t border-white/10 md:hidden"
-        style={{
-          background: "oklch(0.10 0.025 240 / 95%)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          height: "calc(4rem + env(safe-area-inset-bottom, 0px))",
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-[600] flex h-16 items-stretch border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom)]"
+        style={{ background: "oklch(0.10 0.025 240 / 95%)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         {NAV_LINKS.map((link) => {
           const isActive =
             activeOverride === link.href ||

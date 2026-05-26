@@ -7,12 +7,11 @@ export function AppLayout() {
   const isMapPage = location.pathname === "/talents" || location.pathname === "/lieux";
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-[100dvh] flex-col">
       <Navbar />
-      {/* Map page: no extra padding/footer, overflow hidden for full viewport layout */}
       <main
-        className={isMapPage ? "flex-1" : "flex-1 md:pb-0"}
-        style={!isMapPage ? { paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" } : undefined}
+        className="flex flex-1 flex-col relative min-h-0 md:pb-0"
+        style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <Outlet />
       </main>
