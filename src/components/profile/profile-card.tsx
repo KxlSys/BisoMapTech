@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 interface ProfileCardProps {
   profile: Profile;
   matchScore?: number;
-  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
+  onClick?: (profile: Profile, e: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
 function formatLastSeen(lastSeenAt?: string): string | null {
@@ -34,7 +34,7 @@ export const ProfileCard = React.memo(function ProfileCard({ profile, matchScore
   // Wrapped ProfileCard in React.memo to prevent unnecessary re-renders when the parent
   // component (like MapPage or ContributorsPage) updates its state (e.g. from typing in the search bar).
   return (
-    <Link to={`/contributeurs/${profile.username}`} onClick={onClick}>
+    <Link to={`/contributeurs/${profile.username}`} onClick={(e) => onClick?.(profile, e)}>
       <div className={cn(
         "group rounded-xl border border-white/10 bg-white/5 p-3 transition-all",
         "hover:border-primary/30 hover:bg-white/8",

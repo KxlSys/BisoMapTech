@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, RotateCcw, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,23 @@ export function FilterPanel({
 
     resetFilters,
   } = useFilterStore();
+
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  // Sync local search with global state
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  // Debounce sync local search to global store
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (localSearch !== searchQuery) {
+        setSearchQuery(localSearch);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [localSearch, searchQuery, setSearchQuery]);
 
   const { cities, departments } = useLocations();
 
@@ -145,8 +162,8 @@ export function FilterPanel({
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Rechercher nom, compétence..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
             className="bg-white/5 border-white/10 pl-8 h-9 text-sm placeholder:text-muted-foreground/60 focus-visible:ring-primary/30"
           />
         </div>
