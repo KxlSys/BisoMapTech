@@ -138,7 +138,7 @@ export function Navbar() {
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-48 z-[1100]">
                   {profile && (
                     <DropdownMenuItem asChild>
                       <Link to={`/contributeurs/${profile.username}`}>Mon profil</Link>
@@ -195,7 +195,7 @@ export function Navbar() {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-48 z-[1100]">
                 {profile && (
                   <DropdownMenuItem asChild>
                     <Link to={`/contributeurs/${profile.username}`}>Mon profil</Link>
