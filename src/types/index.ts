@@ -131,6 +131,38 @@ export interface Message {
   created_at: string;
 }
 
+export type ConnectionStatus = "pending" | "accepted";
+
+export interface Connection {
+  id: string;
+
+  requester_id: string;
+  addressee_id: string;
+
+  status: ConnectionStatus;
+
+  created_at: string;
+  updated_at: string;
+}
+
+/** Relationship between the current user and another member, from "my" point of view. */
+export type ConnectionState =
+  | "self"
+  | "none"
+  | "pending_outgoing"
+  | "pending_incoming"
+  | "connected";
+
+export type ConnectionPartner = Pick<
+  Profile,
+  "id" | "username" | "full_name" | "avatar_url"
+>;
+
+export interface ConnectionWithProfiles extends Connection {
+  requester: ConnectionPartner | null;
+  addressee: ConnectionPartner | null;
+}
+
 export interface Report {
   id: string;
 

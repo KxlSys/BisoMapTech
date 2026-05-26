@@ -302,7 +302,7 @@ function TalentCard({ match, isLoggedIn }: { match: MatchResult; isLoggedIn: boo
             className="h-7 gap-1 border border-white/15 bg-white/5 px-3 text-xs hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
             asChild
           >
-            <Link to={`/messages?to=${profile.username}`}>
+            <Link to={`/contributeurs/${profile.username}`}>
               <Users className="h-3 w-3" />
               Se connecter
             </Link>

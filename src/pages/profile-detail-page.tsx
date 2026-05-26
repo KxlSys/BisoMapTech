@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { MapPin, ExternalLink, ArrowLeft, GitBranch, MessageSquare, Star, GitFork, Calendar, Code as Code2, Activity, Users, ChevronRight, Flame, Zap } from "lucide-react";
+import { MapPin, ExternalLink, ArrowLeft, GitBranch, Star, GitFork, Calendar, Code as Code2, Activity, ChevronRight, Flame, Zap } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConnectionActions } from "@/components/profile/connection-actions";
 import { fetchProfileByUsername, fetchRepositories } from "@/lib/profile-service";
 import { useAuthStore } from "@/store/auth-store";
-import { supabase } from "@/lib/supabase";
 import { MOCK_PROFILES } from "@/lib/mock-data";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import type { Profile, Repository } from "@/types";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type Tab = "biographie" | "arsenal" | "projets";
@@ -50,9 +48,6 @@ export function ProfileDetailPage() {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("biographie");
-  const [messageContent, setMessageContent] = useState("");
-  const [isSendingMessage, setIsSendingMessage] = useState(false);
-  const [showMessageInput, setShowMessageInput] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -76,34 +71,6 @@ export function ProfileDetailPage() {
     }
     fetchData();
   }, [username]);
-
-  async function handleSendMessage() {
-    if (!messageContent.trim() || !user || !profile) return;
-    setIsSendingMessage(true);
-    const { error } = await supabase.from("messages").insert({
-      sender_id: user.id,
-      receiver_id: profile.id,
-      content: messageContent.trim(),
-    });
-    if (error) {
-      toast.error(error.message || "Erreur lors de l'envoi du message");
-    } else {
-      const messageSent = messageContent.trim();
-      toast.success("Message envoyé");
-      setMessageContent("");
-      setShowMessageInput(false);
-
-      // Déclencher de manière asynchrone l'Edge Function d'envoi d'email
-      supabase.functions.invoke("send-message-notification", {
-        body: {
-          sender_id: user.id,
-          receiver_id: profile.id,
-          content: messageSent,
-        },
-      }).catch((err) => console.error("Email notification error:", err));
-    }
-    setIsSendingMessage(false);
-  }
 
   if (isLoading) {
     return (
@@ -198,62 +165,18 @@ export function ProfileDetailPage() {
 
             {/* Action buttons */}
             <div className="mt-5 flex gap-2">
-              {user && !isOwnProfile && (
-                <>
-                  <Button
-                    size="sm"
-                    className="flex-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-[0_2px_12px_oklch(0.82_0.16_155/25%)]"
-                    asChild
-                  >
-                    <Link to={`/messages?to=${profile.username}`}>
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      Message
-                    </Link>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="flex-1 gap-1.5 border border-white/15 bg-white/5 hover:bg-white/8 text-xs"
-                    onClick={() => setShowMessageInput(!showMessageInput)}
-                  >
-                    <Users className="h-3.5 w-3.5" />
-                    Connecter
-                  </Button>
-                </>
-              )}
-              {isOwnProfile && (
+              {isOwnProfile ? (
                 <Button size="sm" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5" asChild>
                   <Link to="/profil/edit">Modifier mon profil</Link>
                 </Button>
-              )}
-              {!user && (
-                <Button size="sm" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" asChild>
-                  <Link to="/login">Se connecter pour contacter</Link>
-                </Button>
+              ) : (
+                <ConnectionActions
+                  targetId={profile.id}
+                  targetUsername={profile.username}
+                  isLoggedIn={Boolean(user)}
+                />
               )}
             </div>
-
-            {showMessageInput && (
-              <div className="mt-3 flex gap-2">
-                <Input
-                  value={messageContent}
-                  onChange={(e) => setMessageContent(e.target.value)}
-                  placeholder="Votre message..."
-                  className="flex-1 bg-white/5 border-white/10 text-xs focus:border-primary focus:ring-1 focus:ring-primary/30"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
-                  }}
-                />
-                <Button
-                  size="sm"
-                  onClick={handleSendMessage}
-                  disabled={!messageContent.trim() || isSendingMessage}
-                  className="text-xs bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  Envoyer
-                </Button>
-              </div>
-            )}
 
             {/* Social links */}
             {profile.github_url && (
@@ -496,18 +419,14 @@ export function ProfileDetailPage() {
           </div>
 
           {/* Action buttons */}
-          {user && !isOwnProfile && (
+          {!isOwnProfile && (
             <div className="mt-4 flex gap-2">
-              <Button size="sm" className="flex-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold" asChild>
-                <Link to={`/messages?to=${profile.username}`}>
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  Message
-                </Link>
-              </Button>
-              <Button size="sm" variant="ghost" className="flex-1 gap-1.5 border border-white/15 bg-white/5 hover:bg-white/8 text-xs">
-                <Users className="h-3.5 w-3.5" />
-                Connecter
-              </Button>
+              <ConnectionActions
+                targetId={profile.id}
+                targetUsername={profile.username}
+                isLoggedIn={Boolean(user)}
+                compact
+              />
             </div>
           )}
         </div>

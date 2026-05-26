@@ -21,8 +21,11 @@ const NAV_LINKS = [
 ];
 
 export function Navbar() {
-  const { user, profile, signOut, unreadMessages } = useAuthStore();
+  const { user, profile, signOut, unreadMessages, pendingRequests } = useAuthStore();
   const location = useLocation();
+
+  // Both unread messages and incoming connection requests live in /messages.
+  const messagesBadge = unreadMessages + pendingRequests;
 
   return (
     <>
@@ -76,9 +79,9 @@ export function Navbar() {
                 >
                   <MessageSquare className="h-4 w-4" />
                   Messages
-                  {unreadMessages > 0 && (
+                  {messagesBadge > 0 && (
                     <Badge className="absolute -right-1 -top-1 h-4 w-4 items-center justify-center rounded-full p-0 text-[10px] bg-primary text-primary-foreground">
-                      {unreadMessages}
+                      {messagesBadge}
                     </Badge>
                   )}
                 </Button>
@@ -132,7 +135,7 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link to="/messages">
                       Messages
-                      {unreadMessages > 0 && ` (${unreadMessages})`}
+                      {messagesBadge > 0 && ` (${messagesBadge})`}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -238,9 +241,9 @@ export function Navbar() {
           >
             <MessageSquare className={cn("h-5 w-5", location.pathname === "/messages" && "drop-shadow-[0_0_6px_oklch(0.82_0.16_155)]")} />
             <span className="text-[10px] font-medium">Messages</span>
-            {unreadMessages > 0 && (
+            {messagesBadge > 0 && (
               <span className="absolute right-4 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-                {unreadMessages > 9 ? "9+" : unreadMessages}
+                {messagesBadge > 9 ? "9+" : messagesBadge}
               </span>
             )}
             {location.pathname === "/messages" && (

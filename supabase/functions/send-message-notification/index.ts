@@ -6,6 +6,17 @@ const corsHeadersBase = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+// Escape user-controlled strings before interpolating them into the email
+// HTML, otherwise a message could inject markup/links into the notification.
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const allowListValue = Deno.env.get("ALLOWED_ORIGINS") ?? "";
   const allowList = allowListValue
@@ -96,6 +107,12 @@ Deno.serve(async (req: Request) => {
     const senderName = senderProfile?.full_name || "Un développeur";
     const senderUsername = senderProfile?.username || "inconnu";
     const receiverName = receiverProfile?.full_name || "Contributeur";
+
+    // HTML-escaped variants for safe interpolation into the email template.
+    const safeSenderName = escapeHtml(senderName);
+    const safeSenderUsername = escapeHtml(senderUsername);
+    const safeReceiverName = escapeHtml(receiverName);
+    const safeContent = escapeHtml(String(content));
 
     // 4. Envoyer l'email via Resend
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -203,15 +220,15 @@ Deno.serve(async (req: Request) => {
           </div>
           
           <div class="greeting">
-            Bonjour <strong>${receiverName}</strong>,
+            Bonjour <strong>${safeReceiverName}</strong>,
           </div>
-          
+
           <div class="greeting">
-            Vous avez reçu un nouveau message privé de la part de <strong>${senderName}</strong> (@${senderUsername}) sur TechMap Congo :
+            Vous avez reçu un nouveau message privé de la part de <strong>${safeSenderName}</strong> (@${safeSenderUsername}) sur TechMap Congo :
           </div>
-          
+
           <div class="message-box">
-            "${content}"
+            "${safeContent}"
           </div>
           
           <div class="btn-container">
