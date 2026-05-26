@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ListFilter as Filter, X, ChevronRight, Plus, Minus, Locate, MapPin, Loader2, List, Map } from "lucide-react";
 import type L from "leaflet";
-import type { Profile } from "@/types";
 import { CongoMap } from "@/components/map/congo-map";
 import { FilterPanel } from "@/components/filters/filter-panel";
 import { ProfileCard } from "@/components/profile/profile-card";
@@ -28,12 +27,6 @@ export function MapPage() {
     leafletMapRef.current = map;
   }, []);
 
-  const handleProfileClick = useCallback((profile: Profile, e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    setFocusedProfileId(profile.id);
-    setMobileView("map");
-  }, []);
-
   const lastProfilesLengthRef = useRef(profiles.length);
 
   // Auto-focus a single search result
@@ -47,8 +40,8 @@ export function MapPage() {
   }, [profiles]);
 
   return (
-    /* Full viewport minus navbar height */
-    <div className="relative flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    /* Full viewport minus navbar height — mobile subtracts top (3rem) + bottom nav (4rem) */
+    <div className="relative flex h-[calc(100vh-7rem)] overflow-hidden md:h-[calc(100vh-3.5rem)]">
 
       {/* ─────────────────── LEFT SIDEBAR ─────────────────── */}
       <aside
@@ -86,7 +79,11 @@ export function MapPage() {
                 <ProfileCard
                   key={profile.id}
                   profile={profile}
-                  onClick={handleProfileClick}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setFocusedProfileId(profile.id);
+                    setMobileView("map");
+                  }}
                 />
               ))}
               {listProfiles.length > 20 && (
@@ -224,7 +221,7 @@ export function MapPage() {
         </div>
 
         {/* Mobile Map/List Toggle FAB */}
-        <div className="fixed bottom-6 left-1/2 z-[1000] -translate-x-1/2 md:hidden">
+        <div className="fixed bottom-20 left-1/2 z-[1000] -translate-x-1/2 md:hidden">
           <Button
             onClick={() => setMobileView(mobileView === "map" ? "list" : "map")}
             className="glass-panel flex h-11 items-center gap-2 rounded-full border border-white/20 bg-black/75 px-5 text-xs font-bold text-foreground shadow-2xl backdrop-blur-xl hover:border-primary/40 hover:text-primary active:scale-95 transition-all"

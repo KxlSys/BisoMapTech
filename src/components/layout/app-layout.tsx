@@ -10,7 +10,10 @@ export function AppLayout() {
     <div className="flex min-h-screen flex-col">
       <Navbar />
       {/* Map page: no extra padding/footer, overflow hidden for full viewport layout */}
-      <main className={isMapPage ? "flex-1" : "flex-1 pb-16 md:pb-0"}>
+      <main
+        className={isMapPage ? "flex-1" : "flex-1 md:pb-0"}
+        style={!isMapPage ? { paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" } : undefined}
+      >
         <Outlet />
       </main>
       {!isMapPage && (

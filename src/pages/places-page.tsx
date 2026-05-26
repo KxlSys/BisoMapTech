@@ -76,7 +76,7 @@ export function PlacesPage() {
   }, [places]);
 
   return (
-    <div className="relative flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="relative flex h-[calc(100vh-7rem)] overflow-hidden md:h-[calc(100vh-3.5rem)]">
       {/* ─────────────────── LEFT SIDEBAR ─────────────────── */}
       <aside
         className={cn(
@@ -226,7 +226,7 @@ export function PlacesPage() {
         </div>
 
         {/* Mobile Map/List Toggle FAB */}
-        <div className="fixed bottom-6 left-1/2 z-[1000] -translate-x-1/2 md:hidden">
+        <div className="fixed bottom-20 left-1/2 z-[1000] -translate-x-1/2 md:hidden">
           <Button
             onClick={() => setMobileView(mobileView === "map" ? "list" : "map")}
             className="glass-panel flex h-11 items-center gap-2 rounded-full border border-white/20 bg-black/75 px-5 text-xs font-bold text-foreground shadow-2xl backdrop-blur-xl hover:border-tertiary/40 hover:text-tertiary active:scale-95 transition-all"
