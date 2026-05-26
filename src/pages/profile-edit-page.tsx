@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/store/auth-store";
-import { upsertProfile } from "@/lib/profile-service";
+import { createPinnedProject, deleteRepository, fetchPinnedProjects, syncGithubReposToDatabase, upsertProfile } from "@/lib/profile-service";
 import { CONGO_CITIES, getCityCoordinates } from "@/lib/cities";
 import {
   TECH_CATEGORIES,
@@ -37,8 +37,7 @@ import {
   EXPERIENCE_LABELS,
   DB_ROLE_TYPES,
 } from "@/lib/constants";
-import type { RoleType, ExperienceLevel } from "@/types";
-import { supabase } from "@/lib/supabase";
+import type { RoleType, ExperienceLevel, Repository } from "@/types";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { toast } from "sonner";
 
@@ -149,19 +148,92 @@ export function ProfileEditPage() {
     }
   }
 
+  const [pinnedProjects, setPinnedProjects] = useState<Repository[]>([]);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectUrl, setNewProjectUrl] = useState("");
+  const [newProjectDescription, setNewProjectDescription] = useState("");
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    fetchPinnedProjects(profile.id)
+      .then(setPinnedProjects)
+      .catch(() => {});
+  }, [profile?.id]);
+
   async function handleSyncRepos() {
     if (!profile?.username) return;
-    try {
-      const { error } = await supabase.functions.invoke("sync-github-repos", {
-        body: { username: profile.username, profile_id: profile.id },
+    const result = await syncGithubReposToDatabase({
+      githubUsername: profile.username,
+      profileId: profile.id,
+    });
+    if (result.ok) {
+      toast.success("Repos GitHub synchronisés", {
+        description: `${result.synced} repo(s) récupéré(s) (${result.source === "cache" ? "cache" : "GitHub"}).`,
       });
-      if (!error) {
-        toast.success("Repositories GitHub synchronisés");
-      } else {
-        toast.error("Erreur lors de la synchronisation");
-      }
-    } catch {
-      toast.error("Erreur de connexion");
+    } else {
+      toast.error(result.message);
+    }
+  }
+
+  function normalizeWebsiteUrl(raw: string): string {
+    const v = raw.trim();
+    if (!v) return "";
+    if (/^https?:\/\//i.test(v)) return v;
+    return `https://${v}`;
+  }
+
+  async function handleAddPinnedProject() {
+    if (!profile?.id) return;
+
+    const schema = z.object({
+      name: z.string().trim().min(2, "Nom trop court"),
+      url: z
+        .string()
+        .trim()
+        .min(4, "Lien requis")
+        .transform(normalizeWebsiteUrl)
+        .refine((value) => {
+          try {
+            const u = new URL(value);
+            return u.protocol === "https:" || u.protocol === "http:";
+          } catch {
+            return false;
+          }
+        }, "Lien invalide"),
+      description: z.string().trim().max(240).optional(),
+    });
+
+    const parsed = schema.safeParse({
+      name: newProjectName,
+      url: newProjectUrl,
+      description: newProjectDescription,
+    });
+
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Formulaire invalide");
+      return;
+    }
+
+    try {
+      await createPinnedProject(profile.id, parsed.data);
+      setNewProjectName("");
+      setNewProjectUrl("");
+      setNewProjectDescription("");
+      setPinnedProjects(await fetchPinnedProjects(profile.id));
+      toast.success("Projet ajouté");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossible d’ajouter ce projet");
+    }
+  }
+
+  async function handleDeletePinnedProject(repoId: string) {
+    if (!profile?.id) return;
+    try {
+      await deleteRepository(repoId);
+      setPinnedProjects((prev) => prev.filter((p) => p.id !== repoId));
+      toast.success("Projet supprimé");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossible de supprimer ce projet");
     }
   }
 
@@ -467,6 +539,117 @@ export function ProfileEditPage() {
         {/* Preferences */}
         <section className="glass-panel rounded-2xl border border-white/10 p-5">
           <div className="mb-4 flex items-center gap-2">
+            <GitBranch className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Projets (site web)
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Nom du projet
+                </Label>
+                <Input
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  placeholder="ex : Plateforme EdTech"
+                  className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Lien du site
+                </Label>
+                <Input
+                  value={newProjectUrl}
+                  onChange={(e) => setNewProjectUrl(e.target.value)}
+                  placeholder="ex : https://mon-projet.com"
+                  className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                Description (optionnel)
+              </Label>
+              <Textarea
+                value={newProjectDescription}
+                onChange={(e) => setNewProjectDescription(e.target.value)}
+                rows={3}
+                placeholder="En une phrase : à quoi sert ce projet ?"
+                className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30 resize-none"
+              />
+              <div className="flex justify-end">
+                <span className="text-xs text-muted-foreground/60">
+                  {newProjectDescription.length}/240
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                onClick={handleAddPinnedProject}
+                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+              >
+                Ajouter ce projet
+              </Button>
+              {profile.github_url && (
+                <Button
+                  type="button"
+                  onClick={handleSyncRepos}
+                  className="gap-2 border border-white/15 bg-white/5 hover:bg-white/8 hover:border-white/25 text-foreground"
+                >
+                  <GitBranch className="h-4 w-4" />
+                  Synchroniser mes repos GitHub
+                </Button>
+              )}
+            </div>
+
+            {pinnedProjects.length > 0 && (
+              <div className="mt-2 space-y-2">
+                {pinnedProjects.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-white/3 p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
+                      <a
+                        href={p.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block truncate text-xs text-primary/90 hover:underline underline-offset-2"
+                      >
+                        {p.url}
+                      </a>
+                      {p.description && (
+                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeletePinnedProject(p.id)}
+                      className="h-8 shrink-0 border border-white/10 bg-white/5 text-muted-foreground hover:text-destructive"
+                    >
+                      Supprimer
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Preferences */}
+        <section className="glass-panel rounded-2xl border border-white/10 p-5">
+          <div className="mb-4 flex items-center gap-2">
             <Briefcase className="h-4 w-4 text-primary" />
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Préférences
@@ -502,18 +685,6 @@ export function ProfileEditPage() {
             <Save className="h-4 w-4" />
             {isSubmitting ? "Sauvegarde..." : "Sauvegarder les modifications"}
           </Button>
-
-          {profile.github_url && (
-            <Button
-              type="button"
-              onClick={handleSyncRepos}
-              className="gap-2 border border-white/15 bg-white/5 hover:bg-white/8 hover:border-white/25 text-foreground"
-            >
-              <GitBranch className="h-4 w-4" />
-              <span className="hidden sm:inline">Sync repos</span>
-              <RefreshCw className="h-4 w-4 sm:hidden" />
-            </Button>
-          )}
         </div>
       </form>
     </div>

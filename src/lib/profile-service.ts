@@ -1,6 +1,15 @@
 import { supabase } from "@/lib/supabase";
 import type { Profile, Repository } from "@/types";
 
+export function escapeHtml(input: string): string {
+  return String(input)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function sanitizeSearchTerm(value: string): string {
   return value
     .trim()
@@ -104,10 +113,150 @@ export async function fetchRepositories(profileId: string): Promise<Repository[]
     .from("repositories")
     .select("*")
     .eq("profile_id", profileId)
+    .order("is_pinned", { ascending: false })
     .order("stars", { ascending: false });
 
   if (error) throw error;
   return (data ?? []) as Repository[];
+}
+
+export async function fetchPinnedProjects(profileId: string): Promise<Repository[]> {
+  const { data, error } = await supabase
+    .from("repositories")
+    .select("*")
+    .eq("profile_id", profileId)
+    .eq("is_pinned", true)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Repository[];
+}
+
+export async function createPinnedProject(
+  profileId: string,
+  input: { name: string; url: string; description?: string }
+): Promise<void> {
+  const { error } = await supabase.from("repositories").insert({
+    profile_id: profileId,
+    name: input.name,
+    url: input.url,
+    description: input.description ?? "",
+    language: "",
+    stars: 0,
+    is_pinned: true,
+  });
+
+  if (error) throw error;
+}
+
+export async function deleteRepository(repositoryId: string): Promise<void> {
+  const { error } = await supabase.from("repositories").delete().eq("id", repositoryId);
+  if (error) throw error;
+}
+
+type GitHubRepo = {
+  name: string;
+  description: string | null;
+  language: string | null;
+  stargazers_count: number;
+  html_url: string;
+  fork: boolean;
+};
+
+type GithubSyncResult =
+  | { ok: true; synced: number; source: "cache" | "github" }
+  | { ok: false; message: string };
+
+const GITHUB_CACHE_TTL_MS = 15 * 60 * 1000;
+
+export async function syncGithubReposToDatabase(input: {
+  githubUsername: string;
+  profileId: string;
+}): Promise<GithubSyncResult> {
+  const username = input.githubUsername.trim();
+  if (!username) return { ok: false, message: "Nom d’utilisateur GitHub manquant." };
+
+  const cacheKey = `bisomap.github.repos.${username}`;
+  const etagKey = `bisomap.github.repos.etag.${username}`;
+
+  const now = Date.now();
+  const cachedRaw = localStorage.getItem(cacheKey);
+  const cached = cachedRaw ? (JSON.parse(cachedRaw) as { ts: number; repos: GitHubRepo[] }) : null;
+
+  const shouldUseCache = cached && now - cached.ts < GITHUB_CACHE_TTL_MS;
+  const cachedEtag = localStorage.getItem(etagKey) || "";
+
+  let repos: GitHubRepo[] | null = null;
+  let source: "cache" | "github" = "github";
+
+  if (shouldUseCache) {
+    repos = cached.repos;
+    source = "cache";
+  } else {
+    const res = await fetch(
+      `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=30&sort=updated&direction=desc`,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+          "User-Agent": "BisoMapTech",
+          ...(cachedEtag ? { "If-None-Match": cachedEtag } : {}),
+        },
+      }
+    );
+
+    if (res.status === 304 && cached) {
+      repos = cached.repos;
+      source = "cache";
+    } else if (res.status === 404) {
+      return { ok: false, message: "Profil GitHub introuvable (404)." };
+    } else if (res.status === 403) {
+      const remaining = res.headers.get("x-ratelimit-remaining");
+      if (remaining === "0") {
+        return { ok: false, message: "Limite GitHub atteinte. Réessayez plus tard." };
+      }
+      return { ok: false, message: "Accès GitHub refusé (403)." };
+    } else if (!res.ok) {
+      return { ok: false, message: "Impossible de récupérer les dépôts GitHub pour le moment." };
+    } else {
+      const etag = res.headers.get("etag");
+      repos = (await res.json()) as GitHubRepo[];
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: now, repos }));
+      if (etag) localStorage.setItem(etagKey, etag);
+      source = "github";
+    }
+  }
+
+  const filteredRepos = (repos ?? [])
+    .filter((r) => !r.fork)
+    .slice(0, 10)
+    .map((r) => ({
+      profile_id: input.profileId,
+      name: r.name,
+      description: r.description || "",
+      language: r.language || "",
+      stars: r.stargazers_count,
+      url: r.html_url,
+      is_pinned: false,
+    }));
+
+  const { error: deleteError } = await supabase
+    .from("repositories")
+    .delete()
+    .eq("profile_id", input.profileId)
+    .eq("is_pinned", false);
+
+  if (deleteError) {
+    return { ok: false, message: "Impossible de mettre à jour la liste des repos." };
+  }
+
+  if (filteredRepos.length > 0) {
+    const { error: insertError } = await supabase.from("repositories").insert(filteredRepos);
+    if (insertError) {
+      return { ok: false, message: "Impossible d’enregistrer les repos GitHub." };
+    }
+  }
+
+  return { ok: true, synced: filteredRepos.length, source };
 }
 
 /**
@@ -178,14 +327,18 @@ function triggerGithubSync(githubUrl: string | undefined, userId: string) {
   const githubUsername = githubUrl.replace(/\/+$/, "").split("/").pop();
   if (!githubUsername) return;
 
-  // Fire-and-forget; failures should never block the profile save.
   supabase.functions
     .invoke("sync-github-repos", {
       body: { username: githubUsername, profile_id: userId },
     })
-    .then(() => {})
-    .catch((err) => {
-      console.warn("sync-github-repos failed (non-blocking):", err);
+    .then(({ error }) => {
+      if (!error) return;
+      if (typeof window === "undefined") return;
+      return syncGithubReposToDatabase({ githubUsername, profileId: userId }).then(() => {});
+    })
+    .catch(() => {
+      if (typeof window === "undefined") return;
+      syncGithubReposToDatabase({ githubUsername, profileId: userId }).then(() => {});
     });
 }
 

@@ -13,26 +13,26 @@ const TILE_ATTRIBUTION =
 const CONGO_CENTER: L.LatLngExpression = [-2.8, 15.2];
 const CONGO_ZOOM = 6;
 
-function createMarkerIcon(isCollaborating: boolean) {
+function createMarkerIcon(isCollaborating: boolean, isFocused: boolean) {
   if (isCollaborating) {
     return L.divIcon({
       html: `
         <div style="position:relative;width:12px;height:12px;display:flex;align-items:center;justify-content:center;">
-          <div style="background:#10b981;width:12px;height:12px;border-radius:50%;border:2px solid #ffffff;box-shadow:0 0 8px rgba(16,185,129,0.6);position:absolute;z-index:2;"></div>
-          <div style="background:rgba(16,185,129,0.35);width:22px;height:22px;border-radius:50%;position:absolute;z-index:1;animation:pulseMarker 1.8s infinite ease-in-out;"></div>
+          <div style="background:#10b981;width:12px;height:12px;border-radius:50%;border:2px solid #ffffff;box-shadow:${isFocused ? "0 0 0 4px rgba(16,185,129,0.25), 0 0 10px rgba(16,185,129,0.8)" : "0 0 8px rgba(16,185,129,0.6)"};position:absolute;z-index:2;"></div>
+          <div style="background:rgba(16,185,129,0.35);width:${isFocused ? "30px" : "22px"};height:${isFocused ? "30px" : "22px"};border-radius:50%;position:absolute;z-index:1;animation:pulseMarker 1.8s infinite ease-in-out;"></div>
         </div>
       `,
       className: "custom-marker-collaborating",
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
+      iconSize: [isFocused ? 30 : 22, isFocused ? 30 : 22],
+      iconAnchor: [isFocused ? 15 : 11, isFocused ? 15 : 11],
       popupAnchor: [0, -10],
     });
   }
   return L.divIcon({
-    html: `<div style="background:#6b7280;width:10px;height:10px;border-radius:50%;border:2.5px solid #ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>`,
+    html: `<div style="background:#6b7280;width:10px;height:10px;border-radius:50%;border:2.5px solid #ffffff;box-shadow:${isFocused ? "0 0 0 4px rgba(16,185,129,0.20), 0 1px 3px rgba(0,0,0,0.35)" : "0 1px 3px rgba(0,0,0,0.3)"}"></div>`,
     className: "custom-marker",
-    iconSize: [10, 10],
-    iconAnchor: [5, 5],
+    iconSize: [isFocused ? 18 : 10, isFocused ? 18 : 10],
+    iconAnchor: [isFocused ? 9 : 5, isFocused ? 9 : 5],
     popupAnchor: [0, -8],
   });
 }
@@ -153,7 +153,7 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
       if (!profile.latitude || !profile.longitude) return;
 
       const marker = L.marker([profile.latitude, profile.longitude], {
-        icon: createMarkerIcon(profile.open_to_collaboration),
+        icon: createMarkerIcon(profile.open_to_collaboration, profile.id === focusedProfileId),
       });
 
       const safeName = escapeHtml(profile.full_name);
@@ -196,7 +196,7 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
       markersRef.current!.addLayer(marker);
       markersMapRef.current.set(profile.id, marker);
     });
-  }, [profiles, onProfileClick]);
+  }, [profiles, onProfileClick, focusedProfileId]);
 
   useEffect(() => {
     if (!focusedProfileId || !mapRef.current || !markersMapRef.current) return;
