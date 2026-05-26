@@ -637,23 +637,45 @@ export function MessagesPage() {
 
   async function fetchMessages(partnerId: string) {
     if (!user) return;
-    const { data } = await supabase
-      .from("messages")
-      .select("*")
-      .or(
-        `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`
-      )
-      .order("created_at", { ascending: true });
     
-    const rawMsgs = (data || []) as Message[];
-    const conv = conversations.find((c) => c.partnerId === partnerId);
+    // On récupère en parallèle les messages et les connexions acceptées pour éviter
+    // tout problème de concurrence temporelle (race condition) avec l'état local.
+    const [msgsRes, conns] = await Promise.all([
+      supabase
+        .from("messages")
+        .select("*")
+        .or(
+          `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`
+        )
+        .order("created_at", { ascending: true }),
+      listAcceptedConnections(user.id)
+    ]);
     
-    if (conv?.partnerPublicKey) {
+    const rawMsgs = (msgsRes.data || []) as Message[];
+    
+    // Trouver la connexion pour ce correspondant
+    const conn = conns.find((c) => partnerOf(user.id, c)?.id === partnerId);
+    let partnerPublicKey = conn ? partnerOf(user.id, conn)?.e2ee_public_key : null;
+    
+    // Auto-guérison : si la clé est absente mais qu'il y a des messages chiffrés,
+    // on interroge le profil en temps réel dans la table.
+    if (!partnerPublicKey && rawMsgs.some(m => m.is_encrypted)) {
+      try {
+        const profile = await fetchProfileById(partnerId);
+        if (profile?.e2ee_public_key) {
+          partnerPublicKey = profile.e2ee_public_key;
+        }
+      } catch (err) {
+        console.warn("Failed to fetch partner's updated E2EE key:", err);
+      }
+    }
+
+    if (partnerPublicKey) {
       const decMsgs = await Promise.all(
         rawMsgs.map(async (msg) => {
           if (!msg.is_encrypted) return msg;
           try {
-            const plain = await decryptText(msg.content, conv.partnerPublicKey!, msg.encryption_iv!);
+            const plain = await decryptText(msg.content, partnerPublicKey!, msg.encryption_iv!);
             return { ...msg, content: plain };
           } catch {
             return { ...msg, content: "🔒 [Message chiffré - Clé indisponible]" };
