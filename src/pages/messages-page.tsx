@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Send, ArrowLeft, MessageSquare, Flag, Check, X, UserPlus, CheckCheck } from "lucide-react";
+import { Send, ArrowLeft, MessageSquare, Flag, Check, X, UserPlus, CheckCheck, Paperclip, Mic, ShieldAlert, ShieldCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,6 +16,14 @@ import {
   partnerOf,
 } from "@/lib/connection-service";
 import { fetchProfileById, fetchProfileByUsername } from "@/lib/profile-service";
+import {
+  hasE2EELocalKey,
+  generateE2EEKeyPair,
+  encryptText,
+  decryptText,
+  encryptFile,
+  decryptFile,
+} from "@/lib/e2ee-service";
 import type { ConnectionWithProfiles } from "@/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -31,6 +39,13 @@ interface Message {
   content: string;
   read_at: string | null;
   created_at: string;
+  is_encrypted?: boolean;
+  encryption_iv?: string | null;
+  attachment_url?: string | null;
+  attachment_type?: "image" | "pdf" | "voice" | null;
+  attachment_name?: string | null;
+  attachment_iv?: string | null;
+  attachment_key?: string | null;
 }
 
 interface Conversation {
@@ -42,6 +57,7 @@ interface Conversation {
   lastMessageAt: string;
   unread: number;
   hasMessages: boolean;
+  partnerPublicKey?: string;
 }
 
 function buildConversations(
@@ -64,6 +80,7 @@ function buildConversations(
       lastMessageAt: conn.updated_at,
       unread: 0,
       hasMessages: false,
+      partnerPublicKey: partner.e2ee_public_key || undefined,
     });
   }
 
@@ -98,6 +115,138 @@ function buildConversations(
   );
 }
 
+interface AttachmentRendererProps {
+  message: Message;
+  partnerPublicKey?: string;
+}
+
+function AttachmentRenderer({ message, partnerPublicKey }: AttachmentRendererProps) {
+  const [decryptedUrl, setDecryptedUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!message.attachment_url) return;
+    
+    // If it's not encrypted, we can just use the public url directly!
+    if (!message.attachment_key || !partnerPublicKey) {
+      setDecryptedUrl(message.attachment_url);
+      return;
+    }
+
+    let active = true;
+    setLoading(true);
+    setError(false);
+
+    (async () => {
+      try {
+        const res = await fetch(message.attachment_url!);
+        if (!res.ok) throw new Error("Téléchargement échoué");
+        const encryptedBlob = await res.blob();
+        
+        let mime = "application/octet-stream";
+        if (message.attachment_type === "image") {
+          mime = "image/jpeg";
+        } else if (message.attachment_type === "pdf") {
+          mime = "application/pdf";
+        } else if (message.attachment_type === "voice") {
+          mime = "audio/webm";
+        }
+
+        const decrypted = await decryptFile(
+          encryptedBlob,
+          partnerPublicKey,
+          message.attachment_iv!,
+          message.attachment_key!,
+          mime
+        );
+        
+        if (active) {
+          const url = URL.createObjectURL(decrypted);
+          setDecryptedUrl(url);
+        }
+      } catch (err) {
+        console.warn("Échec de déchiffrement de la pièce jointe", err);
+        if (active) setError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+      if (decryptedUrl && decryptedUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(decryptedUrl);
+      }
+    };
+  }, [message.attachment_url, message.attachment_key, partnerPublicKey]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-white/3 p-3 text-xs text-muted-foreground mt-1.5">
+        <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+        Déchiffrement sécurisé du fichier...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive mt-1.5">
+        <ShieldAlert className="h-4 w-4 shrink-0" />
+        Échec de déchiffrement de la pièce jointe
+      </div>
+    );
+  }
+
+  if (!decryptedUrl) return null;
+
+  if (message.attachment_type === "image") {
+    return (
+      <div className="relative mt-1.5 overflow-hidden rounded-xl border border-white/10 bg-black/20 max-w-[280px]">
+        <img
+          src={decryptedUrl}
+          alt={message.attachment_name || "Pièce jointe"}
+          className="max-h-60 w-full object-cover rounded-xl transition-all hover:scale-[1.02] cursor-pointer"
+          onClick={() => window.open(decryptedUrl, "_blank")}
+        />
+      </div>
+    );
+  }
+
+  if (message.attachment_type === "pdf") {
+    return (
+      <a
+        href={decryptedUrl}
+        download={message.attachment_name || "document.pdf"}
+        className="flex items-center gap-3 mt-1.5 rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/8 transition-colors max-w-[280px] text-left"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-400">
+          <Paperclip className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-semibold text-foreground">{message.attachment_name}</p>
+          <p className="text-[10px] text-muted-foreground">Document PDF chiffré</p>
+        </div>
+      </a>
+    );
+  }
+
+  if (message.attachment_type === "voice") {
+    return (
+      <div className="mt-1.5 flex flex-col gap-1 rounded-xl border border-white/10 bg-white/5 p-2.5 min-w-[240px]">
+        <div className="flex items-center gap-2">
+          <Mic className="h-4 w-4 text-primary shrink-0 animate-pulse" />
+          <span className="text-[11px] font-semibold text-foreground">Message vocal sécurisé</span>
+        </div>
+        <audio src={decryptedUrl} controls className="w-full mt-1.5 h-8 bg-transparent" />
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export function MessagesPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -108,12 +257,25 @@ export function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [requests, setRequests] = useState<ConnectionWithProfiles[]>([]);
   const [connectedPartnerIds, setConnectedPartnerIds] = useState<string[]>([]);
-  const [selectedPartner, setSelectedPartner] = useState<string | null>(null);
+  const [selectedPartner, setSelectedPartner] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("bisomap.last.active.chat");
+    }
+    return null;
+  });
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // States for audio recording and file uploads
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingTimerRef = useRef<any | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileTypeToSend, setFileTypeToSend] = useState<"image" | "pdf">("image");
 
   useEffect(() => {
     if (!user) {
@@ -121,6 +283,44 @@ export function MessagesPage() {
       return;
     }
     fetchAll();
+  }, [user]);
+
+  // Save selectedPartner in localStorage to persist the active conversation
+  useEffect(() => {
+    if (selectedPartner) {
+      localStorage.setItem("bisomap.last.active.chat", selectedPartner);
+    } else {
+      localStorage.removeItem("bisomap.last.active.chat");
+    }
+  }, [selectedPartner]);
+
+  // Auto-initialize E2EE cryptographic keys on login
+  useEffect(() => {
+    if (!user) return;
+    
+    (async () => {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("e2ee_public_key")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        const hasLocal = await hasE2EELocalKey();
+
+        // If no local key exists OR if the profile doesn't have a public key, we generate a new pair!
+        if (!hasLocal || !profile?.e2ee_public_key) {
+          const { publicKeyJWK } = await generateE2EEKeyPair();
+          await supabase
+            .from("profiles")
+            .update({ e2ee_public_key: publicKeyJWK })
+            .eq("id", user.id);
+          console.info("[E2EE] Clés initialisées avec succès.");
+        }
+      } catch (err) {
+        console.warn("[E2EE] Échec de l'initialisation automatique :", err);
+      }
+    })();
   }, [user]);
 
   // Auto-scroll to bottom when messages change
@@ -250,8 +450,30 @@ export function MessagesPage() {
         listIncomingRequests(user.id),
       ]);
 
-      const msgs = (msgsRes.data || []) as Message[];
-      setConversations(buildConversations(conns, msgs, user.id));
+      const rawMsgs = (msgsRes.data || []) as Message[];
+      
+      // Déchiffrer les messages de la barre latérale pour afficher les aperçus en clair.
+      const decryptedMsgs = await Promise.all(
+        rawMsgs.map(async (msg) => {
+          if (!msg.is_encrypted) return msg;
+          const isSent = msg.sender_id === user.id;
+          const partnerId = isSent ? msg.receiver_id : msg.sender_id;
+          const conn = conns.find((c) => partnerOf(user.id, c)?.id === partnerId);
+          const partnerKey = conn ? partnerOf(user.id, conn)?.e2ee_public_key : null;
+          
+          if (partnerKey) {
+            try {
+              const plain = await decryptText(msg.content, partnerKey, msg.encryption_iv!);
+              return { ...msg, content: plain };
+            } catch {
+              return { ...msg, content: "🔒 [Message chiffré]" };
+            }
+          }
+          return { ...msg, content: "🔒 [Message chiffré]" };
+        })
+      );
+
+      setConversations(buildConversations(conns, decryptedMsgs, user.id));
       setRequests(reqs);
       setConnectedPartnerIds(
         conns
@@ -275,7 +497,26 @@ export function MessagesPage() {
         `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`
       )
       .order("created_at", { ascending: true });
-    setMessages((data || []) as Message[]);
+    
+    const rawMsgs = (data || []) as Message[];
+    const conv = conversations.find((c) => c.partnerId === partnerId);
+    
+    if (conv?.partnerPublicKey) {
+      const decMsgs = await Promise.all(
+        rawMsgs.map(async (msg) => {
+          if (!msg.is_encrypted) return msg;
+          try {
+            const plain = await decryptText(msg.content, conv.partnerPublicKey!, msg.encryption_iv!);
+            return { ...msg, content: plain };
+          } catch {
+            return { ...msg, content: "🔒 [Message chiffré - Clé indisponible]" };
+          }
+        })
+      );
+      setMessages(decMsgs);
+    } else {
+      setMessages(rawMsgs);
+    }
   }
 
   async function markAsRead(partnerId: string) {
@@ -297,11 +538,30 @@ export function MessagesPage() {
       return;
     }
     setIsSending(true);
-    const { error } = await supabase.from("messages").insert({
+
+    const conv = conversations.find((c) => c.partnerId === selectedPartner);
+    const payload: Partial<Message> = {
       sender_id: user.id,
       receiver_id: selectedPartner,
-      content: content.slice(0, MAX_MESSAGE_LENGTH),
-    });
+    };
+
+    if (conv?.partnerPublicKey) {
+      try {
+        const { cipherText, iv } = await encryptText(content, conv.partnerPublicKey);
+        payload.content = cipherText;
+        payload.is_encrypted = true;
+        payload.encryption_iv = iv;
+      } catch (err) {
+        toast.error("Échec du chiffrement du message.");
+        setIsSending(false);
+        return;
+      }
+    } else {
+      payload.content = content;
+      payload.is_encrypted = false;
+    }
+
+    const { error } = await supabase.from("messages").insert(payload);
     if (error) {
       const msg = error.message || "Erreur lors de l'envoi du message";
       if (/row level security|rls/i.test(msg)) {
@@ -316,7 +576,7 @@ export function MessagesPage() {
       // Fire-and-forget email notification (non-blocking).
       supabase.functions
         .invoke("send-message-notification", {
-          body: { sender_id: user.id, receiver_id: selectedPartner, content },
+          body: { sender_id: user.id, receiver_id: selectedPartner, content: conv?.partnerPublicKey ? "🔒 [Message chiffré]" : content },
         })
         .catch((err) => console.error("Email notification error:", err));
     }
@@ -348,6 +608,170 @@ export function MessagesPage() {
       await fetchAll();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Une erreur est survenue");
+    }
+  }
+
+  // Audio recording helpers
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: "audio/webm" });
+        const audioFile = new File([audioBlob], "note-vocale.webm", { type: "audio/webm" });
+        await sendAttachment(audioFile, "voice");
+        
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      setMediaRecorder(recorder);
+      recorder.start();
+      setIsRecording(true);
+      setRecordingDuration(0);
+      
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      toast.error("Impossible d'accéder au microphone.");
+    }
+  }
+
+  function stopRecording(cancel = false) {
+    if (!mediaRecorder) return;
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
+
+    if (cancel) {
+      mediaRecorder.ondataavailable = null;
+      mediaRecorder.onstop = null;
+      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+      setIsRecording(false);
+      setMediaRecorder(null);
+      return;
+    }
+
+    mediaRecorder.stop();
+    setIsRecording(false);
+    setMediaRecorder(null);
+  }
+
+  // File selection triggers
+  function triggerFileSelect(type: "image" | "pdf") {
+    setFileTypeToSend(type);
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 10);
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !selectedPartner || !user) return;
+
+    const limit = fileTypeToSend === "image" ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > limit) {
+      toast.error(`Fichier trop volumineux. Max ${fileTypeToSend === "image" ? "5 Mo" : "10 Mo"}.`);
+      return;
+    }
+
+    await sendAttachment(file, fileTypeToSend);
+    if (e.target) e.target.value = ""; // Reset
+  }
+
+  // Send Attachment (Photo, PDF, Voice Note) local encryption & Storage upload
+  async function sendAttachment(file: File, type: "image" | "pdf" | "voice") {
+    if (!selectedPartner || !user) return;
+    setIsSending(true);
+
+    const conv = conversations.find((c) => c.partnerId === selectedPartner);
+    const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+    const path = `${user.id}/${Date.now()}_${cleanName}`;
+
+    let uploadedUrl = "";
+    let fileIv = "";
+    let wrappedFileKey = "";
+
+    try {
+      if (conv?.partnerPublicKey) {
+        toast.info("Chiffrement local de la pièce jointe...");
+        const { encryptedBlob, fileIv: iv, wrappedFileKey: key } = await encryptFile(file, conv.partnerPublicKey);
+        fileIv = iv;
+        wrappedFileKey = key;
+
+        const { error: uploadError } = await supabase.storage
+          .from("message-attachments")
+          .upload(path, encryptedBlob, {
+            contentType: "application/octet-stream",
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+      } else {
+        const { error: uploadError } = await supabase.storage
+          .from("message-attachments")
+          .upload(path, file, {
+            contentType: file.type,
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+      }
+
+      const { data: publicData } = supabase.storage
+        .from("message-attachments")
+        .getPublicUrl(path);
+
+      if (!publicData?.publicUrl) {
+        throw new Error("Impossible de générer l'URL de téléchargement.");
+      }
+      uploadedUrl = publicData.publicUrl;
+
+      const payload: Partial<Message> = {
+        sender_id: user.id,
+        receiver_id: selectedPartner,
+        attachment_url: uploadedUrl,
+        attachment_type: type,
+        attachment_name: file.name,
+      };
+
+      if (conv?.partnerPublicKey) {
+        const { cipherText, iv } = await encryptText(`[Fichier joint: ${file.name}]`, conv.partnerPublicKey);
+        payload.content = cipherText;
+        payload.is_encrypted = true;
+        payload.encryption_iv = iv;
+        payload.attachment_iv = fileIv;
+        payload.attachment_key = wrappedFileKey;
+      } else {
+        payload.content = `[Fichier joint: ${file.name}]`;
+        payload.is_encrypted = false;
+      }
+
+      const { error: insertError } = await supabase.from("messages").insert(payload);
+      if (insertError) throw insertError;
+
+      toast.success("Pièce jointe envoyée !");
+      await fetchMessages(selectedPartner);
+
+      // Notify via edge function
+      supabase.functions
+        .invoke("send-message-notification", {
+          body: { sender_id: user.id, receiver_id: selectedPartner, content: `[Pièce jointe: ${file.name}]` },
+        })
+        .catch(() => {});
+    } catch (err) {
+      console.error("sendAttachment failed:", err);
+      toast.error(err instanceof Error ? err.message : "Échec de l'envoi.");
+    } finally {
+      setIsSending(false);
     }
   }
 
@@ -517,7 +941,20 @@ export function MessagesPage() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{selectedConv.partnerName}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-foreground truncate">{selectedConv.partnerName}</p>
+                    {selectedConv.partnerPublicKey ? (
+                      <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400 border border-emerald-500/20" title="Chiffrement de bout en bout (E2EE) activé">
+                        <ShieldCheck className="h-3 w-3 shrink-0" />
+                        E2EE
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-amber-400 border border-amber-500/20" title="Chiffrement standard SSL/TLS en cours">
+                        <ShieldAlert className="h-3 w-3 shrink-0" />
+                        Standard
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11px] text-muted-foreground">@{selectedConv.partnerUsername}</p>
                 </div>
               </div>
@@ -569,7 +1006,15 @@ export function MessagesPage() {
                                 ? "rounded-tr-sm bg-primary text-primary-foreground"
                                 : "rounded-tl-sm bg-white/8 border border-white/10 text-foreground"
                             )}>
-                              {msg.content}
+                              {!msg.content.startsWith("[Fichier joint:") && (
+                                <p>{msg.content}</p>
+                              )}
+                              {msg.attachment_url && (
+                                <AttachmentRenderer
+                                  message={msg}
+                                  partnerPublicKey={selectedConv?.partnerPublicKey}
+                                />
+                              )}
                             </div>
                             <div className="flex items-center gap-1.5 mt-1 px-1">
                               <p className="text-[10px] text-muted-foreground/60">
@@ -611,18 +1056,86 @@ export function MessagesPage() {
                 onSubmit={handleSend}
                 className="flex flex-shrink-0 items-center gap-2 border-t border-white/8 p-3"
               >
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Votre message..."
-                  maxLength={MAX_MESSAGE_LENGTH}
-                  disabled={isSending || !canReply}
-                  className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  style={{ display: "none" }}
+                  accept="image/*,application/pdf"
                 />
+
+                {!isRecording && (
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => triggerFileSelect("image")}
+                      disabled={isSending || !canReply}
+                      className="h-9 w-9 p-0 hover:bg-white/5 text-muted-foreground hover:text-foreground"
+                      title="Envoyer une photo ou un document"
+                    >
+                      <Paperclip className="h-4.5 w-4.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={startRecording}
+                      disabled={isSending || !canReply}
+                      className="h-9 w-9 p-0 hover:bg-white/5 text-muted-foreground hover:text-foreground"
+                      title="Enregistrer un message vocal"
+                    >
+                      <Mic className="h-4.5 w-4.5" />
+                    </Button>
+                  </div>
+                )}
+
+                {isRecording ? (
+                  <div className="flex flex-1 items-center justify-between rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                    <div className="flex items-center gap-2">
+                      <Mic className="h-4 w-4 text-red-500 animate-pulse" />
+                      <span className="font-semibold">
+                        Micro actif ({Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")})
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => stopRecording(true)}
+                        className="h-7 text-[11px] text-muted-foreground hover:text-destructive hover:bg-white/5"
+                      >
+                        Annuler
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => stopRecording(false)}
+                        className="h-7 bg-red-500 text-white hover:bg-red-600 px-3 text-[11px]"
+                      >
+                        Envoyer
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Votre message..."
+                    maxLength={MAX_MESSAGE_LENGTH}
+                    disabled={!canReply}
+                    readOnly={isSending}
+                    className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                  />
+                )}
+
                 <Button
                   type="submit"
                   size="sm"
-                  disabled={!newMessage.trim() || isSending || !canReply}
+                  disabled={!newMessage.trim() || isSending || !canReply || isRecording}
                   className="h-9 w-9 shrink-0 p-0 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <Send className="h-4 w-4" />

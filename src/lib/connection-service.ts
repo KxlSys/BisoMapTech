@@ -6,7 +6,7 @@ import type {
   ConnectionWithProfiles,
 } from "@/types";
 
-const PARTNER_FIELDS = "id, username, full_name, avatar_url";
+const PARTNER_FIELDS = "id, username, full_name, avatar_url, e2ee_public_key";
 
 /**
  * Derive the connection state between the current user and another member.
