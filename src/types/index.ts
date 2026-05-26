@@ -77,6 +77,7 @@ export interface Profile {
   created_at: string;
   updated_at: string;
   last_seen_at?: string;
+  e2ee_public_key?: string;
 }
 
 export interface Repository {
@@ -130,6 +131,13 @@ export interface Message {
   read_at: string | null;
 
   created_at: string;
+  is_encrypted?: boolean;
+  encryption_iv?: string | null;
+  attachment_url?: string | null;
+  attachment_type?: "image" | "pdf" | "voice" | null;
+  attachment_name?: string | null;
+  attachment_iv?: string | null;
+  attachment_key?: string | null;
 }
 
 export type ConnectionStatus = "pending" | "accepted";
@@ -156,7 +164,7 @@ export type ConnectionState =
 
 export type ConnectionPartner = Pick<
   Profile,
-  "id" | "username" | "full_name" | "avatar_url"
+  "id" | "username" | "full_name" | "avatar_url" | "e2ee_public_key"
 >;
 
 export interface ConnectionWithProfiles extends Connection {

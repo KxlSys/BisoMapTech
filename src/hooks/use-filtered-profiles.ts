@@ -167,6 +167,7 @@ export function useFilteredProfiles(
     experienceLevel,
     techStack,
     openToCollaboration,
+    sortBy,
   } = useFilterStore();
 
   const fetchData = useCallback(async () => {
@@ -221,24 +222,36 @@ export function useFilteredProfiles(
           openToCollaboration,
         });
 
-      if (result.total === 0) {
-        const mock =
-          filterMockProfiles(mockArgs);
+      const raw =
+        result.total === 0
+          ? filterMockProfiles(mockArgs)
+          : { profiles: result.profiles, total: result.total };
 
-        setProfiles(mock.profiles);
-
-        setTotal(mock.total);
-      } else {
-        setProfiles(result.profiles);
-
-        setTotal(result.total);
+      const sorted = [...raw.profiles];
+      if (sortBy === "available_first") {
+        sorted.sort((a, b) => {
+          if (a.open_to_collaboration === b.open_to_collaboration) return 0;
+          return a.open_to_collaboration ? -1 : 1;
+        });
+      } else if (sortBy === "recent") {
+        sorted.sort(
+          (a, b) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
       }
+
+      setProfiles(sorted);
+      setTotal(raw.total);
     } catch {
-      const mock =
-        filterMockProfiles(mockArgs);
-
-      setProfiles(mock.profiles);
-
+      const mock = filterMockProfiles(mockArgs);
+      const sorted = [...mock.profiles];
+      if (sortBy === "available_first") {
+        sorted.sort((a, b) => {
+          if (a.open_to_collaboration === b.open_to_collaboration) return 0;
+          return a.open_to_collaboration ? -1 : 1;
+        });
+      }
+      setProfiles(sorted);
       setTotal(mock.total);
     } finally {
       setIsLoading(false);
@@ -257,6 +270,7 @@ export function useFilteredProfiles(
     techStack,
 
     openToCollaboration,
+    sortBy,
   ]);
 
   useEffect(() => {
