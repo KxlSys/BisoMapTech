@@ -1327,6 +1327,19 @@ export function MessagesPage() {
                     <p className="text-[11px] text-muted-foreground">@{selectedConv.partnerUsername}</p>
                   </div>
                 </Link>
+                {selectedConv.partnerPublicKey && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleE2EEReset}
+                    className="h-8 gap-1.5 border border-white/10 bg-white/5 text-xs text-muted-foreground hover:bg-white/8 hover:text-foreground shrink-0 mr-2"
+                    title="Options de sécurité E2EE (Réinitialiser les clés)"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="hidden sm:inline">Options de sécurité</span>
+                  </Button>
+                )}
               </div>
 
               {/* Messages */}
