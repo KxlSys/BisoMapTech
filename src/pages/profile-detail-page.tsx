@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Flame,
   Zap,
-  Github,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -236,7 +235,7 @@ export function ProfileDetailPage() {
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
                   >
-                    <Github className="h-3.5 w-3.5" />
+                    <GitBranch className="h-3.5 w-3.5" />
                     {githubUsername || "GitHub"}
                     <ExternalLink className="h-3 w-3" />
                   </a>
@@ -285,7 +284,7 @@ export function ProfileDetailPage() {
             </div>
           </div>
 
-          {/* Arsenal Technique — real badges, no fake percentages */}
+          {/* Arsenal Technique */}
           {profile.tech_stack.length > 0 && (
             <div className="glass-panel rounded-2xl border border-white/10 p-5">
               <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -307,7 +306,7 @@ export function ProfileDetailPage() {
 
         {/* Right panel */}
         <div className="flex flex-col gap-4">
-          {/* Contribution heatmap — données réelles GitHub */}
+          {/* Contribution heatmap */}
           <div className="glass-panel rounded-2xl border border-white/10 p-5">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -402,7 +401,6 @@ export function ProfileDetailPage() {
 
       {/* ===== MOBILE LAYOUT ===== */}
       <div className="lg:hidden">
-        {/* Mobile header card */}
         <div className="glass-panel rounded-2xl border border-white/10 p-5 mb-4">
           <div className="flex items-start gap-4">
             <div className="relative shrink-0">
@@ -430,7 +428,6 @@ export function ProfileDetailPage() {
             </div>
           </div>
 
-          {/* Stats row — pas de "0+" si vide */}
           <div className="mt-4 grid grid-cols-3 gap-2">
             <div className="rounded-lg border border-white/10 bg-white/5 py-2 text-center">
               <p className="text-base font-bold text-foreground">
@@ -452,7 +449,6 @@ export function ProfileDetailPage() {
             </div>
           </div>
 
-          {/* Action buttons */}
           {!isOwnProfile && (
             <div className="mt-4 flex gap-2">
               <ConnectionActions
@@ -465,7 +461,6 @@ export function ProfileDetailPage() {
           )}
         </div>
 
-        {/* Tabs */}
         <div className="mb-4 flex rounded-xl border border-white/10 bg-white/5 p-1">
           {TABS.map((tab) => (
             <button
@@ -483,7 +478,6 @@ export function ProfileDetailPage() {
           ))}
         </div>
 
-        {/* Tab: Biographie */}
         {activeTab === "biographie" && (
           <div className="space-y-3">
             {profile.bio && (
@@ -503,8 +497,6 @@ export function ProfileDetailPage() {
                 {profile.city || "Congo-Brazzaville"}
               </div>
             </div>
-
-            {/* Heatmap GitHub — visible sur mobile */}
             <div className="glass-panel rounded-xl border border-white/10 p-4">
               <div className="mb-3 flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" />
@@ -514,7 +506,6 @@ export function ProfileDetailPage() {
               </div>
               <GithubHeatmap githubUsername={githubUsername} />
             </div>
-
             {profile.github_url && (
               <div className="glass-panel rounded-xl border border-white/10 p-4">
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -526,7 +517,7 @@ export function ProfileDetailPage() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  <Github className="h-4 w-4" />
+                  <GitBranch className="h-4 w-4" />
                   {githubUsername || "GitHub"}
                   <ExternalLink className="ml-auto h-3.5 w-3.5" />
                 </a>
@@ -535,7 +526,6 @@ export function ProfileDetailPage() {
           </div>
         )}
 
-        {/* Tab: Arsenal — badges honnêtes */}
         {activeTab === "arsenal" && (
           <div className="glass-panel rounded-xl border border-white/10 p-4">
             <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -558,7 +548,6 @@ export function ProfileDetailPage() {
           </div>
         )}
 
-        {/* Tab: Projets */}
         {activeTab === "projets" && (
           <div className="space-y-3">
             {repos.length === 0 ? (
