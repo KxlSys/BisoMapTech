@@ -35,8 +35,10 @@ const ROLE_ICONS: Record<string, string> = {
 
 export function FilterPanel({
   compact = false,
+  hideSearch = false,
 }: {
   compact?: boolean;
+  hideSearch?: boolean;
 }) {
   const {
     searchQuery,
@@ -58,7 +60,6 @@ export function FilterPanel({
 
   const { cities, departments } = useLocations();
 
-  // Accordion state
   const [isRoleOpen, setIsRoleOpen] = useState(true);
   const [isLevelOpen, setIsLevelOpen] = useState(!!experienceLevel);
   const [isLocationOpen, setIsLocationOpen] = useState(
@@ -97,7 +98,6 @@ export function FilterPanel({
         !compact && "glass-panel rounded-xl border border-white/10 p-4"
       )}
     >
-      {/* Header */}
       {!compact && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -126,7 +126,6 @@ export function FilterPanel({
         </div>
       )}
 
-      {/* Compact reset button */}
       {compact && hasActiveFilters && (
         <div className="flex justify-end">
           <Button
@@ -141,18 +140,18 @@ export function FilterPanel({
         </div>
       )}
 
-      {/* Search Bar - Always Visible */}
-      <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Rechercher nom, compétence..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-white/5 border-white/10 pl-8 h-9 text-sm placeholder:text-muted-foreground/60 focus-visible:ring-primary/30"
-        />
-      </div>
+      {!hideSearch && (
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher nom, compétence..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-white/5 border-white/10 pl-8 h-9 text-sm placeholder:text-muted-foreground/60 focus-visible:ring-primary/30"
+          />
+        </div>
+      )}
 
-      {/* Accordion 1: Type de rôle */}
       <div className="border border-white/8 rounded-xl bg-white/5 overflow-hidden transition-all duration-200">
         <button
           onClick={() => setIsRoleOpen(!isRoleOpen)}
@@ -206,7 +205,6 @@ export function FilterPanel({
         )}
       </div>
 
-      {/* Accordion 2: Niveau d'expérience */}
       <div className="border border-white/8 rounded-xl bg-white/5 overflow-hidden transition-all duration-200">
         <button
           onClick={() => setIsLevelOpen(!isLevelOpen)}
@@ -258,7 +256,6 @@ export function FilterPanel({
         )}
       </div>
 
-      {/* Accordion 3: Localisation */}
       <div className="border border-white/8 rounded-xl bg-white/5 overflow-hidden transition-all duration-200">
         <button
           onClick={() => setIsLocationOpen(!isLocationOpen)}
@@ -283,7 +280,6 @@ export function FilterPanel({
 
         {isLocationOpen && (
           <div className="px-2.5 pb-2.5 pt-2 border-t border-white/5 bg-white/[0.02] space-y-2.5">
-            {/* Département */}
             <div className="space-y-1">
               <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/80">
                 Département
@@ -320,7 +316,6 @@ export function FilterPanel({
               </div>
             </div>
 
-            {/* City */}
             <div className="space-y-1">
               <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/80">
                 Ville
