@@ -30,6 +30,7 @@ export type RoleType =
   | "product"
   | "enseignement"
   | "nocode"
+  | "vibecoder"
   | "autre";
 
 export type ExperienceLevel =

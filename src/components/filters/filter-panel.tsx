@@ -29,6 +29,7 @@ const ROLE_ICONS: Record<string, string> = {
   product: "PM",
   enseignement: "ED",
   nocode: "NC",
+  vibecoder: "VC",
   autre: "AU",
 };
 

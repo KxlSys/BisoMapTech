@@ -329,6 +329,25 @@ export const TECH_CATEGORIES: readonly TechCategory[] = [
     description: "Utilitaires partagés à toutes les disciplines",
     techs: ["Git", "GitHub", "GitLab", "Bitbucket"],
   },
+  {
+    id: "vibecoding",
+    label: "Vibe Coding & IA",
+    description: "Développement assisté par IA, prompting, outils génératifs",
+    techs: [
+      "GitHub Copilot",
+      "Cursor",
+      "Windsurf",
+      "Bolt.new",
+      "v0",
+      "Claude Code",
+      "Lovable",
+      "Replit AI",
+      "Codeium",
+      "Tabnine",
+      "Prompt Engineering",
+      "LLM Integration",
+    ],
+  },
 ] as const;
 
 // Flatten into a single sorted+deduplicated list. The order of categories
@@ -367,6 +386,7 @@ export const ROLE_TYPE_LABELS: Record<string, string> = {
   product: "Gestion de projet / Product",
   enseignement: "Enseignement / Formation",
   nocode: "No-code / Automatisation",
+  vibecoder: "Vibe-coder",
   autre: "Autre",
 };
 
@@ -388,6 +408,7 @@ export const DB_ROLE_TYPES = [
   "product",
   "nocode",
   "enseignement",
+  "vibecoder",
   "autre",
 ] as const;
 
