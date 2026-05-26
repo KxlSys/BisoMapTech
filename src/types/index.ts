@@ -228,6 +228,42 @@ export interface Place {
   updated_at: string;
 }
 
+export type ProjectAuthor = Pick<
+  Profile,
+  "id" | "username" | "full_name" | "avatar_url"
+>;
+
+export interface Project {
+  id: string;
+
+  title: string;
+  description: string;
+
+  tech_stack: string[];
+
+  budget: string;
+  duration: string;
+  collab_mode: string;
+
+  open_to_collaboration: boolean;
+
+  location: string;
+  project_type: string;
+  priority: string;
+
+  author_id: string;
+  author?: ProjectAuthor;
+
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectMatch {
+  project: Project;
+  score: number;
+  reasons: string[];
+}
+
 export interface ProjectMember {
   project_id: string;
   profile_id: string;
