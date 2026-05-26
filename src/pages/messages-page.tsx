@@ -160,8 +160,13 @@ export function MessagesPage() {
   useEffect(() => {
     if (!user) return;
 
+    // Unique topic per subscription: supabase.channel() reuses a channel with
+    // the same topic, and removeChannel() only detaches it asynchronously, so a
+    // re-subscribe (deps change / remount) could hit an already-joined channel
+    // and throw "cannot add postgres_changes callbacks after subscribe()".
+    const topic = `messages-realtime-${user.id}-${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(`messages-realtime-${user.id}`)
+      .channel(topic)
       .on(
         "postgres_changes",
         {

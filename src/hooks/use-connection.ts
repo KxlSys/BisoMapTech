@@ -56,8 +56,13 @@ export function useConnection(otherId: string | undefined | null): UseConnection
   useEffect(() => {
     if (!user || !otherId) return;
 
+    // Unique topic per subscription: supabase.channel() reuses an existing
+    // channel with the same topic, and this hook is mounted more than once on
+    // the profile page (desktop + mobile layouts). A shared topic would make
+    // the second mount call `.on()` on an already-subscribed channel and throw.
+    const topic = `connection-${user.id}-${otherId}-${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(`connection-${user.id}-${otherId}`)
+      .channel(topic)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "connections", filter: `requester_id=eq.${user.id}` },
