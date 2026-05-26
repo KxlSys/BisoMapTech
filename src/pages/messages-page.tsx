@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Send, ArrowLeft, MessageSquare, Flag, Check, X, UserPlus } from "lucide-react";
+import { Send, ArrowLeft, MessageSquare, Flag, Check, X, UserPlus, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -494,7 +494,7 @@ export function MessagesPage() {
                           )}
                           <div className={cn("flex flex-col", isMine ? "items-end" : "items-start")}>
                             <div className={cn(
-                              "max-w-[75%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap break-words",
+                              "max-w-[75%] min-w-[8ch] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap break-words leading-snug",
                               isMine
                                 ? "rounded-tr-sm bg-primary text-primary-foreground"
                                 : "rounded-tl-sm bg-white/8 border border-white/10 text-foreground"
@@ -505,8 +505,18 @@ export function MessagesPage() {
                               <p className="text-[10px] text-muted-foreground/60">
                                 {new Date(msg.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                               </p>
-                              {isMine && isLastSent && msg.read_at && (
-                                <span className="text-[10px] text-primary/70 font-medium">Vu</span>
+                              {isMine && isLastSent && (
+                                msg.read_at ? (
+                                  <span className="flex items-center gap-1 text-[10px] text-primary/80 font-medium">
+                                    <CheckCheck className="h-3 w-3" />
+                                    Vu
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70 font-medium">
+                                    <Check className="h-3 w-3" />
+                                    Envoyé
+                                  </span>
+                                )
                               )}
                               {!isMine && (
                                 <button
