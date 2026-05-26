@@ -497,3 +497,70 @@ export async function restorePrivateKey(
   }
 }
 
+// ============================================================
+// Identité : vérification de cohérence clé locale ↔ clé serveur
+// ============================================================
+
+/**
+ * Reconstruit la clé publique (JWK) à partir de la clé privée stockée localement.
+ * Le JWK d'une clé privée EC contient déjà les coordonnées publiques (x, y),
+ * ce qui permet de dériver la clé publique sans recalcul de point.
+ * Renvoie null si aucune clé locale n'est disponible ou si l'export échoue.
+ */
+export async function getLocalPublicKeyJWK(): Promise<string | null> {
+  const privateKey = await getPrivateKey();
+  if (!privateKey) return null;
+  try {
+    const jwk = (await window.crypto.subtle.exportKey("jwk", privateKey)) as JsonWebKey;
+    if (!jwk.x || !jwk.y) return null;
+    return JSON.stringify({ kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Compare deux clés publiques au format JWK par leurs coordonnées cryptographiques
+ * (kty, crv, x, y), en ignorant les champs annexes (ext, key_ops, use) dont l'ordre
+ * ou la présence peut varier selon la manière dont la clé a été exportée.
+ */
+export function publicKeysMatch(aJWK: string, bJWK: string): boolean {
+  try {
+    const a = JSON.parse(aJWK);
+    const b = JSON.parse(bJWK);
+    return a.kty === b.kty && a.crv === b.crv && a.x === b.x && a.y === b.y;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================
+// Transfert de clé d'appareil à appareil (chaîne portable)
+// ============================================================
+
+/**
+ * Exporte la clé privée locale sous forme d'une chaîne portable unique
+ * "sel:iv:chiffré", protégée par la phrase secrète (PBKDF2 + AES-GCM).
+ * À transférer manuellement vers un autre navigateur/appareil
+ * (copier-coller, QR code, etc.) — c'est le mécanisme de récupération le plus
+ * robuste car il ne dépend d'aucune sauvegarde serveur préalable.
+ */
+export async function exportPortableKey(passphrase: string): Promise<string> {
+  const { encryptedKeyBase64, saltBase64 } = await backupPrivateKey(passphrase);
+  // encryptedKeyBase64 = "iv:chiffré" ; on préfixe le sel → "sel:iv:chiffré"
+  return `${saltBase64}:${encryptedKeyBase64}`;
+}
+
+/**
+ * Importe une clé privée à partir d'une chaîne portable "sel:iv:chiffré"
+ * générée par exportPortableKey, la déchiffre avec la phrase secrète, puis
+ * l'enregistre dans l'IndexedDB local. Renvoie true en cas de succès.
+ */
+export async function importPortableKey(portable: string, passphrase: string): Promise<boolean> {
+  const parts = portable.trim().split(":");
+  if (parts.length !== 3) return false;
+  const [saltB64, ivB64, cipherB64] = parts;
+  if (!saltB64 || !ivB64 || !cipherB64) return false;
+  return restorePrivateKey(`${ivB64}:${cipherB64}`, saltB64, passphrase);
+}
+
