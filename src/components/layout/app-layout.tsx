@@ -9,12 +9,10 @@ export function AppLayout() {
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <Navbar />
-      {/*
-        Always use flex-1 flex flex-col so that children can use height 100% naturally.
-        Also ALWAYS add pb-16 on mobile (md:pb-0) so that the content never gets hidden behind
-        the fixed bottom-nav, even for map pages. The map page will just use the remaining space.
-      */}
-      <main className="flex flex-1 flex-col pb-16 md:pb-0 relative min-h-0">
+      <main
+        className="flex flex-1 flex-col relative min-h-0 md:pb-0"
+        style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
+      >
         <Outlet />
       </main>
       {!isMapPage && (

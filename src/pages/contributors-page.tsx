@@ -5,22 +5,10 @@ import {
   Handshake,
   ChevronLeft,
   ChevronRight,
+  GitBranch,
   SlidersHorizontal,
+  ArrowUpDown,
 } from "lucide-react";
-import type { Profile } from "@/types";
-
-// Inline GitHub icon (lucide-react ne fournit pas `Github`)
-const GithubIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className={className}
-    aria-hidden="true"
-  >
-    <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
-  </svg>
-);
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,9 +17,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FilterPanel } from "@/components/filters/filter-panel";
 import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useFilterStore } from "@/store/filter-store";
+import type { SortBy } from "@/store/filter-store";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
+import type { Profile } from "@/types";
 
 // Techs les plus utilisés dans l'écosystème tech congolais
 const QUICK_FILTERS = [
@@ -45,6 +35,12 @@ const QUICK_FILTERS = [
   "Vue.js",
 ];
 
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: "default", label: "Tous" },
+  { value: "available_first", label: "Disponibles d'abord" },
+  { value: "recent", label: "Récemment actifs" },
+];
+
 function formatLastSeen(lastSeenAt?: string): string | null {
   if (!lastSeenAt) return null;
   const diffMs = Date.now() - new Date(lastSeenAt).getTime();
@@ -55,7 +51,7 @@ function formatLastSeen(lastSeenAt?: string): string | null {
   return null;
 }
 
-const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Profile }) {
+function ProfileCard({ profile }: { profile: Profile }) {
   const lastSeen = formatLastSeen(profile.last_seen_at);
 
   return (
@@ -143,7 +139,7 @@ const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Prof
                 className="text-muted-foreground/60 hover:text-primary transition-colors"
                 aria-label="Voir profil GitHub"
               >
-                <GithubIcon className="h-4 w-4" />
+                <GitBranch className="h-4 w-4" />
               </a>
             )}
           </div>
@@ -151,27 +147,14 @@ const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Prof
       </article>
     </Link>
   );
-});
+}
 
 export function ContributorsPage() {
   const { profiles, isLoading, total, page, totalPages, setPage } =
     useFilteredProfiles({ pageSize: 18 });
-  const { techStack, searchQuery, setTechStack, setSearchQuery } = useFilterStore();
+  const { techStack, searchQuery, sortBy, setTechStack, setSearchQuery, setSortBy } =
+    useFilterStore();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [localSearch, setLocalSearch] = useState(searchQuery);
-
-  useEffect(() => {
-    setLocalSearch(searchQuery);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (localSearch !== searchQuery) {
-        setSearchQuery(localSearch);
-      }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [localSearch, searchQuery, setSearchQuery]);
 
   if (isLoading && page === 1) {
     return (
@@ -179,7 +162,7 @@ export function ContributorsPage() {
         <Skeleton className="mb-6 h-10 w-72 rounded-xl" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 rounded-xl" />
+            <Skeleton key={i} className="h-44 rounded-xl" />
           ))}
         </div>
       </div>
@@ -188,7 +171,7 @@ export function ContributorsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-24 pt-6 md:pb-8">
-      {/* Page header */}
+      {/* En-tête */}
       <div className="mb-5 flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
@@ -200,63 +183,81 @@ export function ContributorsPage() {
         </div>
         <Button
           variant="ghost"
-          size="sm"
           onClick={() => setMobileFilterOpen(true)}
-          className="gap-2 border border-white/10 bg-white/5 text-xs lg:hidden"
+          className="h-10 gap-2 border border-white/10 bg-white/5 text-sm lg:hidden"
         >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
+          <SlidersHorizontal className="h-4 w-4" />
           Filtres
         </Button>
       </div>
 
-      {/* Search bar */}
+      {/* Barre de recherche */}
       <div className="relative mb-4">
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Rechercher par nom, competence..."
+          placeholder="Rechercher par nom, compétence..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="bg-white/5 border-white/10 pl-10 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30"
         />
       </div>
 
-      {/* Quick filter chips */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        {QUICK_FILTERS.map((tech) => {
-          const isActive = techStack.includes(tech);
-          return (
-            <button
-              key={tech}
-              onClick={() => {
-                if (isActive) {
-                  setTechStack(techStack.filter((t) => t !== tech));
-                } else {
-                  setTechStack([...techStack, tech]);
+      {/* Quick-chips + tri */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Quick-chips : scroll horizontal sur mobile */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {QUICK_FILTERS.map((tech) => {
+            const isActive = techStack.includes(tech);
+            return (
+              <button
+                key={tech}
+                onClick={() =>
+                  setTechStack(
+                    isActive ? techStack.filter((t) => t !== tech) : [...techStack, tech]
+                  )
                 }
-              }}
+                className={cn(
+                  "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                  isActive
+                    ? "border-primary/60 bg-primary/15 text-primary shadow-[0_0_8px_rgba(78,222,163,0.2)]"
+                    : "border-white/15 bg-white/5 text-muted-foreground hover:border-white/25 hover:text-foreground"
+                )}
+              >
+                {tech}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tri */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/60" />
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setSortBy(opt.value)}
               className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-all",
-                isActive
-                  ? "border-primary/60 bg-primary/15 text-primary shadow-[0_0_8px_rgba(78,222,163,0.2)]"
+                "rounded-full border px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
+                sortBy === opt.value
+                  ? "border-primary/60 bg-primary/15 text-primary"
                   : "border-white/15 bg-white/5 text-muted-foreground hover:border-white/25 hover:text-foreground"
               )}
             >
-              {tech}
+              {opt.label}
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-      {/* Sidebar + grid */}
+      {/* Sidebar + grille */}
       <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
         <aside className="hidden lg:block">
           <div className="sticky top-20">
-            <FilterPanel />
+            <FilterPanel hideSearch />
           </div>
         </aside>
 
         <div>
-          {/* Talent grid — large cards on desktop, list-style on mobile */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {profiles.map((profile) => (
               <ProfileCard key={profile.id} profile={profile} />
@@ -265,8 +266,10 @@ export function ContributorsPage() {
             {profiles.length === 0 && !isLoading && (
               <div className="col-span-full py-20 text-center">
                 <Handshake className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
-                <p className="font-semibold text-muted-foreground">Aucun contributeur trouve</p>
-                <p className="mt-1 text-sm text-muted-foreground/60">Essayez de modifier vos filtres</p>
+                <p className="font-semibold text-muted-foreground">Aucun contributeur trouvé</p>
+                <p className="mt-1 text-sm text-muted-foreground/60">
+                  Essayez de modifier vos filtres
+                </p>
               </div>
             )}
           </div>
@@ -282,7 +285,7 @@ export function ContributorsPage() {
                 className="gap-1 border border-white/10 bg-white/5 hover:bg-white/8 disabled:opacity-30"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Precedent
+                Précédent
               </Button>
               <span className="text-xs text-muted-foreground">
                 {page} / {totalPages}
@@ -302,7 +305,7 @@ export function ContributorsPage() {
         </div>
       </div>
 
-      {/* Mobile filter drawer */}
+      {/* Tiroir de filtres mobile */}
       {mobileFilterOpen && (
         <div className="fixed inset-0 z-[600] flex flex-col lg:hidden">
           <div className="flex-1" onClick={() => setMobileFilterOpen(false)} />
@@ -315,17 +318,16 @@ export function ContributorsPage() {
             </div>
             <div className="flex items-center justify-between px-4 py-3">
               <p className="font-semibold text-sm">Filtres</p>
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => setMobileFilterOpen(false)}
-                className="h-7 w-7 p-0 hover:bg-white/5"
+                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/10 text-muted-foreground text-lg"
+                aria-label="Fermer les filtres"
               >
                 ×
-              </Button>
+              </button>
             </div>
             <div className="px-4 pb-6">
-              <FilterPanel />
+              <FilterPanel hideSearch />
             </div>
             <div
               className="sticky bottom-0 border-t border-white/10 p-4"
@@ -335,7 +337,7 @@ export function ContributorsPage() {
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={() => setMobileFilterOpen(false)}
               >
-                Voir {profiles.length} resultat{profiles.length !== 1 ? "s" : ""}
+                Voir {profiles.length} résultat{profiles.length !== 1 ? "s" : ""}
               </Button>
             </div>
           </div>

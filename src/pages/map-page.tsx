@@ -47,7 +47,6 @@ export function MapPage() {
   }, [profiles]);
 
   return (
-    /* Flex-1 fills the space correctly without calc due to parent being flex-col */
     <div className="relative flex flex-1 overflow-hidden">
 
       {/* ─────────────────── LEFT SIDEBAR ─────────────────── */}
