@@ -15,7 +15,7 @@ import {
   removeConnection,
   partnerOf,
 } from "@/lib/connection-service";
-import { fetchProfileByUsername } from "@/lib/profile-service";
+import { fetchProfileById, fetchProfileByUsername } from "@/lib/profile-service";
 import type { ConnectionWithProfiles } from "@/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -71,8 +71,20 @@ function buildConversations(
   for (const msg of messages) {
     const isSent = msg.sender_id === myId;
     const partnerId = isSent ? msg.receiver_id : msg.sender_id;
-    const conv = map.get(partnerId);
-    if (!conv) continue; // only surface conversations with current connections
+    let conv = map.get(partnerId);
+    if (!conv) {
+      conv = {
+        partnerId,
+        partnerName: "Utilisateur",
+        partnerUsername: "",
+        partnerAvatar: "",
+        lastMessage: "",
+        lastMessageAt: msg.created_at,
+        unread: 0,
+        hasMessages: false,
+      };
+      map.set(partnerId, conv);
+    }
     if (!conv.hasMessages) {
       conv.hasMessages = true;
       conv.lastMessage = msg.content;
@@ -95,6 +107,7 @@ export function MessagesPage() {
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [requests, setRequests] = useState<ConnectionWithProfiles[]>([]);
+  const [connectedPartnerIds, setConnectedPartnerIds] = useState<string[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -128,6 +141,29 @@ export function MessagesPage() {
       });
     }
   }, [selectedPartner]);
+
+  useEffect(() => {
+    if (!user || !selectedPartner) return;
+    const conv = conversations.find((c) => c.partnerId === selectedPartner);
+    if (!conv || conv.partnerUsername) return;
+    fetchProfileById(selectedPartner)
+      .then((p) => {
+        if (!p) return;
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.partnerId === selectedPartner
+              ? {
+                  ...c,
+                  partnerName: p.full_name || p.username || c.partnerName,
+                  partnerUsername: p.username || c.partnerUsername,
+                  partnerAvatar: p.avatar_url || c.partnerAvatar,
+                }
+              : c
+          )
+        );
+      })
+      .catch(() => {});
+  }, [user, selectedPartner, conversations]);
 
   // Deep-link from a profile: /messages?to=username (only for accepted connections).
   useEffect(() => {
@@ -217,6 +253,11 @@ export function MessagesPage() {
       const msgs = (msgsRes.data || []) as Message[];
       setConversations(buildConversations(conns, msgs, user.id));
       setRequests(reqs);
+      setConnectedPartnerIds(
+        conns
+          .map((c) => partnerOf(user.id, c)?.id)
+          .filter((id): id is string => Boolean(id))
+      );
       useAuthStore.getState().fetchPendingRequests();
     } catch (err) {
       console.warn("fetchAll (messages) failed:", err);
@@ -251,6 +292,10 @@ export function MessagesPage() {
     e.preventDefault();
     const content = newMessage.trim();
     if (!content || !selectedPartner || !user) return;
+    if (!connectedPartnerIds.includes(selectedPartner)) {
+      toast.error("Vous devez être connecté à ce membre pour répondre.");
+      return;
+    }
     setIsSending(true);
     const { error } = await supabase.from("messages").insert({
       sender_id: user.id,
@@ -258,7 +303,12 @@ export function MessagesPage() {
       content: content.slice(0, MAX_MESSAGE_LENGTH),
     });
     if (error) {
-      toast.error(error.message || "Erreur lors de l'envoi du message");
+      const msg = error.message || "Erreur lors de l'envoi du message";
+      if (/row level security|rls/i.test(msg)) {
+        toast.error("Impossible d’envoyer : vous devez être connecté à ce membre.");
+      } else {
+        toast.error(msg);
+      }
     } else {
       setNewMessage("");
       await fetchMessages(selectedPartner);
@@ -313,6 +363,7 @@ export function MessagesPage() {
   }
 
   const selectedConv = conversations.find((c) => c.partnerId === selectedPartner);
+  const canReply = Boolean(selectedPartner && connectedPartnerIds.includes(selectedPartner));
   const lastSentMsg = messages.filter((m) => m.sender_id === user.id).at(-1);
 
   return (
@@ -473,6 +524,25 @@ export function MessagesPage() {
 
               {/* Messages */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+                {!canReply && selectedConv && (
+                  <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
+                    <p className="font-semibold">Réponse désactivée</p>
+                    <p className="mt-1 text-amber-100/80">
+                      Pour répondre, vous devez d’abord être connecté à ce membre.
+                      {selectedConv.partnerUsername ? (
+                        <>
+                          {" "}
+                          <button
+                            className="underline underline-offset-2"
+                            onClick={() => navigate(`/contributeurs/${selectedConv.partnerUsername}`)}
+                          >
+                            Voir le profil
+                          </button>
+                        </>
+                      ) : null}
+                    </p>
+                  </div>
+                )}
                 {messages.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center py-12 text-center">
                     <p className="text-sm text-muted-foreground">Démarrez la conversation</p>
@@ -546,13 +616,13 @@ export function MessagesPage() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Votre message..."
                   maxLength={MAX_MESSAGE_LENGTH}
-                  disabled={isSending}
+                  disabled={isSending || !canReply}
                   className="bg-white/5 border-white/10 focus:border-primary focus:ring-1 focus:ring-primary/30"
                 />
                 <Button
                   type="submit"
                   size="sm"
-                  disabled={!newMessage.trim() || isSending}
+                  disabled={!newMessage.trim() || isSending || !canReply}
                   className="h-9 w-9 shrink-0 p-0 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <Send className="h-4 w-4" />

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useAuthStore } from "@/store/auth-store";
+import { useFilterStore } from "@/store/filter-store";
 import { cn } from "@/lib/utils";
 
 export function MapPage() {
@@ -17,7 +18,10 @@ export function MapPage() {
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
   const [focusedProfileId, setFocusedProfileId] = useState<string | undefined>(undefined);
   const { user } = useAuthStore();
+  const { resetFilters } = useFilterStore();
   const leafletMapRef = useRef<L.Map | null>(null);
+
+  const listProfiles = user ? profiles.filter((p) => p.id !== user.id) : profiles;
 
   const handleMapReady = useCallback((map: L.Map) => {
     leafletMapRef.current = map;
@@ -71,7 +75,7 @@ export function MapPage() {
           </div>
           <ScrollArea className="flex-1">
             <div className="space-y-2 p-4 pb-8">
-              {profiles.slice(0, 20).map((profile) => (
+              {listProfiles.slice(0, 20).map((profile) => (
                 <ProfileCard
                   key={profile.id}
                   profile={profile}
@@ -82,17 +86,27 @@ export function MapPage() {
                   }}
                 />
               ))}
-              {profiles.length > 20 && (
+              {listProfiles.length > 20 && (
                 <Link to="/contributeurs">
                   <p className="py-2 text-center text-xs text-muted-foreground hover:text-primary transition-colors">
-                    +{profiles.length - 20} autres contributeurs →
+                    +{listProfiles.length - 20} autres contributeurs →
                   </p>
                 </Link>
               )}
-              {profiles.length === 0 && (
+              {listProfiles.length === 0 && (
                 <div className="py-8 text-center">
                   <p className="text-sm text-muted-foreground">Aucun résultat</p>
                   <p className="mt-1 text-xs text-muted-foreground/60">Modifiez vos filtres</p>
+                  <div className="mt-3 flex justify-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="border border-white/15 bg-white/5 hover:bg-white/8"
+                      onClick={() => resetFilters()}
+                    >
+                      Réinitialiser les filtres
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -100,13 +114,13 @@ export function MapPage() {
         </div>
 
         {/* Apply filters CTA */}
-        <div className="flex-shrink-0 border-t border-white/8 p-4">
+        <div className="flex-shrink-0 border-t border-white/8 p-4 md:hidden">
           <Button
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-[0_4px_16px_oklch(0.82_0.16_155/25%)] active:scale-95"
             size="default"
             onClick={() => setMobileView("map")}
           >
-            Appliquer les Filtres
+            Revenir à la carte
           </Button>
         </div>
       </aside>
