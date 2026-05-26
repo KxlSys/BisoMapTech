@@ -7,7 +7,7 @@ import {
   ChevronRight,
   SlidersHorizontal,
 } from "lucide-react";
-import { Profile } from "@/types";
+import type { Profile } from "@/types";
 
 // Inline GitHub icon (lucide-react ne fournit pas `Github`)
 const GithubIcon = ({ className }: { className?: string }) => (
