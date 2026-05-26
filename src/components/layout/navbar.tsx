@@ -26,6 +26,7 @@ export function Navbar() {
 
   // Both unread messages and incoming connection requests live in /messages.
   const messagesBadge = unreadMessages + pendingRequests;
+  const messagesBadgeLabel = messagesBadge > 99 ? "99+" : String(messagesBadge);
 
   return (
     <>
@@ -81,7 +82,7 @@ export function Navbar() {
                   Messages
                   {messagesBadge > 0 && (
                     <Badge className="absolute -right-1 -top-1 h-4 w-4 items-center justify-center rounded-full p-0 text-[10px] bg-primary text-primary-foreground">
-                      {messagesBadge}
+                      {messagesBadgeLabel}
                     </Badge>
                   )}
                 </Button>
@@ -243,7 +244,7 @@ export function Navbar() {
             <span className="text-[10px] font-medium">Messages</span>
             {messagesBadge > 0 && (
               <span className="absolute right-4 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-                {messagesBadge > 9 ? "9+" : messagesBadge}
+                {messagesBadge > 99 ? "99+" : messagesBadge > 9 ? "9+" : messagesBadgeLabel}
               </span>
             )}
             {location.pathname === "/messages" && (
