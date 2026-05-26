@@ -72,9 +72,6 @@ export function AuthCallbackPage() {
         let profile = await fetchProfileById(userId);
 
         if (!profile) {
-          // Fresh account — seed a row with the GitHub metadata. Using upsert
-          // (instead of insert) means we recover gracefully if a previous
-          // attempt half-succeeded.
           const username =
             metadata.user_name ||
             metadata.preferred_username ||
@@ -111,7 +108,9 @@ export function AuthCallbackPage() {
           navigate("/onboarding", { replace: true });
         } else {
           setIsNewUser(false);
-          navigate("/", { replace: true });
+          const returnTo = sessionStorage.getItem("auth.returnTo");
+          sessionStorage.removeItem("auth.returnTo");
+          navigate(returnTo || "/", { replace: true });
         }
       } catch (err) {
         const message =
