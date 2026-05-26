@@ -13,4 +13,4 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: Rosentic/rosentic-action@v1
+      - uses: Rosentic/rosentic-action@v1.1.0
