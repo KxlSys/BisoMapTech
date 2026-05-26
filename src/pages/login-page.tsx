@@ -17,7 +17,7 @@ export function LoginPage() {
   if (user) return null;
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)]">
+    <div className="flex flex-1">
       {/* ── Branding panel (desktop only) ── */}
       <div className="relative hidden lg:flex lg:w-5/12 flex-col justify-between overflow-hidden border-r border-white/8 p-12">
         <div className="pointer-events-none absolute inset-0">
