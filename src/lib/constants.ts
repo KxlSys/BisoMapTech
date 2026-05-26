@@ -355,6 +355,14 @@ export const TECH_OPTIONS: readonly string[] = (() => {
   return out;
 })();
 
+// One representative technology per discipline, so quick-pick suggestion
+// chips stay balanced across every IT domain instead of defaulting to
+// web/app dev. The cross-cutting "tools" category is excluded — it is not a
+// discipline on its own.
+export const CROSS_DOMAIN_TECHS: readonly string[] = TECH_CATEGORIES.filter(
+  (cat) => cat.id !== "tools"
+).map((cat) => cat.techs[0]);
+
 // ======================================================
 // ROLE LABELS
 // ======================================================
