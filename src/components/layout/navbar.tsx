@@ -20,9 +20,23 @@ const NAV_LINKS = [
   { href: "/a-propos", label: "À propos", icon: Info },
 ];
 
+// Pages where the bottom nav should not appear (standalone flows)
+const HIDE_BOTTOM_NAV = ["/login", "/onboarding", "/auth/callback"];
+
+// Maps sub-routes to their parent nav tab so the right tab stays highlighted
+function contextualActiveHref(pathname: string): string | null {
+  if (pathname.startsWith("/contributeurs")) return "/talents";
+  if (pathname.startsWith("/projet")) return "/matching";
+  if (pathname === "/profil/edit") return "/talents";
+  if (pathname.startsWith("/lieux/")) return "/lieux";
+  return null;
+}
+
 export function Navbar() {
   const { user, profile, signOut, unreadMessages, pendingRequests } = useAuthStore();
   const location = useLocation();
+  const activeOverride = contextualActiveHref(location.pathname);
+  const showBottomNav = !HIDE_BOTTOM_NAV.includes(location.pathname);
 
   // Both unread messages and incoming connection requests live in /messages.
   const messagesBadge = unreadMessages + pendingRequests;
@@ -209,10 +223,12 @@ export function Navbar() {
       </header>
 
       {/* Mobile bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-stretch border-t border-white/10 md:hidden"
+      {showBottomNav && (
+      <nav className="fixed bottom-0 left-0 right-0 z-[600] flex h-16 items-stretch border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom)]"
         style={{ background: "oklch(0.10 0.025 240 / 95%)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         {NAV_LINKS.map((link) => {
           const isActive =
+            activeOverride === link.href ||
             location.pathname === link.href ||
             (link.href !== "/" && location.pathname.startsWith(`${link.href}/`));
           return (
@@ -262,6 +278,7 @@ export function Navbar() {
           </Link>
         )}
       </nav>
+      )}
     </>
   );
 }

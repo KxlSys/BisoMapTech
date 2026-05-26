@@ -71,7 +71,7 @@ export function ProjectNewPage() {
       description: `"${title}" est désormais visible dans le moteur de matching.`,
       duration: 5000,
     });
-    navigate("/matching");
+    navigate("/matching?vue=projets");
   }
 
   // Not logged in — show auth gate
@@ -94,8 +94,8 @@ export function ProjectNewPage() {
           <LogIn className="h-4 w-4" />
           Se connecter avec GitHub
         </Button>
-        <Link to="/matching" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-          Retour au matching
+        <Link to="/matching?vue=projets" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+          Retour aux projets
         </Link>
       </div>
     );
@@ -104,10 +104,10 @@ export function ProjectNewPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-6 md:pb-8">
       {/* Back */}
-      <Link to="/matching">
+      <Link to="/matching?vue=projets">
         <Button variant="ghost" size="sm" className="mb-6 gap-2 text-muted-foreground hover:text-foreground hover:bg-white/5">
           <ArrowLeft className="h-4 w-4" />
-          Retour au Matching
+          Retour aux projets
         </Button>
       </Link>
 

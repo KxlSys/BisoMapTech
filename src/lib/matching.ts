@@ -1,4 +1,4 @@
-import type { Profile } from "@/types";
+import type { Profile, Project, ProjectMatch } from "@/types";
 
 const COMPLEMENTARY_ROLES: Record<string, string[]> = {
   frontend: ["backend", "fullstack", "devops", "design"],
@@ -88,6 +88,60 @@ export function calculateMatches(
       }
 
       return { profile: candidate, score: Math.min(score, 100), reasons };
+    })
+    .filter((m) => m.score > 0)
+    .sort((a, b) => b.score - a.score);
+}
+
+export function calculateProjectMatches(
+  profile: Profile,
+  projects: Project[]
+): ProjectMatch[] {
+  return projects
+    .map((project) => {
+      let score = 0;
+      const reasons: string[] = [];
+
+      const commonTechs = profile.tech_stack.filter((t) =>
+        project.tech_stack.map((pt) => pt.toLowerCase()).includes(t.toLowerCase())
+      );
+      if (commonTechs.length > 0) {
+        score += Math.min(commonTechs.length * 15, 40);
+        reasons.push(`${commonTechs.length} techno(s) en commun`);
+      }
+
+      const roleInStack = project.tech_stack.some((t) => {
+        const tl = t.toLowerCase();
+        const r = profile.role_type;
+        return (
+          (r === "frontend" && (tl.includes("react") || tl.includes("vue") || tl.includes("angular") || tl.includes("next") || tl.includes("svelte"))) ||
+          (r === "mobile" && (tl.includes("flutter") || tl.includes("react native") || tl.includes("dart") || tl.includes("mobile"))) ||
+          (r === "backend" && (tl.includes("node") || tl.includes("python") || tl.includes("django") || tl.includes("php") || tl.includes("java") || tl.includes("go") || tl.includes("rust"))) ||
+          (r === "fullstack" && (tl.includes("react") || tl.includes("node") || tl.includes("next") || tl.includes("supabase") || tl.includes("typescript"))) ||
+          (r === "data" && (tl.includes("python") || tl.includes("sql") || tl.includes("spark") || tl.includes("data"))) ||
+          (r === "devops" && (tl.includes("docker") || tl.includes("kubernetes") || tl.includes("aws") || tl.includes("linux"))) ||
+          (r === "cybersecurite" && (tl.includes("cyber") || tl.includes("linux") || tl.includes("securite") || tl.includes("reseaux"))) ||
+          (r === "design" && (tl.includes("figma") || tl.includes("design") || tl.includes("ui")))
+        );
+      });
+      if (roleInStack) {
+        score += 25;
+        reasons.push("Votre rôle correspond au projet");
+      }
+
+      if (project.open_to_collaboration && profile.open_to_collaboration) {
+        score += 20;
+        reasons.push("Les deux parties disponibles");
+      }
+
+      if (profile.experience_level === "senior") {
+        score += 10;
+        reasons.push("Profil senior valorisé");
+      } else if (profile.experience_level === "mid") {
+        score += 5;
+      }
+
+      return { project, score: Math.min(score, 100), reasons };
     })
     .filter((m) => m.score > 0)
     .sort((a, b) => b.score - a.score);

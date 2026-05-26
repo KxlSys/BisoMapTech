@@ -47,8 +47,7 @@ export function MapPage() {
   }, [profiles]);
 
   return (
-    /* Full viewport minus navbar height */
-    <div className="relative flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="relative flex flex-1 overflow-hidden">
 
       {/* ─────────────────── LEFT SIDEBAR ─────────────────── */}
       <aside
@@ -67,9 +66,21 @@ export function MapPage() {
           <p className="text-xs text-muted-foreground mt-0.5">Affiner la recherche de talents</p>
         </div>
 
-        {/* Filters */}
-        <div className="flex-shrink-0 border-b border-white/8 px-4 py-4">
+        {/* Filters (Desktop Only) */}
+        <div className="hidden md:block flex-shrink-0 border-b border-white/8 px-4 py-4">
           <FilterPanel compact />
+        </div>
+
+        {/* Mobile Filter Toggle */}
+        <div className="md:hidden flex-shrink-0 border-b border-white/8 px-4 py-3">
+          <Button
+            variant="outline"
+            className="w-full justify-center gap-2 border-white/15 bg-white/5 text-xs text-foreground"
+            onClick={() => setMobileFiltersOpen(true)}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            Filtrer les talents
+          </Button>
         </div>
 
         {/* Talents list */}
@@ -224,7 +235,7 @@ export function MapPage() {
         </div>
 
         {/* Mobile Map/List Toggle FAB */}
-        <div className="fixed bottom-6 left-1/2 z-[1000] -translate-x-1/2 md:hidden">
+        <div className="absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 md:hidden">
           <Button
             onClick={() => setMobileView(mobileView === "map" ? "list" : "map")}
             className="glass-panel flex h-11 items-center gap-2 rounded-full border border-white/20 bg-black/75 px-5 text-xs font-bold text-foreground shadow-2xl backdrop-blur-xl hover:border-primary/40 hover:text-primary active:scale-95 transition-all"
