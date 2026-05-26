@@ -227,3 +227,29 @@ export interface Place {
   created_at: string;
   updated_at: string;
 }
+
+export type ProjectType = "Startup" | "Public" | "ONG" | "Personnel";
+
+export interface Project {
+  id: string;
+  title: string;
+  description: string;
+  tech_stack: string[];
+  budget?: string;
+  duration?: string;
+  collab_mode?: string;
+  open_to_collaboration: boolean;
+  location?: string;
+  project_type?: ProjectType;
+  priority?: string;
+  author_id: string;
+  author?: Pick<Profile, "id" | "username" | "full_name" | "avatar_url">;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectMatch {
+  project: Project;
+  score: number;
+  reasons: string[];
+}
