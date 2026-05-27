@@ -179,7 +179,7 @@ export function Navbar() {
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/20">
             <Map className="h-3.5 w-3.5 text-primary" />
           </div>
-          <span className="text-sm tracking-tight">BisoMapTech</span>
+          <span className="hidden min-[340px]:inline text-sm tracking-tight">BisoMapTech</span>
         </Link>
 
         <div className="flex items-center gap-1">
@@ -230,7 +230,7 @@ export function Navbar() {
 
       {/* Mobile bottom navigation */}
       {showBottomNav && (
-      <nav className="fixed bottom-0 left-0 right-0 z-[600] flex h-16 items-stretch border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom)]"
+      <nav className="fixed bottom-0 left-0 right-0 z-[600] flex h-16 items-stretch border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom)] overflow-x-auto scrollbar-none"
         style={{ background: "oklch(0.10 0.025 240 / 95%)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         {NAV_LINKS.map((link) => {
           const isActive =
@@ -242,7 +242,7 @@ export function Navbar() {
               key={link.href}
               to={link.href}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-0.5 transition-colors",
+                "flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 transition-colors",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
@@ -258,7 +258,7 @@ export function Navbar() {
           <Link
             to="/messages"
             className={cn(
-              "relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-colors",
+              "relative flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 transition-colors",
               location.pathname === "/messages" ? "text-primary" : "text-muted-foreground"
             )}
           >
@@ -277,7 +277,7 @@ export function Navbar() {
         {!user && (
           <Link
             to="/login"
-            className="flex flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors"
+            className="flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors"
           >
             <LogIn className="h-5 w-5" />
             <span className="text-[10px] font-medium">Connexion</span>
