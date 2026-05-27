@@ -4,7 +4,7 @@ import { ArrowLeft, Plus, X, Rocket, FileText, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/auth-store";
-import { TECH_OPTIONS } from "@/lib/constants";
+import { CROSS_DOMAIN_TECHS } from "@/lib/constants";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { createProject } from "@/lib/project-service";
@@ -229,7 +229,7 @@ export function ProjectNewPage() {
                 </div>
                 {/* Quick-add chips */}
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {TECH_OPTIONS.slice(0, 10).filter(t => !techStack.includes(t)).map((tech) => (
+                  {CROSS_DOMAIN_TECHS.filter(t => !techStack.includes(t)).map((tech) => (
                     <button
                       key={tech}
                       type="button"

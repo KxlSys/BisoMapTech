@@ -21,7 +21,10 @@ export async function fetchPaginatedPlaces(params: {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase.from("places").select("*", { count: "exact" });
+  let query = supabase
+    .from("places")
+    .select("id,name,category,city,address,latitude,longitude,phone,whatsapp,website,status,created_at", { count: "exact" })
+    .eq("status", "approved");
 
   if (search) {
     const safeSearch = sanitizeSearchTerm(search);
@@ -36,7 +39,7 @@ export async function fetchPaginatedPlaces(params: {
   if (category && category !== "all") query = query.eq("category", category);
 
   const { data, count, error } = await query
-    .order("created_at", { ascending: false })
+    .order("name", { ascending: true })
     .range(from, to);
 
   if (error) throw error;
@@ -68,13 +71,18 @@ export type CreatePlaceInput = {
   created_by: string;
 };
 
-export async function createPlace(input: CreatePlaceInput): Promise<void> {
-  const { error } = await supabase.from("places").insert({
-    ...input,
-    status: "pending",
-    updated_at: new Date().toISOString(),
-  });
+export async function createPlace(input: CreatePlaceInput): Promise<string> {
+  const { data, error } = await supabase
+    .from("places")
+    .insert({
+      ...input,
+      status: "pending",
+      updated_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
   if (error) throw error;
+  return data.id as string;
 }
 
 export async function approvePlace(placeId: string, approvedBy: string): Promise<void> {

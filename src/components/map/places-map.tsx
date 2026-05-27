@@ -12,13 +12,36 @@ const TILE_ATTRIBUTION =
 
 const CONGO_CENTER: L.LatLngExpression = [-2.8, 15.2];
 const CONGO_ZOOM = 6;
+const MAX_ZOOM = 18;
 
-function createMarkerIcon() {
+const CATEGORY_COLORS: Record<string, string> = {
+  "Espace Tech": "#6366f1",
+  "Coworking": "#8b5cf6",
+  "Incubateur / Accélérateur": "#a855f7",
+  "Formation / Bootcamp": "#06b6d4",
+  "Fab Lab": "#0ea5e9",
+  "Café": "#f59e0b",
+  "Restaurant": "#f97316",
+  "Marché": "#84cc16",
+  "Pharmacie": "#22c55e",
+  "Hôpital": "#ef4444",
+  "École / Université": "#3b82f6",
+  "Opérateur Télécoms": "#ec4899",
+  "Cybercafé / Point Internet": "#14b8a6",
+  "ONG Tech": "#10b981",
+  "Autre": "#6b7280",
+};
+
+function getCategoryColor(category: string): string {
+  return CATEGORY_COLORS[category] ?? "#06b6d4";
+}
+
+function createMarkerIcon(color: string): L.DivIcon {
   return L.divIcon({
     html: `
       <div style="position:relative;width:12px;height:12px;display:flex;align-items:center;justify-content:center;">
-        <div style="background:var(--tertiary, #06b6d4);width:12px;height:12px;border-radius:50%;border:2px solid #ffffff;box-shadow:0 0 8px rgba(6,180,212,0.6);position:absolute;z-index:2;"></div>
-        <div style="background:rgba(6,180,212,0.35);width:22px;height:22px;border-radius:50%;position:absolute;z-index:1;animation:pulseMarker 1.8s infinite ease-in-out;"></div>
+        <div style="background:${color};width:12px;height:12px;border-radius:50%;border:2px solid #ffffff;box-shadow:0 0 8px ${color}99;position:absolute;z-index:2;"></div>
+        <div style="background:${color}59;width:22px;height:22px;border-radius:50%;position:absolute;z-index:1;animation:pulseMarker 1.8s infinite ease-in-out;"></div>
       </div>
     `,
     className: "custom-marker-place",
@@ -42,7 +65,6 @@ export const PlacesMap = React.memo(function PlacesMap({ places, onMapReady, foc
   const markersMapRef = useRef<Map<string, L.Marker>>(new Map());
   const { theme } = useTheme();
 
-  // Injecter les animations CSS et les surcharges Leaflet de style premium
   useEffect(() => {
     const styleId = "places-map-animations";
     if (!document.getElementById(styleId)) {
@@ -93,7 +115,7 @@ export const PlacesMap = React.memo(function PlacesMap({ places, onMapReady, foc
       zoomControl: false,
       attributionControl: true,
       minZoom: 2,
-      maxZoom: 13,
+      maxZoom: MAX_ZOOM,
       worldCopyJump: true,
       maxBounds: [
         [-85, -360],
@@ -109,10 +131,24 @@ export const PlacesMap = React.memo(function PlacesMap({ places, onMapReady, foc
 
     tileLayerRef.current = L.tileLayer(isDark ? DARK_TILES : LIGHT_TILES, {
       attribution: TILE_ATTRIBUTION,
-      maxZoom: 13,
+      maxZoom: MAX_ZOOM,
     }).addTo(mapRef.current);
 
     markersRef.current = L.layerGroup().addTo(mapRef.current);
+
+    // React Router navigation from popup links (avoids full page reload)
+    mapRef.current.getContainer().addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest("a[data-place-id]") as HTMLAnchorElement | null;
+      if (link) {
+        e.preventDefault();
+        const placeId = link.dataset.placeId;
+        if (placeId) {
+          window.history.pushState({}, "", `/lieux/${placeId}`);
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }
+      }
+    });
 
     onMapReady?.(mapRef.current);
 
@@ -140,25 +176,29 @@ export const PlacesMap = React.memo(function PlacesMap({ places, onMapReady, foc
     markersMapRef.current.clear();
 
     places.forEach((place) => {
-      if (!place.latitude || !place.longitude) return;
+      if (place.latitude == null || place.longitude == null) return;
+      if (place.latitude === 0 && place.longitude === 0) return;
 
+      const color = getCategoryColor(place.category);
       const marker = L.marker([place.latitude, place.longitude], {
-        icon: createMarkerIcon(),
+        icon: createMarkerIcon(color),
       });
 
       const safeName = escapeHtml(place.name);
       const safeCity = escapeHtml(place.city || "");
       const safeCategory = escapeHtml(place.category);
+      const safeId = escapeHtml(place.id);
 
       const popupContent = `
         <div style="min-width:190px;font-family:system-ui,sans-serif;">
           <div style="font-weight:700;font-size:13.5px;color:#f3f4f6;line-height:1.2;margin-bottom:2px">${safeName}</div>
           <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">📍 ${safeCity}</div>
-          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(6,180,212,0.12);color:#06b6d4;border:1px solid rgba(6,180,212,0.25);padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;margin-bottom:12px">
+          <div style="display:inline-flex;align-items:center;gap:6px;background:${color}1a;color:${color};border:1px solid ${color}40;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;margin-bottom:12px">
             ${safeCategory}
           </div>
-          <a href="/lieux/${escapeHtml(place.id)}"
-             style="display:block;text-align:center;background:linear-gradient(135deg, var(--tertiary, #06b6d4) 0%, #0891b2 100%);color:white;padding:7px 12px;border-radius:8px;font-size:11px;text-decoration:none;font-weight:700;box-shadow:0 3px 8px rgba(6,180,212,0.25);transition:transform 0.15s ease;">
+          <a href="/lieux/${safeId}"
+             data-place-id="${safeId}"
+             style="display:block;text-align:center;background:linear-gradient(135deg,${color} 0%,${color}cc 100%);color:white;padding:7px 12px;border-radius:8px;font-size:11px;text-decoration:none;font-weight:700;box-shadow:0 3px 8px ${color}40;transition:transform 0.15s ease;">
             Voir la fiche &rarr;
           </a>
         </div>
@@ -175,7 +215,7 @@ export const PlacesMap = React.memo(function PlacesMap({ places, onMapReady, foc
 
     const marker = markersMapRef.current.get(focusedPlaceId);
     if (marker) {
-      mapRef.current.flyTo(marker.getLatLng(), 11, {
+      mapRef.current.flyTo(marker.getLatLng(), 15, {
         animate: true,
         duration: 1.5,
       });

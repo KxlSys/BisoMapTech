@@ -1,6 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import type { Profile } from "@/types";
 import { useTheme } from "@/components/theme-provider";
 import { escapeHtml } from "@/lib/profile-service";
@@ -48,7 +51,7 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
-  const markersRef = useRef<L.LayerGroup | null>(null);
+  const markersRef = useRef<L.MarkerClusterGroup | null>(null);
   const markersMapRef = useRef<Map<string, L.Marker>>(new Map());
   const { theme } = useTheme();
 
@@ -89,6 +92,22 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
         .leaflet-popup-content {
           margin: 12px !important;
         }
+        .congo-cluster { background: transparent; }
+        .congo-cluster-inner {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          background: rgba(16, 185, 129, 0.9);
+          color: #ffffff;
+          font-weight: 700;
+          font-family: system-ui, sans-serif;
+          font-size: 13px;
+          border: 2px solid #ffffff;
+          box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22), 0 2px 8px rgba(0, 0, 0, 0.45);
+          transition: transform 0.15s ease;
+        }
+        .congo-cluster:hover .congo-cluster-inner { transform: scale(1.08); }
       `;
       document.head.appendChild(style);
     }
@@ -122,11 +141,33 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
       maxZoom: 13,
     }).addTo(mapRef.current);
 
-    markersRef.current = L.layerGroup().addTo(mapRef.current);
+    markersRef.current = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      maxClusterRadius: 50,
+      spiderfyDistanceMultiplier: 1.6,
+      iconCreateFunction: (cluster) => {
+        const count = cluster.getChildCount();
+        const size = count < 10 ? 36 : count < 50 ? 44 : 52;
+        return L.divIcon({
+          html: `<div class="congo-cluster-inner" style="width:${size}px;height:${size}px;">${count}</div>`,
+          className: "congo-cluster",
+          iconSize: L.point(size, size),
+        });
+      },
+    }).addTo(mapRef.current);
+
+    // Leaflet mis-positions tiles and markers when its container is resized
+    // while hidden (mobile list↔map toggle, sidebar, fullscreen), which throws
+    // off centering. Recompute the size on any resize so flyTo lands correctly.
+    const resizeObserver = new ResizeObserver(() => {
+      mapRef.current?.invalidateSize();
+    });
+    resizeObserver.observe(containerRef.current);
 
     onMapReady?.(mapRef.current);
 
     return () => {
+      resizeObserver.disconnect();
       mapRef.current?.remove();
       mapRef.current = null;
     };
@@ -199,21 +240,32 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
   }, [profiles, onProfileClick, focusedProfileId]);
 
   useEffect(() => {
-    if (!focusedProfileId || !mapRef.current || !markersMapRef.current) return;
+    const map = mapRef.current;
+    const cluster = markersRef.current;
+    if (!focusedProfileId || !map || !cluster) return;
 
     const marker = markersMapRef.current.get(focusedProfileId);
-    if (marker) {
-      mapRef.current.flyTo(marker.getLatLng(), 11, {
-        animate: true,
-        duration: 1.5,
-      });
+    if (!marker) return;
 
-      const timer = setTimeout(() => {
-        marker.openPopup();
-      }, 800);
+    // The container may have just become visible (mobile/fullscreen toggle), so
+    // make sure Leaflet knows its real size before computing the centering.
+    map.invalidateSize();
 
-      return () => clearTimeout(timer);
-    }
+    const reveal = () => {
+      // Profiles share a single city coordinate, so the focused one is usually
+      // inside a cluster — zoomToShowLayer spiderfies it open, then we show its card.
+      cluster.zoomToShowLayer(marker, () => marker.openPopup());
+    };
+
+    map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 11), {
+      animate: true,
+      duration: 1.2,
+    });
+    map.once("moveend", reveal);
+
+    return () => {
+      map.off("moveend", reveal);
+    };
   }, [focusedProfileId]);
 
   return (
