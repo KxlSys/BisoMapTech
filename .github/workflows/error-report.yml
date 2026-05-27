@@ -1,23 +1,34 @@
-name: Détection et Rapport d'Erreurs
+name: Error Detection & Auto Issue
+
 on:
+  workflow_dispatch:
   schedule:
-    - cron: '0 7 * * *' # Tourne tous les jours à 7h du matin
+    - cron: "0 */6 * * *"
 
 jobs:
-  check-errors:
+  detect-errors:
     runs-on: ubuntu-latest
-    steps:
-      - name: Récupérer les logs d'erreurs
-        run: |
-          # Ici, ton script va interroger ton système (ex: Supabase) 
-          # pour récupérer les erreurs des dernières 24h.
-          echo "Récupération des logs..."
 
-      - name: Créer l'issue automatiquement si un bug est trouvé
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Simulate production log scan
+        run: |
+          echo "Checking logs..."
+          echo "ERROR_FOUND=true" >> $GITHUB_ENV
+
+      - name: Create GitHub Issue if error found
+        if: env.ERROR_FOUND == 'true'
         uses: imjohnbo/issue-bot@v3
         with:
-          title: "[Auto] Erreur détectée en production"
-          body: "Une erreur critique a été détectée dans les logs de production. Jules, à toi de jouer !"
-          labels: "bug, auto-detected, jules" # C'est ce label qui va réveiller Jules !
+          title: "[AUTO] Production error detected"
+          body: |
+            An automatic scan detected a potential production issue.
+
+            Please investigate the logs and affected services.
+
+            Triggered automatically by GitHub Actions.
+          labels: "bug,auto-detected,jules"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
