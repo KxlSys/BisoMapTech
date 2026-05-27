@@ -230,6 +230,12 @@ export interface Place {
 
 export type ProjectType = "Startup" | "Public" | "ONG" | "Personnel";
 
+/** Helper type — sous-ensemble de Profile affiché sur les cartes projet */
+export type ProjectAuthor = Pick<
+  Profile,
+  "id" | "username" | "full_name" | "avatar_url"
+>;
+
 export interface Project {
   id: string;
   title: string;
@@ -243,7 +249,7 @@ export interface Project {
   project_type?: ProjectType;
   priority?: string;
   author_id: string;
-  author?: Pick<Profile, "id" | "username" | "full_name" | "avatar_url">;
+  author?: ProjectAuthor;
   created_at: string;
   updated_at: string;
 }

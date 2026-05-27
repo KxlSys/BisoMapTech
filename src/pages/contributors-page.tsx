@@ -31,7 +31,7 @@ import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useFilterStore } from "@/store/filter-store";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 
 const QUICK_FILTERS = [
   "React",
@@ -180,6 +180,7 @@ export function ContributorsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-24 pt-6 md:pb-8">
+      {/* Page header */}
       <div className="mb-5 flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
@@ -200,6 +201,7 @@ export function ContributorsPage() {
         </Button>
       </div>
 
+      {/* Search bar */}
       <div className="relative mb-4">
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -210,6 +212,7 @@ export function ContributorsPage() {
         />
       </div>
 
+      {/* Quick filter chips */}
       <div className="mb-6 flex flex-wrap gap-2">
         {QUICK_FILTERS.map((tech) => {
           const isActive = techStack.includes(tech);
@@ -236,6 +239,7 @@ export function ContributorsPage() {
         })}
       </div>
 
+      {/* Sidebar + grid */}
       <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
         <aside className="hidden lg:block">
           <div className="sticky top-20">
@@ -244,6 +248,7 @@ export function ContributorsPage() {
         </aside>
 
         <div>
+          {/* Talent grid — large cards on desktop, list-style on mobile */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {profiles.map((profile) => (
               <ProfileCard key={profile.id} profile={profile} />
@@ -288,6 +293,7 @@ export function ContributorsPage() {
         </div>
       </div>
 
+      {/* Mobile filter drawer */}
       {mobileFilterOpen && (
         <div className="fixed inset-0 z-[600] flex flex-col lg:hidden">
           <div className="flex-1" onClick={() => setMobileFilterOpen(false)} />
