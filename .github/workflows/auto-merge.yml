@@ -1,0 +1,15 @@
+name: Auto-Merge des correctifs de Jules
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  auto-merge:
+    if: github.event.label.name == 'auto-fix' # Détecte le travail de Jules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fusionner la PR
+        uses: pascalgn/automerge-action@v0.16.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MERGE_METHOD: "merge"

@@ -1,0 +1,23 @@
+name: Détection et Rapport d'Erreurs
+on:
+  schedule:
+    - cron: '0 7 * * *' # Tourne tous les jours à 7h du matin
+
+jobs:
+  check-errors:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer les logs d'erreurs
+        run: |
+          # Ici, ton script va interroger ton système (ex: Supabase) 
+          # pour récupérer les erreurs des dernières 24h.
+          echo "Récupération des logs..."
+
+      - name: Créer l'issue automatiquement si un bug est trouvé
+        uses: imjohnbo/issue-bot@v3
+        with:
+          title: "[Auto] Erreur détectée en production"
+          body: "Une erreur critique a été détectée dans les logs de production. Jules, à toi de jouer !"
+          labels: "bug, auto-detected, jules" # C'est ce label qui va réveiller Jules !
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
