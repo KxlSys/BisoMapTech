@@ -1,7 +1,3 @@
-## 2025-05-25 - [Learning] Map Re-renders
-**Learning:** The leaflet maps are rendering all profiles/places markers on map updates. By optimizing map renders or using memoization we can reduce rendering time.
-**Action:** I will add memoization.
-
-## 2025-05-26 - [Learning] React State Debouncing & Memoization
-**Learning:** Binding high-frequency events (like text inputs) directly to global state stores (Zustand/Redux) causes massive unnecessary re-renders across the entire app, especially on complex pages like maps and grids. Additionally, passing inline arrow functions directly as props breaks `React.memo` optimizations.
-**Action:** Always debounce global state updates for text inputs using a fast local state and a timeout. Ensure callbacks passed to memoized components are wrapped in `useCallback`.
+## 2024-05-28 - Optimize Leaflet Marker Updates
+**Learning:** React Leaflet implementations often recreate all markers when a single property like `focusedProfileId` changes if dependencies are broad.
+**Action:** When working with Leaflet markers in React, avoid putting the focused ID in the main layer creation dependency array. Instead, use a secondary `useEffect` to find the specific Leaflet marker instance and update its icon or state directly. This turns an O(N) DOM operation (recreating hundreds of markers) into an O(1) operation (updating just 1-2 markers), vastly improving interaction performance on maps with many points.
