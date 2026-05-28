@@ -196,6 +196,7 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
       const marker = L.marker([profile.latitude, profile.longitude], {
         icon: createMarkerIcon(profile.open_to_collaboration, profile.id === focusedProfileId),
       });
+      (marker as any)._isCollaborating = profile.open_to_collaboration;
 
       const safeName = escapeHtml(profile.full_name);
       const safeCity = escapeHtml(profile.city);
@@ -237,11 +238,34 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
       markersRef.current!.addLayer(marker);
       markersMapRef.current.set(profile.id, marker);
     });
-  }, [profiles, onProfileClick, focusedProfileId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profiles, onProfileClick]); // Omit focusedProfileId to prevent recreating all markers on focus
+
+  const prevFocusedIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     const map = mapRef.current;
     const cluster = markersRef.current;
+
+    // ⚡ Bolt: Efficiently update only the changed marker icons instead of recreating all markers
+    if (prevFocusedIdRef.current && prevFocusedIdRef.current !== focusedProfileId) {
+      const prevMarker = markersMapRef.current.get(prevFocusedIdRef.current);
+      if (prevMarker) {
+        const isCollab = (prevMarker as any)._isCollaborating;
+        prevMarker.setIcon(createMarkerIcon(!!isCollab, false));
+      }
+    }
+
+    if (focusedProfileId) {
+      const newMarker = markersMapRef.current.get(focusedProfileId);
+      if (newMarker) {
+        const isCollab = (newMarker as any)._isCollaborating;
+        newMarker.setIcon(createMarkerIcon(!!isCollab, true));
+      }
+    }
+
+    prevFocusedIdRef.current = focusedProfileId;
+
     if (!focusedProfileId || !map || !cluster) return;
 
     const marker = markersMapRef.current.get(focusedProfileId);
