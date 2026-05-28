@@ -1,0 +1,31 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  review:
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          direct_prompt: |
+            Analyse ce diff de Pull Request en tant qu'expert en sécurité et qualité de code.
+
+            Fournis une revue détaillée en français couvrant :
+            1. **Failles de sécurité** (injections, XSS, exposition de données sensibles, secrets exposés, etc.)
+            2. **Bugs potentiels** (erreurs logiques, cas limites non gérés, régressions possibles, etc.)
+            3. **Qualité du code** (lisibilité, maintenabilité, bonnes pratiques)
+
+            Pour chaque point identifié, indique la sévérité :
+            🔴 Critique / 🟠 Haute / 🟡 Moyenne / 🟢 Faible
+
+            Si aucun problème n'est détecté, indique-le clairement avec un résumé positif.
