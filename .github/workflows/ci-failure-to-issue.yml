@@ -1,0 +1,50 @@
+name: CI Failure to Jules Issue
+
+on:
+  workflow_run:
+    workflows: ["Security Scan", "CI"]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  issues: write
+
+jobs:
+  create-issue:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or comment Jules issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflowName = context.payload.workflow_run.name;
+            const sha = context.payload.workflow_run.head_sha;
+            const runUrl = context.payload.workflow_run.html_url;
+            const title = `[CI] Échec : ${workflowName}`;
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'jules',
+              state: 'open',
+            });
+
+            const existing = issues.find(i => i.title === title);
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Nouvel échec détecté pour **${workflowName}** sur \`main\`.\nCommit : ${sha}\nLien : ${runUrl}`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: `Le workflow **${workflowName}** a échoué sur \`main\`.\n\nCommit : ${sha}\nLien : ${runUrl}\n\nMerci de diagnostiquer et corriger l'échec.`,
+                labels: ['bug', 'jules'],
+              });
+            }
