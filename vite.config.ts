@@ -17,6 +17,9 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ["react", "react-dom", "react-router-dom"],
+          supabase: ["@supabase/supabase-js"],
+          sentry: ["@sentry/react"],
+          forms: ["react-hook-form", "@hookform/resolvers", "zod"],
           ui: ["radix-ui", "class-variance-authority", "clsx", "tailwind-merge"],
           leaflet: ["leaflet", "react-leaflet"],
         },

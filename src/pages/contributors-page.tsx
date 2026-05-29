@@ -58,90 +58,92 @@ const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Prof
   const lastSeen = formatLastSeen(profile.last_seen_at);
 
   return (
-    <Link to={`/contributeurs/${profile.username}`}>
-      <article className="glass-panel group relative rounded-xl border border-white/10 p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_8px_24px_rgba(78,222,163,0.08)] active:scale-[0.99] cursor-pointer">
-        <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-primary/6 blur-xl transition-colors group-hover:bg-primary/12" />
+    <article className="glass-panel group relative rounded-xl border border-white/10 p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_8px_24px_rgba(78,222,163,0.08)] active:scale-[0.99]">
+      {/* Absolute overlay Link covering the whole card for easy clickability, with no nested interactive children inside it */}
+      <Link
+        to={`/contributeurs/${profile.username}`}
+        className="absolute inset-0 z-0 rounded-xl"
+        aria-label={`Voir le profil de ${profile.full_name}`}
+      />
 
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="relative shrink-0">
-            <Avatar className="h-14 w-14 border-2 border-white/15">
-              <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-              <AvatarFallback className="bg-primary/20 text-primary text-lg font-semibold">
-                {profile.full_name?.charAt(0) || "U"}
-              </AvatarFallback>
-            </Avatar>
-            {profile.open_to_collaboration && (
-              <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-background">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75 motion-reduce:animate-none" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <h3 className="truncate text-sm font-bold leading-tight text-foreground group-hover:text-primary transition-colors">
-              {profile.full_name}
-            </h3>
-            <p className="mt-0.5 text-sm font-medium text-primary">
-              {ROLE_TYPE_LABELS[profile.role_type]}
-            </p>
-            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3 shrink-0" />
-              <span className="truncate">{profile.city || "Congo"}</span>
-            </div>
-            {profile.open_to_collaboration && (
-              <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[11px] font-medium text-primary">
-                Disponible
+      <div className="relative z-10 pointer-events-none mb-4 flex items-start justify-between gap-3">
+        <div className="relative shrink-0">
+          <Avatar className="h-14 w-14 border-2 border-white/15">
+            <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+            <AvatarFallback className="bg-primary/20 text-primary text-lg font-semibold">
+              {profile.full_name?.charAt(0) || "U"}
+            </AvatarFallback>
+          </Avatar>
+          {profile.open_to_collaboration && (
+            <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-background">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75 motion-reduce:animate-none" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
               </span>
-            )}
-          </div>
-
-          <Badge
-            variant="outline"
-            className="shrink-0 border-white/10 bg-white/5 text-xs text-muted-foreground"
-          >
-            {EXPERIENCE_LABELS[profile.experience_level]}
-          </Badge>
+            </div>
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-white/10 pt-3">
-          {profile.tech_stack.slice(0, 3).map((tech) => (
-            <span
-              key={tech}
-              className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-muted-foreground"
-            >
-              {tech}
-            </span>
-          ))}
-          {profile.tech_stack.length > 3 && (
-            <span className="text-xs text-muted-foreground">
-              +{profile.tech_stack.length - 3}
+        <div className="flex-1 min-w-0">
+          <h3 className="truncate text-sm font-bold leading-tight text-foreground group-hover:text-primary transition-colors">
+            {profile.full_name}
+          </h3>
+          <p className="mt-0.5 text-sm font-medium text-primary">
+            {ROLE_TYPE_LABELS[profile.role_type]}
+          </p>
+          <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate">{profile.city || "Congo"}</span>
+          </div>
+          {profile.open_to_collaboration && (
+            <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[11px] font-medium text-primary">
+              Disponible
             </span>
           )}
-          <div className="ml-auto flex items-center gap-2">
-            {lastSeen && (
-              <span className="text-[11px] text-muted-foreground/60 hidden sm:inline">
-                {lastSeen}
-              </span>
-            )}
-            {profile.github_url && (
-              <a
-                href={profile.github_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-muted-foreground/60 hover:text-primary transition-colors"
-                aria-label="Voir profil GitHub"
-              >
-                <GithubIcon className="h-4 w-4" />
-              </a>
-            )}
-          </div>
         </div>
-      </article>
-    </Link>
+
+        <Badge
+          variant="outline"
+          className="shrink-0 border-white/10 bg-white/5 text-xs text-muted-foreground"
+        >
+          {EXPERIENCE_LABELS[profile.experience_level]}
+        </Badge>
+      </div>
+
+      <div className="relative z-10 flex flex-wrap items-center gap-1.5 border-t border-white/10 pt-3">
+        {profile.tech_stack.slice(0, 3).map((tech) => (
+          <span
+            key={tech}
+            className="rounded-md border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-muted-foreground"
+          >
+            {tech}
+          </span>
+        ))}
+        {profile.tech_stack.length > 3 && (
+          <span className="text-xs text-muted-foreground">
+            +{profile.tech_stack.length - 3}
+          </span>
+        )}
+        <div className="ml-auto flex items-center gap-2 pointer-events-auto">
+          {lastSeen && (
+            <span className="text-[11px] text-muted-foreground/60 hidden sm:inline">
+              {lastSeen}
+            </span>
+          )}
+          {profile.github_url && (
+            <a
+              href={profile.github_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground/60 hover:text-primary transition-colors relative z-20"
+              aria-label={`Voir le profil GitHub de ${profile.full_name}`}
+            >
+              <GithubIcon className="h-4 w-4" />
+            </a>
+          )}
+        </div>
+      </div>
+    </article>
   );
 });
 
@@ -208,6 +210,7 @@ export function ContributorsPage() {
           placeholder="Rechercher par nom, compétence..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          aria-label="Rechercher des contributeurs par nom ou compétence"
           className="bg-white/5 border-white/10 pl-10 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30"
         />
       </div>

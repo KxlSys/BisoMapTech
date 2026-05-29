@@ -161,6 +161,7 @@ export function PlacesPage() {
             placeholder="Rechercher (nom, ville, adresse...)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="Rechercher des lieux par nom, ville ou adresse"
             className="bg-white/5 border-white/10"
           />
 

@@ -93,8 +93,17 @@ export function AvatarUploader({
     <div className={cn("flex flex-col items-center gap-3.5", className)}>
       {/* Interactive Avatar Container */}
       <div 
+        role="button"
+        tabIndex={disabled || isUploading ? -1 : 0}
+        aria-label="Modifier la photo de profil"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            pickFile();
+          }
+        }}
         className={cn(
-          "group relative cursor-pointer select-none",
+          "group relative cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full",
           (disabled || isUploading) && "cursor-not-allowed pointer-events-none"
         )}
         onClick={pickFile}
