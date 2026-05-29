@@ -17,6 +17,8 @@ createRoot(document.getElementById("root")!).render(
 // Sentry is a sizeable dependency; loading it lazily once the browser is idle
 // keeps it out of the initial bundle without disabling monitoring.
 function initMonitoring() {
+  if (!import.meta.env.PROD) return;
+
   import("@sentry/react")
     .then((Sentry) => {
       Sentry.init({
@@ -31,9 +33,17 @@ function initMonitoring() {
 }
 
 if (typeof window !== "undefined") {
-  if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(initMonitoring);
+  const scheduleSentry = () => {
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(initMonitoring);
+    } else {
+      setTimeout(initMonitoring, 100);
+    }
+  };
+
+  if (document.readyState === "complete") {
+    scheduleSentry();
   } else {
-    setTimeout(initMonitoring, 1);
+    window.addEventListener("load", scheduleSentry);
   }
 }

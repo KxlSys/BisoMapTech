@@ -15,13 +15,14 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          supabase: ["@supabase/supabase-js"],
-          sentry: ["@sentry/react"],
-          forms: ["react-hook-form", "@hookform/resolvers", "zod"],
-          ui: ["radix-ui", "class-variance-authority", "clsx", "tailwind-merge"],
-          leaflet: ["leaflet", "react-leaflet"],
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("@supabase")) return "supabase";
+            if (id.includes("@sentry")) return "sentry";
+            if (id.includes("leaflet") || id.includes("react-leaflet") || id.includes("leaflet.markercluster")) return "leaflet";
+            if (id.includes("react-hook-form") || id.includes("zod") || id.includes("@hookform")) return "forms";
+            if (id.includes("recharts") || id.includes("d3")) return "charts";
+          }
         },
       },
     },

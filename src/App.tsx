@@ -157,10 +157,16 @@ export default function App() {
     if (!isSupabaseConfigured) {
       return;
     }
-    initialize();
-    sessionStorage.removeItem(
-      "lazy-retry-refreshed"
-    );
+    const initAuth = () => {
+      initialize();
+      sessionStorage.removeItem("lazy-retry-refreshed");
+    };
+
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(initAuth);
+    } else {
+      setTimeout(initAuth, 100);
+    }
   }, [initialize]);
 
   const showSupabaseDebug =
