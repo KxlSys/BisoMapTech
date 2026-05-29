@@ -33,7 +33,7 @@ export function HomePage() {
           </p>
           <div className="mt-5">
             <Link to="/talents">
-              <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
+              <Button className="h-11 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
                 Ouvrir la carte
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -51,7 +51,7 @@ export function HomePage() {
           </p>
           <div className="mt-5">
             <Link to="/lieux">
-              <Button className="gap-2 border border-white/15 bg-white/5 hover:bg-white/8 text-foreground font-semibold">
+              <Button className="h-11 gap-2 border border-white/15 bg-white/5 hover:bg-white/8 text-foreground font-semibold">
                 Ouvrir la carte
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -69,7 +69,7 @@ export function HomePage() {
           </p>
           <div className="mt-5">
             <Link to="/matching">
-              <Button className="gap-2 border border-white/15 bg-white/5 hover:bg-white/8 text-foreground font-semibold">
+              <Button className="h-11 gap-2 border border-white/15 bg-white/5 hover:bg-white/8 text-foreground font-semibold">
                 Explorer
                 <ArrowRight className="h-4 w-4" />
               </Button>

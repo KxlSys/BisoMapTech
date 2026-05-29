@@ -49,7 +49,7 @@ export function Navbar() {
         style={{ background: "oklch(0.10 0.025 240 / 80%)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div className="mx-auto flex h-14 max-w-7xl items-center px-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 font-semibold text-primary" aria-label="BisoMapTech — Accueil">
+          <Link to="/" className="flex min-h-11 items-center gap-2 font-semibold text-primary" aria-label="BisoMapTech — Accueil">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20">
               <Map className="h-4 w-4 text-primary" />
             </div>
@@ -175,7 +175,7 @@ export function Navbar() {
       {/* Mobile top bar */}
       <header className="sticky top-0 z-50 flex h-12 items-center justify-between border-b border-white/10 px-4 md:hidden"
         style={{ background: "oklch(0.10 0.025 240 / 90%)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
-        <Link to="/" className="flex items-center gap-2 font-semibold text-primary" aria-label="BisoMapTech — Accueil">
+        <Link to="/" className="flex min-h-11 items-center gap-2 font-semibold text-primary" aria-label="BisoMapTech — Accueil">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/20">
             <Map className="h-3.5 w-3.5 text-primary" />
           </div>
@@ -186,7 +186,7 @@ export function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/5" aria-label="Menu utilisateur">
+                <Button variant="ghost" size="sm" className="h-11 w-11 p-0 hover:bg-white/5" aria-label="Menu utilisateur">
                   <Avatar className="h-6 w-6 border border-primary/30">
                     <AvatarImage src={profile?.avatar_url} alt={profile?.full_name} />
                     <AvatarFallback className="bg-primary/20 text-primary text-[10px]">
@@ -219,7 +219,7 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <Link to="/login">
-              <Button size="sm" className="h-7 gap-1.5 bg-primary text-primary-foreground text-xs hover:bg-primary/90 font-semibold shadow-[0_2px_10px_oklch(0.82_0.16_155/25%)]">
+              <Button size="sm" className="h-11 gap-2 bg-primary text-primary-foreground text-sm hover:bg-primary/90 font-semibold shadow-[0_2px_10px_oklch(0.82_0.16_155/25%)]">
                 <LogIn className="h-3.5 w-3.5" />
                 Connexion
               </Button>

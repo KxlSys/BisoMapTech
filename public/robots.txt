@@ -1,4 +1,12 @@
 User-agent: *
 Allow: /
 
+# Private / authenticated routes — not useful to index
+Disallow: /login
+Disallow: /onboarding
+Disallow: /auth/
+Disallow: /profil/edit
+Disallow: /admin
+Disallow: /messages
+
 Sitemap: https://bisomaptech.vercel.app/sitemap.xml
