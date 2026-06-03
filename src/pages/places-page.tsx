@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import type L from "leaflet";
 import { MapPin, Plus, Loader2, Locate, List, Map, AlertCircle, RotateCcw, LogIn } from "lucide-react";
@@ -52,12 +52,43 @@ function PlaceCardSkeleton() {
   );
 }
 
+const MemoizedPlaceListItem = React.memo(({
+  place,
+  onClick
+}: {
+  place: Place;
+  onClick: (id: string) => void;
+}) => (
+  <button
+    type="button"
+    onClick={() => onClick(place.id)}
+    className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-3 hover:bg-white/8 transition-colors text-left"
+  >
+    <p className="text-sm font-semibold text-foreground">{place.name}</p>
+    <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+      <Badge
+        variant="outline"
+        className={cn("text-[10px] py-0 px-1.5 font-medium border", getCategoryBadge(place.category))}
+      >
+        {place.category}
+      </Badge>
+      {place.city && (
+        <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
+          <MapPin className="h-2.5 w-2.5" />
+          {place.city}
+        </span>
+      )}
+    </div>
+  </button>
+));
+
 export function PlacesPage() {
   const { user } = useAuthStore();
   const [places, setPlaces] = useState<Place[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [localSearch, setLocalSearch] = useState("");
   const [city, setCity] = useState<string>("all");
   const [category, setCategory] = useState<string>("all");
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
@@ -73,12 +104,22 @@ export function PlacesPage() {
 
   function resetFilters() {
     setSearch("");
+    setLocalSearch("");
     setCity("all");
     setCategory("all");
   }
 
   const cities = useMemo(() => ["all", ...CONGO_CITIES.map((c) => c.name)], []);
   const categories = useMemo(() => ["all", ...PLACE_CATEGORIES], []);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      if (localSearch !== search) {
+        setSearch(localSearch);
+      }
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [localSearch, search]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,6 +163,11 @@ export function PlacesPage() {
   const LIST_LIMIT = 50;
   const displayedPlaces = places.slice(0, LIST_LIMIT);
 
+  const handlePlaceClick = useCallback((id: string) => {
+    setFocusedPlaceId(id);
+    setMobileView("map");
+  }, []);
+
   return (
     <div className="relative flex flex-1 overflow-hidden">
       <aside
@@ -159,8 +205,8 @@ export function PlacesPage() {
         <div className="flex-shrink-0 border-b border-white/8 px-4 py-4 space-y-3">
           <Input
             placeholder="Rechercher (nom, ville, adresse...)"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
             aria-label="Rechercher des lieux par nom, ville ou adresse"
             className="bg-white/5 border-white/10"
           />
@@ -242,31 +288,11 @@ export function PlacesPage() {
               )}
 
               {!isLoading && !fetchError && displayedPlaces.map((p) => (
-                <button
+                <MemoizedPlaceListItem
                   key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setFocusedPlaceId(p.id);
-                    setMobileView("map");
-                  }}
-                  className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-3 hover:bg-white/8 transition-colors text-left"
-                >
-                  <p className="text-sm font-semibold text-foreground">{p.name}</p>
-                  <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-                    <Badge
-                      variant="outline"
-                      className={cn("text-[10px] py-0 px-1.5 font-medium border", getCategoryBadge(p.category))}
-                    >
-                      {p.category}
-                    </Badge>
-                    {p.city && (
-                      <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
-                        <MapPin className="h-2.5 w-2.5" />
-                        {p.city}
-                      </span>
-                    )}
-                  </div>
-                </button>
+                  place={p}
+                  onClick={handlePlaceClick}
+                />
               ))}
 
               {places.length > LIST_LIMIT && !isLoading && (
