@@ -36,17 +36,17 @@ function getCategoryColor(category: string): string {
   return CATEGORY_COLORS[category] ?? "#06b6d4";
 }
 
-function createMarkerIcon(color: string): L.DivIcon {
+function createMarkerIcon(color: string, isFocused: boolean): L.DivIcon {
   return L.divIcon({
     html: `
-      <div style="position:relative;width:12px;height:12px;display:flex;align-items:center;justify-content:center;">
-        <div style="background:${color};width:12px;height:12px;border-radius:50%;border:2px solid #ffffff;box-shadow:0 0 8px ${color}99;position:absolute;z-index:2;"></div>
-        <div style="background:${color}59;width:22px;height:22px;border-radius:50%;position:absolute;z-index:1;animation:pulseMarker 1.8s infinite ease-in-out;"></div>
+      <div style="position:relative;width:${isFocused ? "16px" : "12px"};height:${isFocused ? "16px" : "12px"};display:flex;align-items:center;justify-content:center;transition:all 0.2s ease;">
+        <div style="background:${color};width:${isFocused ? "16px" : "12px"};height:${isFocused ? "16px" : "12px"};border-radius:50%;border:2px solid #ffffff;box-shadow:0 0 ${isFocused ? "12px" : "8px"} ${color}99;position:absolute;z-index:2;"></div>
+        <div style="background:${color}59;width:${isFocused ? "30px" : "22px"};height:${isFocused ? "30px" : "22px"};border-radius:50%;position:absolute;z-index:1;animation:pulseMarker 1.8s infinite ease-in-out;"></div>
       </div>
     `,
     className: "custom-marker-place",
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
+    iconSize: [isFocused ? 30 : 22, isFocused ? 30 : 22],
+    iconAnchor: [isFocused ? 15 : 11, isFocused ? 15 : 11],
     popupAnchor: [0, -10],
   });
 }
@@ -181,8 +181,9 @@ export const PlacesMap = React.memo(function PlacesMap({ places, onMapReady, foc
 
       const color = getCategoryColor(place.category);
       const marker = L.marker([place.latitude, place.longitude], {
-        icon: createMarkerIcon(color),
+        icon: createMarkerIcon(color, place.id === focusedPlaceId),
       });
+      (marker as any)._color = color;
 
       const safeName = escapeHtml(place.name);
       const safeCity = escapeHtml(place.city || "");
@@ -208,9 +209,31 @@ export const PlacesMap = React.memo(function PlacesMap({ places, onMapReady, foc
       markersRef.current!.addLayer(marker);
       markersMapRef.current.set(place.id, marker);
     });
-  }, [places]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [places]); // Omit focusedPlaceId to prevent recreating all markers on focus
+
+  const prevFocusedIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
+    // ⚡ Bolt: Efficiently update only the changed marker icons instead of recreating all markers
+    if (prevFocusedIdRef.current && prevFocusedIdRef.current !== focusedPlaceId) {
+      const prevMarker = markersMapRef.current.get(prevFocusedIdRef.current);
+      if (prevMarker) {
+        const color = (prevMarker as any)._color;
+        prevMarker.setIcon(createMarkerIcon(color, false));
+      }
+    }
+
+    if (focusedPlaceId) {
+      const newMarker = markersMapRef.current.get(focusedPlaceId);
+      if (newMarker) {
+        const color = (newMarker as any)._color;
+        newMarker.setIcon(createMarkerIcon(color, true));
+      }
+    }
+
+    prevFocusedIdRef.current = focusedPlaceId;
+
     if (!focusedPlaceId || !mapRef.current || !markersMapRef.current) return;
 
     const marker = markersMapRef.current.get(focusedPlaceId);
