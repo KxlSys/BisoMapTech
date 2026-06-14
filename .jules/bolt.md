@@ -5,3 +5,6 @@
 ## 2024-06-03 - Leaflet Marker Icon Updates
 **Learning:** In Leaflet, redefining all markers completely when only a single marker's focus state changes can be expensive and cause slight UI flickering. Using `marker.setIcon()` avoids recreating marker nodes.
 **Action:** Track `focusedPlaceId` changes via a ref, grab the previously focused marker to reset its icon, and then set the new focused marker's icon.
+## 2026-06-14 - Isolated search input state to prevent full page re-renders
+**Learning:** Found that linking a search input directly to a debounced `useState` in a parent component (like `ContributorsPage`, `PlacesPage`, or `FilterPanel`) causes the entire parent component (including large lists and Leaflet maps) to re-render synchronously on every single keystroke.
+**Action:** Extract input into a dedicated `DebouncedInput` component that manages its own local keystroke state. This confines keystroke re-renders solely to the `DebouncedInput` component, updating the parent only after the user stops typing.

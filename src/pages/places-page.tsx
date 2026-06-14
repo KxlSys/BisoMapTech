@@ -4,7 +4,7 @@ import type L from "leaflet";
 import { MapPin, Plus, Loader2, Locate, List, Map, AlertCircle, RotateCcw, LogIn } from "lucide-react";
 import { PlacesMap } from "@/components/map/places-map";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DebouncedInput } from "@/components/ui/debounced-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -88,7 +88,6 @@ export function PlacesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [localSearch, setLocalSearch] = useState("");
   const [city, setCity] = useState<string>("all");
   const [category, setCategory] = useState<string>("all");
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
@@ -104,22 +103,12 @@ export function PlacesPage() {
 
   function resetFilters() {
     setSearch("");
-    setLocalSearch("");
     setCity("all");
     setCategory("all");
   }
 
   const cities = useMemo(() => ["all", ...CONGO_CITIES.map((c) => c.name)], []);
   const categories = useMemo(() => ["all", ...PLACE_CATEGORIES], []);
-
-  useEffect(() => {
-    const t = window.setTimeout(() => {
-      if (localSearch !== search) {
-        setSearch(localSearch);
-      }
-    }, 300);
-    return () => window.clearTimeout(t);
-  }, [localSearch, search]);
 
   useEffect(() => {
     let cancelled = false;
@@ -203,10 +192,10 @@ export function PlacesPage() {
         </div>
 
         <div className="flex-shrink-0 border-b border-white/8 px-4 py-4 space-y-3">
-          <Input
+          <DebouncedInput
             placeholder="Rechercher (nom, ville, adresse...)"
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
+            value={search}
+            onChange={setSearch}
             aria-label="Rechercher des lieux par nom, ville ou adresse"
             className="bg-white/5 border-white/10"
           />
