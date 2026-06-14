@@ -24,14 +24,14 @@ const GithubIcon = ({ className }: { className?: string }) => (
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DebouncedInput } from "@/components/ui/debounced-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterPanel } from "@/components/filters/filter-panel";
 import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useFilterStore } from "@/store/filter-store";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 const QUICK_FILTERS = [
   "React",
@@ -152,20 +152,6 @@ export function ContributorsPage() {
     useFilteredProfiles({ pageSize: 18 });
   const { techStack, searchQuery, setTechStack, setSearchQuery } = useFilterStore();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [localSearch, setLocalSearch] = useState(searchQuery);
-
-  useEffect(() => {
-    setLocalSearch(searchQuery);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (localSearch !== searchQuery) {
-        setSearchQuery(localSearch);
-      }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [localSearch, searchQuery, setSearchQuery]);
 
   if (isLoading && page === 1) {
     return (
@@ -206,10 +192,10 @@ export function ContributorsPage() {
       {/* Search bar */}
       <div className="relative mb-4">
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <DebouncedInput
           placeholder="Rechercher par nom, compétence..."
-          value={localSearch}
-          onChange={(e) => setLocalSearch(e.target.value)}
+          value={searchQuery}
+          onChange={setSearchQuery}
           aria-label="Rechercher des contributeurs par nom ou compétence"
           className="bg-white/5 border-white/10 pl-10 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30"
         />
