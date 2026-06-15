@@ -71,9 +71,17 @@ export function OnboardingStepper() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [techSearch, setTechSearch] = useState("");
+  const [localTechSearch, setLocalTechSearch] = useState("");
 
 
   const draft = useMemo(() => (user ? loadDraft(user.id) : null), [user]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setTechSearch(localTechSearch);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [localTechSearch]);
 
   const DRAFT_KEY = `onboarding_draft_${user?.id}`;
 
@@ -384,8 +392,8 @@ export function OnboardingStepper() {
                 <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Rechercher : Linux, Cisco, Pentest, Python, AWS, Flutter..."
-                  value={techSearch}
-                  onChange={(e) => setTechSearch(e.target.value)}
+                  value={localTechSearch}
+                  onChange={(e) => setLocalTechSearch(e.target.value)}
                   className="bg-white/5 border-white/10 pl-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30"
                 />
               </div>
