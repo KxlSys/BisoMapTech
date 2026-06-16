@@ -115,7 +115,11 @@ export function PlacesPage() {
     setIsLoading(true);
     setFetchError(null);
 
-    const t = window.setTimeout(async () => {
+    // ⚡ Bolt: Remove redundant 250ms setTimeout wrapper around fetchPaginatedPlaces.
+    // The `search` state is controlled by DebouncedInput which already handles debouncing.
+    // Executing the fetch immediately removes artificial delay for fast inputs (dropdowns)
+    // and eliminates the double-debounce latency for text search.
+    async function fetchPlaces() {
       try {
         const { places } = await fetchPaginatedPlaces({
           page: 1,
@@ -130,11 +134,12 @@ export function PlacesPage() {
       } finally {
         if (!cancelled) setIsLoading(false);
       }
-    }, 250);
+    }
+
+    fetchPlaces();
 
     return () => {
       cancelled = true;
-      window.clearTimeout(t);
     };
   }, [search, city, category, retryTick]);
 
