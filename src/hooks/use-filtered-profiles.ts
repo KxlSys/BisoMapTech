@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import { fetchPaginatedProfiles } from "@/lib/profile-service";
 import { useFilterStore } from "@/store/filter-store";
@@ -155,10 +155,6 @@ export function useFilteredProfiles(
 
   const [page, setPage] = useState(1);
 
-  const debounceRef = useRef<
-    ReturnType<typeof setTimeout> | null
-  >(null);
-
   const {
     searchQuery,
     city,
@@ -288,21 +284,12 @@ export function useFilteredProfiles(
     openToCollaboration,
   ]);
 
+  // ⚡ Bolt: Remove redundant 300ms setTimeout debounce wrapper around fetchData.
+  // The `searchQuery` is controlled by a DebouncedInput component, meaning state updates
+  // are already debounced. Removing this wrapper eliminates "double debouncing" for text
+  // search and prevents unnecessary latency when interacting with other immediate filters.
   useEffect(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-
-    debounceRef.current =
-      setTimeout(fetchData, 300);
-
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(
-          debounceRef.current
-        );
-      }
-    };
+    fetchData();
   }, [fetchData]);
 
   return {
