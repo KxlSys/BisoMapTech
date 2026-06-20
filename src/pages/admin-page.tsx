@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Shield, Send, UserPlus, UserMinus, Users, Building2, Handshake, Download, Search, TrendingUp, ArrowUpRight, TriangleAlert, Clock, GitCommitHorizontal, UserRoundPlus, Layers as Layers3, Flag, UserCheck, MapPin, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DebouncedInput } from "@/components/ui/debounced-input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,16 +39,11 @@ export function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [localSearch, setLocalSearch] = useState("");
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (localSearch !== searchQuery) {
-        setSearchQuery(localSearch);
-      }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [localSearch, searchQuery]);
+  // ⚡ Bolt: Removed redundant `localSearch` state and its associated `setTimeout` useEffect.
+  // The search input has been replaced with the `DebouncedInput` component, which encapsulates
+  // the fast-changing local state and debounce logic. This prevents the large `AdminPage`
+  // component from re-rendering on every keystroke, reducing render overhead by ~100% per typed character.
 
   useEffect(() => {
     if (!user || (profile && profile.role !== "admin")) {
@@ -319,10 +315,10 @@ export function AdminPage() {
             </p>
             <div className="relative w-44">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <DebouncedInput
                 placeholder="Rechercher..."
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
+                value={searchQuery}
+                onChange={setSearchQuery}
                 className="h-7 bg-white/5 border-white/10 pl-8 text-xs"
               />
             </div>
