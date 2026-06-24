@@ -44,6 +44,9 @@ export function calculateMatches(
   currentUser: Profile,
   candidates: Profile[]
 ): MatchResult[] {
+  // ⚡ Bolt: Pre-calculate the current user's tech stack as a Set to avoid O(N*M) lookups
+  const currentUserTechsSet = new Set(currentUser.tech_stack);
+
   return candidates
     .filter((c) => c.id !== currentUser.id && c.open_to_collaboration)
     .map((candidate) => {
@@ -56,8 +59,9 @@ export function calculateMatches(
         reasons.push("Competences complementaires");
       }
 
-      const commonTechs = currentUser.tech_stack.filter((t) =>
-        candidate.tech_stack.includes(t)
+      // ⚡ Bolt: Fast Set lookup instead of array.includes() for nested tech stack matching
+      const commonTechs = candidate.tech_stack.filter((t) =>
+        currentUserTechsSet.has(t)
       );
       if (commonTechs.length > 0) {
         score += Math.min(commonTechs.length * 10, 25);
@@ -97,14 +101,24 @@ export function calculateProjectMatches(
   profile: Profile,
   projects: Project[]
 ): ProjectMatch[] {
+  // ⚡ Bolt: Pre-calculate the lowercase tech stack of the profile to avoid re-lowercasing
+  // it for every single tech in every single project.
+  const profileTechsLower = profile.tech_stack.map((t) => t.toLowerCase());
+
   return projects
     .map((project) => {
       let score = 0;
       const reasons: string[] = [];
 
-      const commonTechs = profile.tech_stack.filter((t) =>
-        project.tech_stack.map((pt) => pt.toLowerCase()).includes(t.toLowerCase())
+      // ⚡ Bolt: Instead of iterating and lowercasing the project's entire tech stack
+      // for *every* item in the profile's tech stack (O(M*K)), we pre-calculate a Set
+      // of the lowercased project techs (O(M)) and do O(1) lookups.
+      const projectTechsSet = new Set(project.tech_stack.map((pt) => pt.toLowerCase()));
+
+      const commonTechs = profileTechsLower.filter((tLower) =>
+        projectTechsSet.has(tLower)
       );
+
       if (commonTechs.length > 0) {
         score += Math.min(commonTechs.length * 15, 40);
         reasons.push(`${commonTechs.length} techno(s) en commun`);

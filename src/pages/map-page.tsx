@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ListFilter as Filter, X, ChevronRight, Plus, Minus, Locate, MapPin, Loader2, List, Map } from "lucide-react";
 import type L from "leaflet";
@@ -22,7 +22,12 @@ export function MapPage() {
   const { resetFilters } = useFilterStore();
   const leafletMapRef = useRef<L.Map | null>(null);
 
-  const listProfiles = user ? profiles.filter((p) => p.id !== user.id) : profiles;
+  // ⚡ Bolt: Memoize the filtered list of profiles to prevent O(N) recalculations on every render.
+  // With up to 200 profiles, recalculating this synchronously blocks the main thread slightly.
+  const listProfiles = useMemo(
+    () => (user ? profiles.filter((p) => p.id !== user.id) : profiles),
+    [user, profiles]
+  );
 
   const handleMapReady = useCallback((map: L.Map) => {
     leafletMapRef.current = map;
@@ -93,7 +98,7 @@ export function MapPage() {
           </div>
           <ScrollArea className="flex-1">
             <div className="space-y-2 p-4 pb-8">
-              {listProfiles.slice(0, 20).map((profile) => (
+              {listProfiles.slice(0, 20).map((profile: Profile) => (
                 <ProfileCard
                   key={profile.id}
                   profile={profile}
