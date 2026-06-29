@@ -16,19 +16,42 @@ interface UseLocationsResult {
  * Charge villes et départements depuis Supabase, avec repli sur les
  * constantes statiques si les tables sont absentes, vides ou en erreur.
  */
+// ⚡ Bolt: Cache location data at module level to prevent redundant Supabase calls
+let cachedCities: CityCoordinates[] | null = null;
+let cachedDepartments: string[] | null = null;
+let fetchPromise: Promise<[CityCoordinates[], string[]]> | null = null;
+
 export function useLocations(): UseLocationsResult {
-  const [cities, setCities] = useState<CityCoordinates[]>(CONGO_CITIES);
-  const [departments, setDepartments] = useState<string[]>(département_OPTIONS);
-  const [isLoading, setIsLoading] = useState(true);
+  const [cities, setCities] = useState<CityCoordinates[]>(
+    cachedCities ?? CONGO_CITIES
+  );
+  const [departments, setDepartments] = useState<string[]>(
+    cachedDepartments ?? département_OPTIONS
+  );
+  // ⚡ Bolt: Immediately set isLoading to false if data is already cached
+  const [isLoading, setIsLoading] = useState(!cachedCities || !cachedDepartments);
 
   useEffect(() => {
+    // ⚡ Bolt: If data is already cached, no need to fetch again
+    if (cachedCities && cachedDepartments) {
+      return;
+    }
+
     let active = true;
 
-    Promise.all([getCities(), getDepartments()])
+    if (!fetchPromise) {
+      fetchPromise = Promise.all([getCities(), getDepartments()]);
+    }
+
+    fetchPromise
       .then(([dbCities, dbDepartments]) => {
+        if (dbCities.length > 0) cachedCities = dbCities;
+        if (dbDepartments.length > 0) cachedDepartments = dbDepartments;
+
         if (!active) return;
-        if (dbCities.length > 0) setCities(dbCities);
-        if (dbDepartments.length > 0) setDepartments(dbDepartments);
+
+        if (cachedCities) setCities(cachedCities);
+        if (cachedDepartments) setDepartments(cachedDepartments);
       })
       .catch(() => {
         // On conserve les valeurs statiques de repli.
