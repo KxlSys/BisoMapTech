@@ -10,3 +10,6 @@
 **Learning:** In the onboarding stepper, the tech search input filtered a large list (`TECH_OPTIONS`) synchronously on every keystroke, causing the root component to re-render and producing noticeable UI lag.
 **Action:** Decouple the fast-changing input state (`localTechSearch`) from the expensive render-triggering state (`techSearch`) and use a standard `useEffect` debounce pattern (300ms) to synchronize the two.
 ## 2026-06-24 - Memoization and Set Lookups for Performance\n**Learning:** Recalculating array mappings or filtering directly inside the render loop or inside nested array iteration blocks the main thread. Specifically, `.filter()` combined with `.map().includes()` creates an O(N*M) time complexity.\n**Action:** Use `useMemo` in React components to memoize filtered collections (e.g. `listProfiles`). In algorithmic logic, pre-calculate lowercased values and convert reference arrays to `Set` structures for O(1) membership lookups.
+## 2024-06-29 - Cache location API calls
+**Learning:** Found that `useLocations` hook calls Supabase `getCities` and `getDepartments` on every component mount, causing redundant network requests and database hits.
+**Action:** Implement module-level caching (or use React Query if available) for static/slow-changing data like locations to prevent unnecessary API calls across the application.
