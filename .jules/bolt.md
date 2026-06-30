@@ -9,10 +9,6 @@
 ## 2024-06-05 - Onboarding Tech Search Debouncing
 **Learning:** In the onboarding stepper, the tech search input filtered a large list (`TECH_OPTIONS`) synchronously on every keystroke, causing the root component to re-render and producing noticeable UI lag.
 **Action:** Decouple the fast-changing input state (`localTechSearch`) from the expensive render-triggering state (`techSearch`) and use a standard `useEffect` debounce pattern (300ms) to synchronize the two.
-## 2026-06-24 - Memoization and Set Lookups for Performance\n**Learning:** Recalculating array mappings or filtering directly inside the render loop or inside nested array iteration blocks the main thread. Specifically, `.filter()` combined with `.map().includes()` creates an O(N*M) time complexity.\n**Action:** Use `useMemo` in React components to memoize filtered collections (e.g. `listProfiles`). In algorithmic logic, pre-calculate lowercased values and convert reference arrays to `Set` structures for O(1) membership lookups.
-## 2024-06-29 - Cache location API calls
-**Learning:** Found that `useLocations` hook calls Supabase `getCities` and `getDepartments` on every component mount, causing redundant network requests and database hits.
-**Action:** Implement module-level caching (or use React Query if available) for static/slow-changing data like locations to prevent unnecessary API calls across the application.
-## 2024-07-02 - UI Debouncing Component Usage
-**Learning:** Re-implementing debounced inputs manually via `useState` + `setTimeout` in parent components (e.g., `AdminPage`, `OnboardingStepper`) leads to redundant boilerplate, potential re-render blocking during fast typing, and inconsistencies across the app.
-**Action:** When a debounced text input is required to optimize rendering or fetch performance, always utilize the pre-existing `DebouncedInput` component (`src/components/ui/debounced-input.tsx`) rather than writing custom `useEffect` timeout logic.
+## 2024-05-24 - Double-debouncing with state in React
+**Learning:** Found a component re-rendering issue during typing caused by a custom debounce wrapper using `setTimeout`. The local state updates were triggering massive re-renders on the parent component before being debounced for external logic.
+**Action:** Always check if a dedicated `DebouncedInput` component exists in the codebase that encapsulates local state internally. This prevents intermediate typing updates from bubbling up to the parent component, drastically cutting down on React render cycles.

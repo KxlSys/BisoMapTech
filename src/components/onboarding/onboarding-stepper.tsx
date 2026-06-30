@@ -383,6 +383,7 @@ export function OnboardingStepper() {
 
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                {/* ⚡ Bolt: Use DebouncedInput to prevent unnecessary re-renders of the entire form while typing */}
                 <DebouncedInput
                   placeholder="Rechercher : Linux, Cisco, Pentest, Python, AWS, Flutter..."
                   value={techSearch}
