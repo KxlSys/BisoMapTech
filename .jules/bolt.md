@@ -13,3 +13,6 @@
 ## 2024-06-29 - Cache location API calls
 **Learning:** Found that `useLocations` hook calls Supabase `getCities` and `getDepartments` on every component mount, causing redundant network requests and database hits.
 **Action:** Implement module-level caching (or use React Query if available) for static/slow-changing data like locations to prevent unnecessary API calls across the application.
+## 2024-07-02 - UI Debouncing Component Usage
+**Learning:** Re-implementing debounced inputs manually via `useState` + `setTimeout` in parent components (e.g., `AdminPage`, `OnboardingStepper`) leads to redundant boilerplate, potential re-render blocking during fast typing, and inconsistencies across the app.
+**Action:** When a debounced text input is required to optimize rendering or fetch performance, always utilize the pre-existing `DebouncedInput` component (`src/components/ui/debounced-input.tsx`) rather than writing custom `useEffect` timeout logic.
