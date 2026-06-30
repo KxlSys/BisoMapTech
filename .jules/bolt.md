@@ -9,6 +9,7 @@
 ## 2024-06-05 - Onboarding Tech Search Debouncing
 **Learning:** In the onboarding stepper, the tech search input filtered a large list (`TECH_OPTIONS`) synchronously on every keystroke, causing the root component to re-render and producing noticeable UI lag.
 **Action:** Decouple the fast-changing input state (`localTechSearch`) from the expensive render-triggering state (`techSearch`) and use a standard `useEffect` debounce pattern (300ms) to synchronize the two.
-## 2024-05-24 - Double-debouncing with state in React
-**Learning:** Found a component re-rendering issue during typing caused by a custom debounce wrapper using `setTimeout`. The local state updates were triggering massive re-renders on the parent component before being debounced for external logic.
-**Action:** Always check if a dedicated `DebouncedInput` component exists in the codebase that encapsulates local state internally. This prevents intermediate typing updates from bubbling up to the parent component, drastically cutting down on React render cycles.
+
+## 2026-06-20 - AdminPage Re-render Optimization
+**Learning:** In the `AdminPage` component, local input state was manually debounced causing the large root component to re-render on every keystroke. This anti-pattern can cause measurable input latency on lower-end devices for complex pages.
+**Action:** Use the `DebouncedInput` component for search fields in heavy pages to isolate the fast-changing state and avoid unnecessary full-page renders.
