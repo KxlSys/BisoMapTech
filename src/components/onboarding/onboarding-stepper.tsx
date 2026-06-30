@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DebouncedInput } from "@/components/ui/debounced-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -71,17 +72,9 @@ export function OnboardingStepper() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [techSearch, setTechSearch] = useState("");
-  const [localTechSearch, setLocalTechSearch] = useState("");
 
 
   const draft = useMemo(() => (user ? loadDraft(user.id) : null), [user]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setTechSearch(localTechSearch);
-    }, 300);
-    return () => clearTimeout(t);
-  }, [localTechSearch]);
 
   const DRAFT_KEY = `onboarding_draft_${user?.id}`;
 
@@ -390,10 +383,10 @@ export function OnboardingStepper() {
 
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                <DebouncedInput
                   placeholder="Rechercher : Linux, Cisco, Pentest, Python, AWS, Flutter..."
-                  value={localTechSearch}
-                  onChange={(e) => setLocalTechSearch(e.target.value)}
+                  value={techSearch}
+                  onChange={setTechSearch}
                   className="bg-white/5 border-white/10 pl-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30"
                 />
               </div>
