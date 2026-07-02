@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Handshake,
@@ -329,7 +329,7 @@ function TalentsTab({
 
 // ─── Talent Card ──────────────────────────────────────────────────────────────
 
-function TalentCard({ match, isLoggedIn }: { match: MatchResult; isLoggedIn: boolean }) {
+const TalentCard = React.memo(function TalentCard({ match, isLoggedIn }: { match: MatchResult; isLoggedIn: boolean }) {
   const { profile, score, reasons } = match;
 
   return (
@@ -414,7 +414,7 @@ function TalentCard({ match, isLoggedIn }: { match: MatchResult; isLoggedIn: boo
       </div>
     </div>
   );
-}
+});
 
 // ─── Tab: Projets ─────────────────────────────────────────────────────────────
 
@@ -454,6 +454,60 @@ function ProjetsTab({
     }
   }, [profile, user]);
 
+  const handleInterest = useCallback(async (projectId: string) => {
+    if (!user) {
+      toast.error("Veuillez vous connecter pour exprimer votre intérêt.");
+      return;
+    }
+
+    const isCurrentlyInterested = interested.has(projectId);
+    if (isCurrentlyInterested) {
+      // Quitter le groupe de projet
+      const { error } = await supabase
+        .from("project_members")
+        .delete()
+        .eq("project_id", projectId)
+        .eq("profile_id", user.id);
+
+      if (!error) {
+        setInterested((prev) => {
+          const next = new Set(prev);
+          next.delete(projectId);
+          return next;
+        });
+        toast.success("Vous n'êtes plus inscrit à ce projet.");
+      } else {
+        toast.error("Impossible de se désinscrire.");
+      }
+    } else {
+      // Rejoindre le groupe de projet comme collaborateur
+      const { error } = await supabase
+        .from("project_members")
+        .insert({
+          project_id: projectId,
+          profile_id: user.id,
+          role: "collaborator"
+        });
+
+      if (!error) {
+        setInterested((prev) => {
+          const next = new Set(prev);
+          next.add(projectId);
+          return next;
+        });
+        toast.success("Vous avez rejoint le groupe de projet !", {
+          description: "Retrouvez la discussion d'équipe sous l'onglet Groupes de Projets dans vos Messages.",
+        });
+      } else {
+        if (error.code === "PGRST116" || error.message?.includes("relation")) {
+          toast.error("La base de données n'a pas encore été configurée pour le chat de groupe.");
+        } else {
+          toast.error("Impossible de rejoindre le projet.");
+        }
+      }
+    }
+  }, [user, interested]);
+
   const displayList: { project: Project; score?: number; reasons?: string[] }[] =
     profile && projectMatches.length > 0
       ? projectMatches.map((m) => ({ project: m.project, score: m.score, reasons: m.reasons }))
@@ -489,59 +543,7 @@ function ProjetsTab({
             reasons={reasons}
             isLoggedIn={!!user}
             isInterested={interested.has(project.id)}
-            onInterest={async () => {
-              if (!user) {
-                toast.error("Veuillez vous connecter pour exprimer votre intérêt.");
-                return;
-              }
-
-              const isCurrentlyInterested = interested.has(project.id);
-              if (isCurrentlyInterested) {
-                // Quitter le groupe de projet
-                const { error } = await supabase
-                  .from("project_members")
-                  .delete()
-                  .eq("project_id", project.id)
-                  .eq("profile_id", user.id);
-
-                if (!error) {
-                  setInterested((prev) => {
-                    const next = new Set(prev);
-                    next.delete(project.id);
-                    return next;
-                  });
-                  toast.success("Vous n'êtes plus inscrit à ce projet.");
-                } else {
-                  toast.error("Impossible de se désinscrire.");
-                }
-              } else {
-                // Rejoindre le groupe de projet comme collaborateur
-                const { error } = await supabase
-                  .from("project_members")
-                  .insert({
-                    project_id: project.id,
-                    profile_id: user.id,
-                    role: "collaborator"
-                  });
-
-                if (!error) {
-                  setInterested((prev) => {
-                    const next = new Set(prev);
-                    next.add(project.id);
-                    return next;
-                  });
-                  toast.success("Vous avez rejoint le groupe de projet !", {
-                    description: "Retrouvez la discussion d'équipe sous l'onglet Groupes de Projets dans vos Messages.",
-                  });
-                } else {
-                  if (error.code === "PGRST116" || error.message?.includes("relation")) {
-                    toast.error("La base de données n'a pas encore été configurée pour le chat de groupe.");
-                  } else {
-                    toast.error("Impossible de rejoindre le projet.");
-                  }
-                }
-              }
-            }}
+            onInterest={() => handleInterest(project.id)}
           />
         ))}
       </div>
@@ -583,7 +585,7 @@ function ProjetsTab({
 
 // ─── Project Card ─────────────────────────────────────────────────────────────
 
-function ProjectCard({
+const ProjectCard = React.memo(function ProjectCard({
   project,
   score,
   reasons,
@@ -704,7 +706,7 @@ function ProjectCard({
       </div>
     </div>
   );
-}
+});
 
 // ─── Tab: Connexions ──────────────────────────────────────────────────────────
 
@@ -827,7 +829,7 @@ function ConnexionsTab({ user }: { user: User | null }) {
 
 // ─── Connection Row ───────────────────────────────────────────────────────────
 
-function ConnectionRow({
+const ConnectionRow = React.memo(function ConnectionRow({
   partner,
   conn,
   mode,
@@ -887,4 +889,4 @@ function ConnectionRow({
       </div>
     </div>
   );
-}
+});
