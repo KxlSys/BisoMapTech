@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 interface DebouncedInputProps extends Omit<React.ComponentProps<typeof Input>, "onChange" | "value"> {
   value: string;
@@ -7,7 +7,8 @@ interface DebouncedInputProps extends Omit<React.ComponentProps<typeof Input>, "
   debounce?: number;
 }
 
-export function DebouncedInput({
+// ⚡ Bolt: Memoize DebouncedInput to prevent re-renders when parent components update state unrelated to this input
+export const DebouncedInput = React.memo(function DebouncedInput({
   value,
   onChange,
   debounce = 300,
@@ -38,4 +39,4 @@ export function DebouncedInput({
       onChange={(e) => setLocalValue(e.target.value)}
     />
   );
-}
+});
