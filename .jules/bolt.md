@@ -13,3 +13,7 @@
 ## 2026-06-20 - AdminPage Re-render Optimization
 **Learning:** In the `AdminPage` component, local input state was manually debounced causing the large root component to re-render on every keystroke. This anti-pattern can cause measurable input latency on lower-end devices for complex pages.
 **Action:** Use the `DebouncedInput` component for search fields in heavy pages to isolate the fast-changing state and avoid unnecessary full-page renders.
+
+## 2024-06-25 - DebouncedInput Component Memoization
+**Learning:** The `DebouncedInput` component was used in several places to prevent excessive parent re-renders while typing. However, because `DebouncedInput` itself was not wrapped in `React.memo()`, it was still re-rendering unnecessarily whenever its parent components re-rendered for reasons unrelated to the input (e.g. other form fields changing, complex page state updates). This unnecessary re-rendering could destroy and recreate its internal debouncing logic and cause extra reconciliation work.
+**Action:** When creating utility wrapper components designed to optimize performance (like `DebouncedInput`), ensure the component itself is memoized with `React.memo()` so it fully shields itself from irrelevant parent state updates.
