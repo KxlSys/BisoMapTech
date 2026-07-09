@@ -9,19 +9,36 @@ export interface PlatformStats {
   techCount: number;
 }
 
+// ⚡ Bolt: Consolidated multiple array passes (.map.filter, .filter, .flatMap) into a single O(n) loop
 function computeStats(
   profiles: Array<{ city?: string | null; open_to_collaboration?: boolean | null; tech_stack?: string[] | null }>
 ): PlatformStats {
   const total = profiles.length;
   if (total === 0) return { totalUsers: 0, totalCities: 0, collaborationRate: 0, techCount: 0 };
-  const cities = new Set(profiles.map((p) => p.city).filter(Boolean)).size;
-  const collab = profiles.filter((p) => p.open_to_collaboration).length;
-  const allTechs = new Set(profiles.flatMap((p) => p.tech_stack ?? [])).size;
+
+  let collab = 0;
+  const citiesSet = new Set<string>();
+  const techsSet = new Set<string>();
+
+  for (const p of profiles) {
+    if (p.open_to_collaboration) {
+      collab++;
+    }
+    if (p.city) {
+      citiesSet.add(p.city);
+    }
+    if (p.tech_stack) {
+      for (const tech of p.tech_stack) {
+        techsSet.add(tech);
+      }
+    }
+  }
+
   return {
     totalUsers: total,
-    totalCities: cities,
+    totalCities: citiesSet.size,
     collaborationRate: Math.round((collab / total) * 100),
-    techCount: allTechs,
+    techCount: techsSet.size,
   };
 }
 
