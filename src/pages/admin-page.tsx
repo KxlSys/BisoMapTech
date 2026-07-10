@@ -177,10 +177,20 @@ export function AdminPage() {
     return p.full_name.toLowerCase().includes(q) || p.username.toLowerCase().includes(q) || p.city?.toLowerCase().includes(q);
   });
 
+  // ⚡ Bolt: Consolidate data aggregation into a single O(n) pass
+  // Avoids multiple redundant iterations and intermediate array allocations
+  const citySet = new Set<string>();
+  let collaboratingCount = 0;
+  for (let i = 0; i < profiles.length; i++) {
+    const p = profiles[i];
+    if (p.city) citySet.add(p.city);
+    if (p.open_to_collaboration) collaboratingCount++;
+  }
+
   const stats = {
     total: profiles.length,
-    cities: new Set(profiles.map((p) => p.city).filter(Boolean)).size,
-    collaborating: profiles.filter((p) => p.open_to_collaboration).length,
+    cities: citySet.size,
+    collaborating: collaboratingCount,
   };
   const collabRate = stats.total > 0 ? (stats.collaborating / stats.total) * 100 : 0;
   const pendingInvitations = invitations.filter((i) => i.status === "pending").length;
