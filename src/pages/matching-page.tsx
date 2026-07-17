@@ -508,10 +508,13 @@ function ProjetsTab({
     }
   }, [user, interested]);
 
-  const displayList: { project: Project; score?: number; reasons?: string[] }[] =
-    profile && projectMatches.length > 0
+  // ⚡ Bolt: Memoize displayList to prevent O(N) object allocations on every render
+  // (e.g. when 'interested' state changes after clicking the "Je suis intéressé" button).
+  const displayList: { project: Project; score?: number; reasons?: string[] }[] = useMemo(() => {
+    return profile && projectMatches.length > 0
       ? projectMatches.map((m) => ({ project: m.project, score: m.score, reasons: m.reasons }))
       : projects.map((p) => ({ project: p }));
+  }, [profile, projectMatches, projects]);
 
   const visible = displayList.slice(0, visibleCount);
 
