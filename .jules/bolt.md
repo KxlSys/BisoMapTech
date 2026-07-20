@@ -21,3 +21,6 @@
 ## 2024-07-10 - O(n) Single Pass Data Aggregation
 **Learning:** Using chained array methods (e.g. `.map().filter()`, `.flatMap()`, and repeated `.filter()` over the same large list like `profiles`) leads to redundant O(n) passes over data and allocates unnecessary intermediate arrays. This blocks the main thread longer than necessary when calculating basic statistics like `uniqueCities`, `uniqueTechs`, or total counts.
 **Action:** Consolidate statistical aggregations over large object arrays into a single O(n) `for` loop that updates multiple accumulators (like `Set` objects and primitive counters) in one pass, thereby improving performance and reducing memory overhead.
+## 2024-07-20 - Consolidate array operations in matching algorithms
+**Learning:** Chaining multiple array methods (`.map().filter()`, `.flatMap()`) creates unnecessary intermediate arrays and O(N) passes over the data.
+**Action:** Use a single `reduce` or `for` loop with multiple accumulators to filter and transform the data simultaneously before sorting. This improves performance for data aggregation, particularly on large arrays like projects or candidates.

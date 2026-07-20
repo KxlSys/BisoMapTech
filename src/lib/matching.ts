@@ -46,55 +46,62 @@ export function calculateMatches(
 ): MatchResult[] {
   // ⚡ Bolt: Pre-calculate the current user's tech stack as a Set to avoid O(N*M) lookups
   const currentUserTechsSet = new Set(currentUser.tech_stack);
+  const results: MatchResult[] = [];
 
-  return candidates
-    .filter((c) => c.id !== currentUser.id && c.open_to_collaboration)
-    .map((candidate) => {
-      let score = 0;
-      const reasons: string[] = [];
+  // ⚡ Bolt: Consolidate .filter().map().filter() into a single O(n) loop to reduce allocations
+  for (let i = 0; i < candidates.length; i++) {
+    const candidate = candidates[i];
+    if (candidate.id === currentUser.id || !candidate.open_to_collaboration) {
+      continue;
+    }
 
-      const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
-      if (complementary.includes(candidate.role_type)) {
-        score += 30;
-        reasons.push("Competences complementaires");
-      }
+    let score = 0;
+    const reasons: string[] = [];
 
-      // ⚡ Bolt: Fast Set lookup instead of array.includes() for nested tech stack matching
-      const commonTechs = candidate.tech_stack.filter((t) =>
-        currentUserTechsSet.has(t)
-      );
-      if (commonTechs.length > 0) {
-        score += Math.min(commonTechs.length * 10, 25);
-        reasons.push(`${commonTechs.length} technologie(s) en commun`);
-      }
+    const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
+    if (complementary.includes(candidate.role_type)) {
+      score += 30;
+      reasons.push("Competences complementaires");
+    }
 
-      if (
-        currentUser.city &&
-        candidate.city &&
-        currentUser.city.toLowerCase() === candidate.city.toLowerCase()
-      ) {
-        score += 20;
-        reasons.push("Meme ville");
-      }
+    // ⚡ Bolt: Fast Set lookup instead of array.includes() for nested tech stack matching
+    const commonTechs = candidate.tech_stack.filter((t) =>
+      currentUserTechsSet.has(t)
+    );
+    if (commonTechs.length > 0) {
+      score += Math.min(commonTechs.length * 10, 25);
+      reasons.push(`${commonTechs.length} technologie(s) en commun`);
+    }
 
-      const levelMap = { junior: 1, mid: 2, senior: 3 };
-      const diff = Math.abs(
-        levelMap[currentUser.experience_level] -
-          levelMap[candidate.experience_level]
-      );
-      if (diff <= 1) {
-        score += 15;
-        reasons.push("Niveau d'experience compatible");
-      }
+    if (
+      currentUser.city &&
+      candidate.city &&
+      currentUser.city.toLowerCase() === candidate.city.toLowerCase()
+    ) {
+      score += 20;
+      reasons.push("Meme ville");
+    }
 
-      if (candidate.open_to_collaboration) {
-        score += 10;
-      }
+    const levelMap = { junior: 1, mid: 2, senior: 3 };
+    const diff = Math.abs(
+      levelMap[currentUser.experience_level] -
+        levelMap[candidate.experience_level]
+    );
+    if (diff <= 1) {
+      score += 15;
+      reasons.push("Niveau d'experience compatible");
+    }
 
-      return { profile: candidate, score: Math.min(score, 100), reasons };
-    })
-    .filter((m) => m.score > 0)
-    .sort((a, b) => b.score - a.score);
+    if (candidate.open_to_collaboration) {
+      score += 10;
+    }
+
+    if (score > 0) {
+      results.push({ profile: candidate, score: Math.min(score, 100), reasons });
+    }
+  }
+
+  return results.sort((a, b) => b.score - a.score);
 }
 
 export function calculateProjectMatches(
@@ -104,59 +111,63 @@ export function calculateProjectMatches(
   // ⚡ Bolt: Pre-calculate the lowercase tech stack of the profile to avoid re-lowercasing
   // it for every single tech in every single project.
   const profileTechsLower = profile.tech_stack.map((t) => t.toLowerCase());
+  const results: ProjectMatch[] = [];
 
-  return projects
-    .map((project) => {
-      let score = 0;
-      const reasons: string[] = [];
+  // ⚡ Bolt: Consolidate .map().filter() into a single O(n) loop to reduce intermediate allocations
+  for (let i = 0; i < projects.length; i++) {
+    const project = projects[i];
+    let score = 0;
+    const reasons: string[] = [];
 
-      // ⚡ Bolt: Instead of iterating and lowercasing the project's entire tech stack
-      // for *every* item in the profile's tech stack (O(M*K)), we pre-calculate a Set
-      // of the lowercased project techs (O(M)) and do O(1) lookups.
-      const projectTechsSet = new Set(project.tech_stack.map((pt) => pt.toLowerCase()));
+    // ⚡ Bolt: Instead of iterating and lowercasing the project's entire tech stack
+    // for *every* item in the profile's tech stack (O(M*K)), we pre-calculate a Set
+    // of the lowercased project techs (O(M)) and do O(1) lookups.
+    const projectTechsSet = new Set(project.tech_stack.map((pt) => pt.toLowerCase()));
 
-      const commonTechs = profileTechsLower.filter((tLower) =>
-        projectTechsSet.has(tLower)
+    const commonTechs = profileTechsLower.filter((tLower) =>
+      projectTechsSet.has(tLower)
+    );
+
+    if (commonTechs.length > 0) {
+      score += Math.min(commonTechs.length * 15, 40);
+      reasons.push(`${commonTechs.length} techno(s) en commun`);
+    }
+
+    const roleInStack = project.tech_stack.some((t) => {
+      const tl = t.toLowerCase();
+      const r = profile.role_type;
+      return (
+        (r === "frontend" && (tl.includes("react") || tl.includes("vue") || tl.includes("angular") || tl.includes("next") || tl.includes("svelte"))) ||
+        (r === "mobile" && (tl.includes("flutter") || tl.includes("react native") || tl.includes("dart") || tl.includes("mobile"))) ||
+        (r === "backend" && (tl.includes("node") || tl.includes("python") || tl.includes("django") || tl.includes("php") || tl.includes("java") || tl.includes("go") || tl.includes("rust"))) ||
+        (r === "fullstack" && (tl.includes("react") || tl.includes("node") || tl.includes("next") || tl.includes("supabase") || tl.includes("typescript"))) ||
+        (r === "data" && (tl.includes("python") || tl.includes("sql") || tl.includes("spark") || tl.includes("data"))) ||
+        (r === "devops" && (tl.includes("docker") || tl.includes("kubernetes") || tl.includes("aws") || tl.includes("linux"))) ||
+        (r === "cybersecurite" && (tl.includes("cyber") || tl.includes("linux") || tl.includes("securite") || tl.includes("reseaux"))) ||
+        (r === "design" && (tl.includes("figma") || tl.includes("design") || tl.includes("ui")))
       );
+    });
+    if (roleInStack) {
+      score += 25;
+      reasons.push("Votre rôle correspond au projet");
+    }
 
-      if (commonTechs.length > 0) {
-        score += Math.min(commonTechs.length * 15, 40);
-        reasons.push(`${commonTechs.length} techno(s) en commun`);
-      }
+    if (project.open_to_collaboration && profile.open_to_collaboration) {
+      score += 20;
+      reasons.push("Les deux parties disponibles");
+    }
 
-      const roleInStack = project.tech_stack.some((t) => {
-        const tl = t.toLowerCase();
-        const r = profile.role_type;
-        return (
-          (r === "frontend" && (tl.includes("react") || tl.includes("vue") || tl.includes("angular") || tl.includes("next") || tl.includes("svelte"))) ||
-          (r === "mobile" && (tl.includes("flutter") || tl.includes("react native") || tl.includes("dart") || tl.includes("mobile"))) ||
-          (r === "backend" && (tl.includes("node") || tl.includes("python") || tl.includes("django") || tl.includes("php") || tl.includes("java") || tl.includes("go") || tl.includes("rust"))) ||
-          (r === "fullstack" && (tl.includes("react") || tl.includes("node") || tl.includes("next") || tl.includes("supabase") || tl.includes("typescript"))) ||
-          (r === "data" && (tl.includes("python") || tl.includes("sql") || tl.includes("spark") || tl.includes("data"))) ||
-          (r === "devops" && (tl.includes("docker") || tl.includes("kubernetes") || tl.includes("aws") || tl.includes("linux"))) ||
-          (r === "cybersecurite" && (tl.includes("cyber") || tl.includes("linux") || tl.includes("securite") || tl.includes("reseaux"))) ||
-          (r === "design" && (tl.includes("figma") || tl.includes("design") || tl.includes("ui")))
-        );
-      });
-      if (roleInStack) {
-        score += 25;
-        reasons.push("Votre rôle correspond au projet");
-      }
+    if (profile.experience_level === "senior") {
+      score += 10;
+      reasons.push("Profil senior valorisé");
+    } else if (profile.experience_level === "mid") {
+      score += 5;
+    }
 
-      if (project.open_to_collaboration && profile.open_to_collaboration) {
-        score += 20;
-        reasons.push("Les deux parties disponibles");
-      }
+    if (score > 0) {
+      results.push({ project, score: Math.min(score, 100), reasons });
+    }
+  }
 
-      if (profile.experience_level === "senior") {
-        score += 10;
-        reasons.push("Profil senior valorisé");
-      } else if (profile.experience_level === "mid") {
-        score += 5;
-      }
-
-      return { project, score: Math.min(score, 100), reasons };
-    })
-    .filter((m) => m.score > 0)
-    .sort((a, b) => b.score - a.score);
+  return results.sort((a, b) => b.score - a.score);
 }
