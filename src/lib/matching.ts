@@ -46,18 +46,19 @@ export function calculateMatches(
 ): MatchResult[] {
   // ⚡ Bolt: Pre-calculate the current user's tech stack as a Set to avoid O(N*M) lookups
   const currentUserTechsSet = new Set(currentUser.tech_stack);
-  const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
-  const levelMap = { junior: 1, mid: 2, senior: 3 };
+  const results: MatchResult[] = [];
 
-  // ⚡ Bolt: Consolidate map and filter into a single reduce pass
-  const results = candidates.reduce<MatchResult[]>((acc, candidate) => {
+  // ⚡ Bolt: Consolidate .filter().map().filter() into a single O(n) loop to reduce allocations
+  for (let i = 0; i < candidates.length; i++) {
+    const candidate = candidates[i];
     if (candidate.id === currentUser.id || !candidate.open_to_collaboration) {
-      return acc;
+      continue;
     }
 
     let score = 0;
     const reasons: string[] = [];
 
+    const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
     if (complementary.includes(candidate.role_type)) {
       score += 30;
       reasons.push("Competences complementaires");
@@ -81,6 +82,7 @@ export function calculateMatches(
       reasons.push("Meme ville");
     }
 
+    const levelMap = { junior: 1, mid: 2, senior: 3 };
     const diff = Math.abs(
       levelMap[currentUser.experience_level] -
         levelMap[candidate.experience_level]
@@ -95,11 +97,9 @@ export function calculateMatches(
     }
 
     if (score > 0) {
-      acc.push({ profile: candidate, score: Math.min(score, 100), reasons });
+      results.push({ profile: candidate, score: Math.min(score, 100), reasons });
     }
-
-    return acc;
-  }, []);
+  }
 
   return results.sort((a, b) => b.score - a.score);
 }
@@ -111,9 +111,11 @@ export function calculateProjectMatches(
   // ⚡ Bolt: Pre-calculate the lowercase tech stack of the profile to avoid re-lowercasing
   // it for every single tech in every single project.
   const profileTechsLower = profile.tech_stack.map((t) => t.toLowerCase());
+  const results: ProjectMatch[] = [];
 
-  // ⚡ Bolt: Consolidate map and filter into a single reduce pass
-  const results = projects.reduce<ProjectMatch[]>((acc, project) => {
+  // ⚡ Bolt: Consolidate .map().filter() into a single O(n) loop to reduce intermediate allocations
+  for (let i = 0; i < projects.length; i++) {
+    const project = projects[i];
     let score = 0;
     const reasons: string[] = [];
 
@@ -163,11 +165,9 @@ export function calculateProjectMatches(
     }
 
     if (score > 0) {
-      acc.push({ project, score: Math.min(score, 100), reasons });
+      results.push({ project, score: Math.min(score, 100), reasons });
     }
-
-    return acc;
-  }, []);
+  }
 
   return results.sort((a, b) => b.score - a.score);
 }
