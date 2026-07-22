@@ -508,15 +508,17 @@ function ProjetsTab({
     }
   }, [user, interested]);
 
-  // ⚡ Bolt: Memoize displayList to prevent O(N) object allocations on every render
-  // (e.g. when 'interested' state changes after clicking the "Je suis intéressé" button).
+  // ⚡ Bolt: Memoize the mapping logic to prevent O(N) object allocations on every render
+  // This avoids redundant work when local interactive states (like visibleCount or interested) change.
+  // Impact: Reduces main-thread blocking during re-renders by caching derived datasets.
   const displayList: { project: Project; score?: number; reasons?: string[] }[] = useMemo(() => {
     return profile && projectMatches.length > 0
       ? projectMatches.map((m) => ({ project: m.project, score: m.score, reasons: m.reasons }))
       : projects.map((p) => ({ project: p }));
   }, [profile, projectMatches, projects]);
 
-  const visible = displayList.slice(0, visibleCount);
+  // ⚡ Bolt: Memoize slicing to prevent re-instantiating the visible array on unrelated renders.
+  const visible = useMemo(() => displayList.slice(0, visibleCount), [displayList, visibleCount]);
 
   if (isLoading) {
     return (
