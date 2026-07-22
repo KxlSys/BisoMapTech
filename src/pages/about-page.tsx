@@ -105,6 +105,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Autres profils": "bg-chart-5",
 };
 
+// ⚡ Bolt: Consolidated multiple iterations into a single O(n) pass over profiles.
 function computeStats(profiles: RawProfile[]): ComputedStats {
   const total = profiles.length;
   if (total === 0) {
@@ -123,8 +124,63 @@ function computeStats(profiles: RawProfile[]): ComputedStats {
   }
 
   const roleCounts: Record<string, number> = {};
-  for (const p of profiles)
+  const expCounts: Record<string, number> = {};
+  const techCounts: Record<string, number> = {};
+  const cityCounts: Record<string, number> = {};
+
+  let collab = 0;
+  let activeLastWeek = 0;
+
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+    return {
+      month: d.toLocaleDateString("fr-FR", { month: "short" }),
+      year: d.getFullYear(),
+      monthNum: d.getMonth(),
+      count: 0,
+    };
+  });
+
+  // ⚡ Bolt: Single pass loop for all aggregations
+  for (const p of profiles) {
+    // Roles
     roleCounts[p.role_type] = (roleCounts[p.role_type] || 0) + 1;
+
+    // Experience
+    expCounts[p.experience_level] = (expCounts[p.experience_level] || 0) + 1;
+
+    // Techs
+    if (p.tech_stack) {
+      for (const t of p.tech_stack) {
+        techCounts[t] = (techCounts[t] || 0) + 1;
+      }
+    }
+
+    // Cities
+    if (p.city) {
+      cityCounts[p.city] = (cityCounts[p.city] || 0) + 1;
+    }
+
+    // Growth
+    const d = new Date(p.created_at);
+    const entry = months.find(
+      (m) => m.year === d.getFullYear() && m.monthNum === d.getMonth()
+    );
+    if (entry) entry.count++;
+
+    // Collaboration
+    if (p.open_to_collaboration) {
+      collab++;
+    }
+
+    // Active last week
+    if (p.last_seen_at && new Date(p.last_seen_at) >= weekAgo) {
+      activeLastWeek++;
+    }
+  }
 
   // Regroupement dynamique : agrège tous les role_type connus dans des
   // catégories plus larges, n'affiche que celles ayant au moins 1 profil
@@ -143,9 +199,6 @@ function computeStats(profiles: RawProfile[]): ComputedStats {
     .filter((r) => r.pct > 0)
     .sort((a, b) => b.pct - a.pct);
 
-  const expCounts: Record<string, number> = {};
-  for (const p of profiles)
-    expCounts[p.experience_level] = (expCounts[p.experience_level] || 0) + 1;
   const experience = [
     {
       label: "Junior",
@@ -164,10 +217,6 @@ function computeStats(profiles: RawProfile[]): ComputedStats {
     },
   ];
 
-  const techCounts: Record<string, number> = {};
-  for (const p of profiles)
-    for (const t of p.tech_stack ?? [])
-      techCounts[t] = (techCounts[t] || 0) + 1;
   const techs = Object.entries(techCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
@@ -176,9 +225,6 @@ function computeStats(profiles: RawProfile[]): ComputedStats {
       pct: Math.round((count / total) * 100),
     }));
 
-  const cityCounts: Record<string, number> = {};
-  for (const p of profiles)
-    if (p.city) cityCounts[p.city] = (cityCounts[p.city] || 0) + 1;
   const sortedCities = Object.entries(cityCounts).sort((a, b) => b[1] - a[1]);
   const cities = sortedCities
     .slice(0, 3)
@@ -187,49 +233,15 @@ function computeStats(profiles: RawProfile[]): ComputedStats {
   if (otherCount > 0)
     cities.push({ name: "Autres", pct: Math.round((otherCount / total) * 100) });
 
-  const now = new Date();
-  const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-    return {
-      month: d.toLocaleDateString("fr-FR", { month: "short" }),
-      year: d.getFullYear(),
-      monthNum: d.getMonth(),
-      count: 0,
-    };
-  });
-  for (const p of profiles) {
-    const d = new Date(p.created_at);
-    const entry = months.find(
-      (m) => m.year === d.getFullYear() && m.monthNum === d.getMonth()
-    );
-    if (entry) entry.count++;
-  }
   const maxCount = Math.max(...months.map((m) => m.count), 1);
   const growth = months.map((m) => ({
     month: m.month,
     value: Math.round((m.count / maxCount) * 100),
   }));
 
-  // ⚡ Bolt: Consolidate data aggregation into a single O(n) pass
-  // Avoids multiple redundant iterations and intermediate array allocations
-  let collab = 0;
-  let activeLastWeek = 0;
-  const citySet = new Set<string>();
-  const techSet = new Set<string>();
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-  for (let i = 0; i < profiles.length; i++) {
-    const p = profiles[i];
-    if (p.open_to_collaboration) collab++;
-    if (p.city) citySet.add(p.city);
-    if (p.last_seen_at && new Date(p.last_seen_at) >= weekAgo) activeLastWeek++;
-
-    if (p.tech_stack) {
-      for (let j = 0; j < p.tech_stack.length; j++) {
-        techSet.add(p.tech_stack[j]);
-      }
-    }
-  }
+  // ⚡ Bolt: Derive distinct counts from keys instead of doing additional passes
+  const totalCities = Object.keys(cityCounts).length;
+  const allTechs = Object.keys(techCounts).length;
 
   return {
     total,
