@@ -21,6 +21,6 @@
 ## 2024-07-10 - O(n) Single Pass Data Aggregation
 **Learning:** Using chained array methods (e.g. `.map().filter()`, `.flatMap()`, and repeated `.filter()` over the same large list like `profiles`) leads to redundant O(n) passes over data and allocates unnecessary intermediate arrays. This blocks the main thread longer than necessary when calculating basic statistics like `uniqueCities`, `uniqueTechs`, or total counts.
 **Action:** Consolidate statistical aggregations over large object arrays into a single O(n) `for` loop that updates multiple accumulators (like `Set` objects and primitive counters) in one pass, thereby improving performance and reducing memory overhead.
-## 2024-07-20 - Memoization of filtering logic
-**Learning:** In pages with heavily interactive inputs (like `AdminPage` with a search bar), performing O(N) array filtering synchronously within the component body causes the expensive calculation to block every re-render, compounding latency on keystrokes.
-**Action:** Wrap any O(N) filtering operations (e.g. `profiles.filter(...)`) in `React.useMemo` to ensure they only re-run when their specific dependencies (`profiles` or `searchQuery`) actually change, completely skipping the overhead on unrelated state updates.
+## 2024-03-24 - React Component State and List Derivation
+**Learning:** In components with highly interactive state (like a button triggering a local state change), deriving and formatting large lists inside the render body without memoization causes redundant O(N) object allocations on every render.
+**Action:** Always wrap data derivations (like mapping a raw dataset into UI-ready objects) inside a `useMemo` hook, ensuring the dependency array only includes variables that actually alter the list structure.
