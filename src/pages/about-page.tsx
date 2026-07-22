@@ -246,8 +246,8 @@ function computeStats(profiles: RawProfile[]): ComputedStats {
   return {
     total,
     collabRate: Math.round((collab / total) * 100),
-    totalCities,
-    allTechs,
+    totalCities: citySet.size,
+    allTechs: techSet.size,
     activeLastWeek,
     roles,
     techs,

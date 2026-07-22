@@ -11,9 +11,25 @@ interface HeroSectionProps {
 export function HeroSection({ totalContributors, profiles }: HeroSectionProps) {
   const { user } = useAuthStore();
 
-  const uniqueCities = new Set(profiles.map((p) => p.city).filter(Boolean)).size;
-  const uniqueTechs = new Set(profiles.flatMap((p) => p.tech_stack)).size;
-  const openToCollab = profiles.filter((p) => p.open_to_collaboration).length;
+  // ⚡ Bolt: Consolidate data aggregation into a single O(n) pass
+  // Avoids multiple redundant iterations and intermediate array allocations
+  const citySet = new Set<string>();
+  const techSet = new Set<string>();
+  let openToCollab = 0;
+
+  for (let i = 0; i < profiles.length; i++) {
+    const p = profiles[i];
+    if (p.city) citySet.add(p.city);
+    if (p.open_to_collaboration) openToCollab++;
+    if (p.tech_stack) {
+      for (let j = 0; j < p.tech_stack.length; j++) {
+        techSet.add(p.tech_stack[j]);
+      }
+    }
+  }
+
+  const uniqueCities = citySet.size;
+  const uniqueTechs = techSet.size;
 
   return (
     <section className="ambient-bg relative overflow-hidden border-b border-white/10">
