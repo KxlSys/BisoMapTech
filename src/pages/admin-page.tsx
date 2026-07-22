@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Shield, Send, UserPlus, UserMinus, Users, Building2, Handshake, Download, Search, TrendingUp, ArrowUpRight, TriangleAlert, Clock, GitCommitHorizontal, UserRoundPlus, Layers as Layers3, Flag, UserCheck, MapPin, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -171,11 +171,11 @@ export function AdminPage() {
     );
   }
 
-  const filteredProfiles = profiles.filter((p) => {
+  const filteredProfiles = useMemo(() => profiles.filter((p) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return p.full_name.toLowerCase().includes(q) || p.username.toLowerCase().includes(q) || p.city?.toLowerCase().includes(q);
-  });
+  }), [profiles, searchQuery]);
 
   // ⚡ Bolt: Consolidate data aggregation into a single O(n) pass
   // Avoids multiple redundant iterations and intermediate array allocations
