@@ -9,34 +9,36 @@ export interface PlatformStats {
   techCount: number;
 }
 
+// ⚡ Bolt: Consolidated multiple array passes (.map.filter, .filter, .flatMap) into a single O(n) loop
 function computeStats(
   profiles: Array<{ city?: string | null; open_to_collaboration?: boolean | null; tech_stack?: string[] | null }>
 ): PlatformStats {
   const total = profiles.length;
   if (total === 0) return { totalUsers: 0, totalCities: 0, collaborationRate: 0, techCount: 0 };
 
-  // ⚡ Bolt: Consolidate data aggregation into a single O(n) pass
-  // Avoids multiple redundant iterations and intermediate array allocations
-  const citySet = new Set<string>();
-  const techSet = new Set<string>();
   let collab = 0;
+  const citiesSet = new Set<string>();
+  const techsSet = new Set<string>();
 
-  for (let i = 0; i < total; i++) {
-    const p = profiles[i];
-    if (p.city) citySet.add(p.city);
-    if (p.open_to_collaboration) collab++;
+  for (const p of profiles) {
+    if (p.open_to_collaboration) {
+      collab++;
+    }
+    if (p.city) {
+      citiesSet.add(p.city);
+    }
     if (p.tech_stack) {
-      for (let j = 0; j < p.tech_stack.length; j++) {
-        techSet.add(p.tech_stack[j]);
+      for (const tech of p.tech_stack) {
+        techsSet.add(tech);
       }
     }
   }
 
   return {
     totalUsers: total,
-    totalCities: citySet.size,
+    totalCities: citiesSet.size,
     collaborationRate: Math.round((collab / total) * 100),
-    techCount: techSet.size,
+    techCount: techsSet.size,
   };
 }
 
