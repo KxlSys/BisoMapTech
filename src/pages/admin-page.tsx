@@ -181,10 +181,12 @@ export function AdminPage() {
   // Avoids multiple redundant iterations and intermediate array allocations
   const citySet = new Set<string>();
   let collaboratingCount = 0;
+  let adminCount = 0;
   for (let i = 0; i < profiles.length; i++) {
     const p = profiles[i];
     if (p.city) citySet.add(p.city);
     if (p.open_to_collaboration) collaboratingCount++;
+    if (p.role === "admin") adminCount++;
   }
 
   const stats = {
@@ -447,7 +449,7 @@ export function AdminPage() {
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
-              <p className="text-xl font-bold text-foreground">{profiles.filter(p => p.role === "admin").length}</p>
+              <p className="text-xl font-bold text-foreground">{adminCount}</p>
               <p className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
                 <Shield className="h-2.5 w-2.5" /> Admins
               </p>
