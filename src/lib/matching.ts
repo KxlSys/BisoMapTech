@@ -65,12 +65,16 @@ export function calculateMatches(
     }
 
     // ⚡ Bolt: Fast Set lookup instead of array.includes() for nested tech stack matching
-    const commonTechs = candidate.tech_stack.filter((t) =>
-      currentUserTechsSet.has(t)
-    );
-    if (commonTechs.length > 0) {
-      score += Math.min(commonTechs.length * 10, 25);
-      reasons.push(`${commonTechs.length} technologie(s) en commun`);
+    // Also avoid creating a new filtered array just to count matching elements
+    let commonTechsCount = 0;
+    for (let j = 0; j < candidate.tech_stack.length; j++) {
+      if (currentUserTechsSet.has(candidate.tech_stack[j])) {
+        commonTechsCount++;
+      }
+    }
+    if (commonTechsCount > 0) {
+      score += Math.min(commonTechsCount * 10, 25);
+      reasons.push(`${commonTechsCount} technologie(s) en commun`);
     }
 
     if (
@@ -108,9 +112,9 @@ export function calculateProjectMatches(
   profile: Profile,
   projects: Project[]
 ): ProjectMatch[] {
-  // ⚡ Bolt: Pre-calculate the lowercase tech stack of the profile to avoid re-lowercasing
-  // it for every single tech in every single project.
-  const profileTechsLower = profile.tech_stack.map((t) => t.toLowerCase());
+  // ⚡ Bolt: Pre-calculate the lowercase tech stack of the profile as a Set to avoid re-lowercasing
+  // and provide O(1) lookups for every single tech in every single project.
+  const profileTechsLowerSet = new Set(profile.tech_stack.map((t) => t.toLowerCase()));
   const results: ProjectMatch[] = [];
 
   // ⚡ Bolt: Consolidate .map().filter() into a single O(n) loop to reduce intermediate allocations
@@ -119,18 +123,18 @@ export function calculateProjectMatches(
     let score = 0;
     const reasons: string[] = [];
 
-    // ⚡ Bolt: Instead of iterating and lowercasing the project's entire tech stack
-    // for *every* item in the profile's tech stack (O(M*K)), we pre-calculate a Set
-    // of the lowercased project techs (O(M)) and do O(1) lookups.
-    const projectTechsSet = new Set(project.tech_stack.map((pt) => pt.toLowerCase()));
+    // ⚡ Bolt: Instead of allocating a new array and Set inside every loop iteration,
+    // iterate through the project tech stack once, lowercase inline, and check the Set.
+    let commonTechsCount = 0;
+    for (let j = 0; j < project.tech_stack.length; j++) {
+      if (profileTechsLowerSet.has(project.tech_stack[j].toLowerCase())) {
+        commonTechsCount++;
+      }
+    }
 
-    const commonTechs = profileTechsLower.filter((tLower) =>
-      projectTechsSet.has(tLower)
-    );
-
-    if (commonTechs.length > 0) {
-      score += Math.min(commonTechs.length * 15, 40);
-      reasons.push(`${commonTechs.length} techno(s) en commun`);
+    if (commonTechsCount > 0) {
+      score += Math.min(commonTechsCount * 15, 40);
+      reasons.push(`${commonTechsCount} techno(s) en commun`);
     }
 
     const roleInStack = project.tech_stack.some((t) => {
