@@ -131,11 +131,15 @@ export function OnboardingStepper() {
     localStorage.setItem(`${DRAFT_KEY}_avatarUrl`, avatarUrl);
   }, [user, fullName, bio, city, techStack, roleType, experienceLevel, openToCollaboration, avatarUrl]);
 
-  const filteredAllTechs = techSearch
-    ? TECH_OPTIONS.filter((t) =>
-        t.toLowerCase().includes(techSearch.toLowerCase())
-      )
-    : null;
+  // ⚡ Bolt: Memoize filtered list to prevent unnecessary O(N) array filtering
+  // when other form fields (like fullName or bio) trigger re-renders
+  const filteredAllTechs: readonly string[] | null = useMemo(() => {
+    return techSearch
+      ? TECH_OPTIONS.filter((t) =>
+          t.toLowerCase().includes(techSearch.toLowerCase())
+        )
+      : null;
+  }, [techSearch]);
 
   const canSubmit = !!fullName.trim() && !!city && techStack.length > 0;
 
