@@ -131,11 +131,11 @@ export function OnboardingStepper() {
     localStorage.setItem(`${DRAFT_KEY}_avatarUrl`, avatarUrl);
   }, [user, fullName, bio, city, techStack, roleType, experienceLevel, openToCollaboration, avatarUrl]);
 
-  const filteredAllTechs = techSearch
-    ? TECH_OPTIONS.filter((t) =>
-        t.toLowerCase().includes(techSearch.toLowerCase())
-      )
-    : null;
+  const filteredAllTechs = useMemo(() => {
+    if (!techSearch) return null;
+    const lowerSearch = techSearch.toLowerCase();
+    return TECH_OPTIONS.filter((t) => t.toLowerCase().includes(lowerSearch));
+  }, [techSearch]);
 
   const canSubmit = !!fullName.trim() && !!city && techStack.length > 0;
 
