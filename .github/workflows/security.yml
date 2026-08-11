@@ -22,7 +22,7 @@ jobs:
         run: npm install
 
       - name: Run npm audit
-        run: npm audit --audit-level=moderate
+        run: npm audit --audit-level=high
 
       - name: Run dependency review
         uses: actions/dependency-review-action@v4
