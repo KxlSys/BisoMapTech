@@ -171,11 +171,13 @@ export function AdminPage() {
     );
   }
 
-  const filteredProfiles = useMemo(() => profiles.filter((p) => {
-    if (!searchQuery) return true;
+  const filteredProfiles = useMemo(() => {
+    if (!searchQuery) return profiles;
     const q = searchQuery.toLowerCase();
-    return p.full_name.toLowerCase().includes(q) || p.username.toLowerCase().includes(q) || p.city?.toLowerCase().includes(q);
-  }), [profiles, searchQuery]);
+    return profiles.filter((p) => {
+      return p.full_name.toLowerCase().includes(q) || p.username.toLowerCase().includes(q) || p.city?.toLowerCase().includes(q);
+    });
+  }, [profiles, searchQuery]);
 
   // ⚡ Bolt: Consolidate data aggregation into a single O(n) pass
   // Avoids multiple redundant iterations and intermediate array allocations
