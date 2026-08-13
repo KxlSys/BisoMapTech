@@ -272,18 +272,25 @@ function renderMessageContent(content: string) {
   const parts = content.split(urlRegex);
   return parts.map((part, index) => {
     if (part.match(urlRegex)) {
-      return (
-        <a
-          key={index}
-          href={part}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary underline hover:text-primary/80 break-all font-semibold"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {part}
-        </a>
-      );
+      try {
+        const url = new URL(part);
+        if (url.protocol === "http:" || url.protocol === "https:") {
+          return (
+            <a
+              key={index}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline hover:text-primary/80 break-all font-semibold"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {part}
+            </a>
+          );
+        }
+      } catch (err) {
+        // Fallback to plain text if URL parsing fails
+      }
     }
     return part;
   });
