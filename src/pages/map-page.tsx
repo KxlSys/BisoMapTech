@@ -280,6 +280,7 @@ export function MapPage() {
                 size="sm"
                 onClick={() => setMobileFiltersOpen(false)}
                 className="h-7 w-7 p-0 hover:bg-white/5"
+                aria-label="Fermer les filtres"
               >
                 <X className="h-4 w-4" />
               </Button>

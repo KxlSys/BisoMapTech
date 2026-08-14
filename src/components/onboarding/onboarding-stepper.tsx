@@ -131,11 +131,12 @@ export function OnboardingStepper() {
     localStorage.setItem(`${DRAFT_KEY}_avatarUrl`, avatarUrl);
   }, [user, fullName, bio, city, techStack, roleType, experienceLevel, openToCollaboration, avatarUrl]);
 
-  const filteredAllTechs = techSearch
-    ? TECH_OPTIONS.filter((t) =>
-        t.toLowerCase().includes(techSearch.toLowerCase())
-      )
-    : null;
+  // ⚡ Bolt: Memoize the filtered technologies list to prevent unnecessary O(N) array filtering allocations on every render
+  const filteredAllTechs = useMemo<string[] | null>(() => {
+    if (!techSearch) return null;
+    const searchLower = techSearch.toLowerCase();
+    return TECH_OPTIONS.filter((t) => t.toLowerCase().includes(searchLower));
+  }, [techSearch]);
 
   const canSubmit = !!fullName.trim() && !!city && techStack.length > 0;
 
@@ -399,7 +400,8 @@ export function OnboardingStepper() {
                       key={tech}
                       type="button"
                       onClick={() => toggleTech(tech)}
-                      className="flex items-center gap-1 rounded-md border border-primary/50 bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                      aria-label={`Supprimer ${tech}`}
+                      className="flex items-center gap-1 rounded-md border border-primary/50 bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                     >
                       {tech}
                       <X className="h-2.5 w-2.5 opacity-70" />

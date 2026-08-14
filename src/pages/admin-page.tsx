@@ -171,20 +171,29 @@ export function AdminPage() {
     );
   }
 
-  const filteredProfiles = useMemo(() => profiles.filter((p) => {
-    if (!searchQuery) return true;
+  // ⚡ Bolt: Optimize profile filtering by returning the original array when the search query is empty
+  // (avoiding unnecessary memory allocations) and hoisting the search string lowercasing outside the loop.
+  const filteredProfiles = useMemo(() => {
+    if (!searchQuery) return profiles;
+
     const q = searchQuery.toLowerCase();
-    return p.full_name.toLowerCase().includes(q) || p.username.toLowerCase().includes(q) || p.city?.toLowerCase().includes(q);
-  }), [profiles, searchQuery]);
+    return profiles.filter((p) =>
+      p.full_name.toLowerCase().includes(q) ||
+      p.username.toLowerCase().includes(q) ||
+      p.city?.toLowerCase().includes(q)
+    );
+  }, [profiles, searchQuery]);
 
   // ⚡ Bolt: Consolidate data aggregation into a single O(n) pass
   // Avoids multiple redundant iterations and intermediate array allocations
   const citySet = new Set<string>();
   let collaboratingCount = 0;
+  let adminCount = 0;
   for (let i = 0; i < profiles.length; i++) {
     const p = profiles[i];
     if (p.city) citySet.add(p.city);
     if (p.open_to_collaboration) collaboratingCount++;
+    if (p.role === "admin") adminCount++;
   }
 
   const stats = {
@@ -447,7 +456,7 @@ export function AdminPage() {
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
-              <p className="text-xl font-bold text-foreground">{profiles.filter(p => p.role === "admin").length}</p>
+              <p className="text-xl font-bold text-foreground">{adminCount}</p>
               <p className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
                 <Shield className="h-2.5 w-2.5" /> Admins
               </p>

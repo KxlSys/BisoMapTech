@@ -108,45 +108,48 @@ export function calculateProjectMatches(
   profile: Profile,
   projects: Project[]
 ): ProjectMatch[] {
-  // ⚡ Bolt: Pre-calculate the lowercase tech stack of the profile to avoid re-lowercasing
-  // it for every single tech in every single project.
-  const profileTechsLower = profile.tech_stack.map((t) => t.toLowerCase());
+  // ⚡ Bolt: Pre-calculate the lowercased profile tech stack as a Set for O(1) lookups.
+  // This avoids instantiating new arrays/sets per project inside the main loop.
+  const profileTechsLowerSet = new Set(profile.tech_stack.map((t) => t.toLowerCase()));
   const results: ProjectMatch[] = [];
 
-  // ⚡ Bolt: Consolidate .map().filter() into a single O(n) loop to reduce intermediate allocations
   for (let i = 0; i < projects.length; i++) {
     const project = projects[i];
     let score = 0;
     const reasons: string[] = [];
 
-    // ⚡ Bolt: Instead of iterating and lowercasing the project's entire tech stack
-    // for *every* item in the profile's tech stack (O(M*K)), we pre-calculate a Set
-    // of the lowercased project techs (O(M)) and do O(1) lookups.
-    const projectTechsSet = new Set(project.tech_stack.map((pt) => pt.toLowerCase()));
+    // ⚡ Bolt: Replace multiple chained methods (.map, .filter, .some) and inner Set creations
+    // with a single unified loop over the project's tech stack to dramatically reduce allocations.
+    let commonTechsCount = 0;
+    let roleInStack = false;
+    const r = profile.role_type;
 
-    const commonTechs = profileTechsLower.filter((tLower) =>
-      projectTechsSet.has(tLower)
-    );
+    for (let j = 0; j < project.tech_stack.length; j++) {
+      const tl = project.tech_stack[j].toLowerCase();
 
-    if (commonTechs.length > 0) {
-      score += Math.min(commonTechs.length * 15, 40);
-      reasons.push(`${commonTechs.length} techno(s) en commun`);
+      if (profileTechsLowerSet.has(tl)) {
+        commonTechsCount++;
+      }
+
+      if (!roleInStack) {
+        roleInStack = (
+          (r === "frontend" && (tl.includes("react") || tl.includes("vue") || tl.includes("angular") || tl.includes("next") || tl.includes("svelte"))) ||
+          (r === "mobile" && (tl.includes("flutter") || tl.includes("react native") || tl.includes("dart") || tl.includes("mobile"))) ||
+          (r === "backend" && (tl.includes("node") || tl.includes("python") || tl.includes("django") || tl.includes("php") || tl.includes("java") || tl.includes("go") || tl.includes("rust"))) ||
+          (r === "fullstack" && (tl.includes("react") || tl.includes("node") || tl.includes("next") || tl.includes("supabase") || tl.includes("typescript"))) ||
+          (r === "data" && (tl.includes("python") || tl.includes("sql") || tl.includes("spark") || tl.includes("data"))) ||
+          (r === "devops" && (tl.includes("docker") || tl.includes("kubernetes") || tl.includes("aws") || tl.includes("linux"))) ||
+          (r === "cybersecurite" && (tl.includes("cyber") || tl.includes("linux") || tl.includes("securite") || tl.includes("reseaux"))) ||
+          (r === "design" && (tl.includes("figma") || tl.includes("design") || tl.includes("ui")))
+        );
+      }
     }
 
-    const roleInStack = project.tech_stack.some((t) => {
-      const tl = t.toLowerCase();
-      const r = profile.role_type;
-      return (
-        (r === "frontend" && (tl.includes("react") || tl.includes("vue") || tl.includes("angular") || tl.includes("next") || tl.includes("svelte"))) ||
-        (r === "mobile" && (tl.includes("flutter") || tl.includes("react native") || tl.includes("dart") || tl.includes("mobile"))) ||
-        (r === "backend" && (tl.includes("node") || tl.includes("python") || tl.includes("django") || tl.includes("php") || tl.includes("java") || tl.includes("go") || tl.includes("rust"))) ||
-        (r === "fullstack" && (tl.includes("react") || tl.includes("node") || tl.includes("next") || tl.includes("supabase") || tl.includes("typescript"))) ||
-        (r === "data" && (tl.includes("python") || tl.includes("sql") || tl.includes("spark") || tl.includes("data"))) ||
-        (r === "devops" && (tl.includes("docker") || tl.includes("kubernetes") || tl.includes("aws") || tl.includes("linux"))) ||
-        (r === "cybersecurite" && (tl.includes("cyber") || tl.includes("linux") || tl.includes("securite") || tl.includes("reseaux"))) ||
-        (r === "design" && (tl.includes("figma") || tl.includes("design") || tl.includes("ui")))
-      );
-    });
+    if (commonTechsCount > 0) {
+      score += Math.min(commonTechsCount * 15, 40);
+      reasons.push(`${commonTechsCount} techno(s) en commun`);
+    }
+
     if (roleInStack) {
       score += 25;
       reasons.push("Votre rôle correspond au projet");

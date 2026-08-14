@@ -89,6 +89,8 @@ import {
   getLocalPublicKeyJWK,
   publicKeysMatch,
   exportPortableKey,
+  arrayBufferToBase64,
+  base64ToArrayBuffer,
   importPortableKey,
 } from "./e2ee-service";
 
@@ -144,5 +146,36 @@ describe("E2EE portable key transfer (device → device)", () => {
   it("rejects a malformed portable string", async () => {
     expect(await importPortableKey("not-a-valid-key", "whatever")).toBe(false);
     expect(await importPortableKey("only:two", "whatever")).toBe(false);
+  });
+});
+
+describe("Base64 encoding/decoding", () => {
+  it("symmetrically encodes and decodes ArrayBuffer", () => {
+    // Generate a random byte array
+    const bytes = new Uint8Array([0, 127, 255, 16, 42]);
+    const buffer = bytes.buffer;
+
+    // Encode to base64
+    const base64 = arrayBufferToBase64(buffer);
+
+    // Decode back to ArrayBuffer
+    const decodedBuffer = base64ToArrayBuffer(base64);
+    const decodedBytes = new Uint8Array(decodedBuffer);
+
+    // Validate symmetry
+    expect(decodedBytes).toEqual(bytes);
+    expect(base64).toBe("AH//ECo="); // Verification
+  });
+
+  it("handles empty ArrayBuffer", () => {
+    const bytes = new Uint8Array([]);
+    const buffer = bytes.buffer;
+
+    const base64 = arrayBufferToBase64(buffer);
+    expect(base64).toBe("");
+
+    const decodedBuffer = base64ToArrayBuffer(base64);
+    const decodedBytes = new Uint8Array(decodedBuffer);
+    expect(decodedBytes.length).toBe(0);
   });
 });
