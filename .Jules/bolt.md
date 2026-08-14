@@ -24,3 +24,6 @@
 ## 2024-07-20 - Consolidate array operations in matching algorithms
 **Learning:** Chaining multiple array methods (`.map().filter()`, `.flatMap()`) creates unnecessary intermediate arrays and O(N) passes over the data.
 **Action:** Use a single `reduce` or `for` loop with multiple accumulators to filter and transform the data simultaneously before sorting. This improves performance for data aggregation, particularly on large arrays like projects or candidates.
+## 2024-07-28 - Array Filtering Performance
+**Learning:** During basic filtering of an array based on an input string, chaining operations inside a filter loop (e.g. converting a string to lowercase repeatedly) or unconditionally returning a copy of an array when no filter is required introduces unnecessary memory allocations and redundant processing.
+**Action:** Always add an early return for an empty query (e.g. `if (!query) return items;`) to maintain referential equality. Hoist any invariant computations out of the `filter` callback (e.g. `const lowerQuery = query.toLowerCase();`) to avoid repetitive execution.
