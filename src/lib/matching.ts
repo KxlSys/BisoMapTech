@@ -48,6 +48,12 @@ export function calculateMatches(
   const currentUserTechsSet = new Set(currentUser.tech_stack);
   const results: MatchResult[] = [];
 
+  // ⚡ Bolt: Hoist static initialization outside the loop
+  const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
+  const currentUserCityLower = currentUser.city?.toLowerCase();
+  const levelMap: Record<string, number> = { junior: 1, mid: 2, senior: 3 };
+  const currentUserLevel = levelMap[currentUser.experience_level];
+
   // ⚡ Bolt: Consolidate .filter().map().filter() into a single O(n) loop to reduce allocations
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
@@ -58,33 +64,36 @@ export function calculateMatches(
     let score = 0;
     const reasons: string[] = [];
 
-    const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
     if (complementary.includes(candidate.role_type)) {
       score += 30;
       reasons.push("Competences complementaires");
     }
 
     // ⚡ Bolt: Fast Set lookup instead of array.includes() for nested tech stack matching
-    const commonTechs = candidate.tech_stack.filter((t) =>
-      currentUserTechsSet.has(t)
-    );
-    if (commonTechs.length > 0) {
-      score += Math.min(commonTechs.length * 10, 25);
-      reasons.push(`${commonTechs.length} technologie(s) en commun`);
+    // ⚡ Bolt: Replaced .filter().length with a manual loop counter to avoid unnecessary array allocations
+    let commonTechsCount = 0;
+    for (let j = 0; j < candidate.tech_stack.length; j++) {
+      if (currentUserTechsSet.has(candidate.tech_stack[j])) {
+        commonTechsCount++;
+      }
+    }
+
+    if (commonTechsCount > 0) {
+      score += Math.min(commonTechsCount * 10, 25);
+      reasons.push(`${commonTechsCount} technologie(s) en commun`);
     }
 
     if (
-      currentUser.city &&
+      currentUserCityLower &&
       candidate.city &&
-      currentUser.city.toLowerCase() === candidate.city.toLowerCase()
+      currentUserCityLower === candidate.city.toLowerCase()
     ) {
       score += 20;
       reasons.push("Meme ville");
     }
 
-    const levelMap = { junior: 1, mid: 2, senior: 3 };
     const diff = Math.abs(
-      levelMap[currentUser.experience_level] -
+      currentUserLevel -
         levelMap[candidate.experience_level]
     );
     if (diff <= 1) {
