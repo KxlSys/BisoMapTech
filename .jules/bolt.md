@@ -1,0 +1,3 @@
+## 2024-03-24 - Missing Memoization on Array Slicing causing unnecessary re-renders
+**Learning:** Returning a sliced array (e.g., `array.slice(0, 50)`) inside a React component's body creates a new reference on every render. Even though the contents are the same, this causes pure child components (`React.memo`) that depend on it to re-render, especially noticeable when unrelated local state changes occur (like a mobile view toggle).
+**Action:** Always wrap array derivations (like `.slice()`, `.filter()`, `.map()`) that are passed as props to child components in a `useMemo` hook to preserve referential equality and avoid unnecessary main-thread work.

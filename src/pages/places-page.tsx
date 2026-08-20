@@ -155,7 +155,9 @@ export function PlacesPage() {
   }, [places]);
 
   const LIST_LIMIT = 50;
-  const displayedPlaces = places.slice(0, LIST_LIMIT);
+  // ⚡ Bolt: Memoize the sliced array to prevent returning a new reference on every render,
+  // avoiding unnecessary re-renders of child components when unrelated state changes.
+  const displayedPlaces = useMemo(() => places.slice(0, LIST_LIMIT), [places]);
 
   const handlePlaceClick = useCallback((id: string) => {
     setFocusedPlaceId(id);
