@@ -65,12 +65,17 @@ export function calculateMatches(
     }
 
     // ⚡ Bolt: Fast Set lookup instead of array.includes() for nested tech stack matching
-    const commonTechs = candidate.tech_stack.filter((t) =>
-      currentUserTechsSet.has(t)
-    );
-    if (commonTechs.length > 0) {
-      score += Math.min(commonTechs.length * 10, 25);
-      reasons.push(`${commonTechs.length} technologie(s) en commun`);
+    // Also use a manual for loop with a counter instead of .filter().length to avoid array allocation
+    let commonTechsCount = 0;
+    for (let j = 0; j < candidate.tech_stack.length; j++) {
+      if (currentUserTechsSet.has(candidate.tech_stack[j])) {
+        commonTechsCount++;
+      }
+    }
+
+    if (commonTechsCount > 0) {
+      score += Math.min(commonTechsCount * 10, 25);
+      reasons.push(`${commonTechsCount} technologie(s) en commun`);
     }
 
     if (
