@@ -24,3 +24,7 @@
 ## 2024-07-20 - Consolidate array operations in matching algorithms
 **Learning:** Chaining multiple array methods (`.map().filter()`, `.flatMap()`) creates unnecessary intermediate arrays and O(N) passes over the data.
 **Action:** Use a single `reduce` or `for` loop with multiple accumulators to filter and transform the data simultaneously before sorting. This improves performance for data aggregation, particularly on large arrays like projects or candidates.
+
+## 2024-07-25 - Referential Equality of Derived Arrays
+**Learning:** Slicing or filtering arrays directly in the render body creates a new array reference on every render. Even if child components use `React.memo`, they will still re-render unnecessarily if passed these unstable references or if a mapped list parent re-renders due to other state changes while mapping over an unstable array reference.
+**Action:** Always wrap array derivations (e.g., `.slice()`, `.map()`, `.filter()`) in a `useMemo` hook when the resulting array is rendered as a list of memoized child components, to preserve referential equality and avoid expensive reconciliation.
