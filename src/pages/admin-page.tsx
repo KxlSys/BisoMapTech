@@ -196,6 +196,16 @@ export function AdminPage() {
     if (p.role === "admin") adminCount++;
   }
 
+  // ⚡ Bolt: Consolidate data aggregation into a single O(n) pass
+  // Avoids multiple redundant iterations and intermediate array allocations
+  const citySet = new Set<string>();
+  let collaboratingCount = 0;
+  for (let i = 0; i < profiles.length; i++) {
+    const p = profiles[i];
+    if (p.city) citySet.add(p.city);
+    if (p.open_to_collaboration) collaboratingCount++;
+  }
+
   const stats = {
     total: profiles.length,
     cities: citySet.size,

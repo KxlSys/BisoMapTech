@@ -239,15 +239,32 @@ function computeStats(profiles: RawProfile[]): ComputedStats {
     value: Math.round((m.count / maxCount) * 100),
   }));
 
-  // ⚡ Bolt: Derive distinct counts from keys instead of doing additional passes
-  const totalCities = Object.keys(cityCounts).length;
-  const allTechs = Object.keys(techCounts).length;
+  // ⚡ Bolt: Consolidate data aggregation into a single O(n) pass
+  // Avoids multiple redundant iterations and intermediate array allocations
+  let collab = 0;
+  let activeLastWeek = 0;
+  const citySet = new Set<string>();
+  const techSet = new Set<string>();
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  for (let i = 0; i < profiles.length; i++) {
+    const p = profiles[i];
+    if (p.open_to_collaboration) collab++;
+    if (p.city) citySet.add(p.city);
+    if (p.last_seen_at && new Date(p.last_seen_at) >= weekAgo) activeLastWeek++;
+
+    if (p.tech_stack) {
+      for (let j = 0; j < p.tech_stack.length; j++) {
+        techSet.add(p.tech_stack[j]);
+      }
+    }
+  }
 
   return {
     total,
     collabRate: Math.round((collab / total) * 100),
-    totalCities,
-    allTechs,
+    totalCities: citySet.size,
+    allTechs: techSet.size,
     activeLastWeek,
     roles,
     techs,
