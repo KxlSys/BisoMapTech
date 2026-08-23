@@ -76,7 +76,8 @@ export function calculateMatches(
       reasons.push("Competences complementaires");
     }
 
-    // ⚡ Bolt: Manual loop with a counter instead of .filter().length to avoid array allocation overhead
+    // ⚡ Bolt: Fast Set lookup instead of array.includes() for nested tech stack matching
+    // Also use a manual for loop with a counter instead of .filter().length to avoid array allocation
     let commonTechsCount = 0;
     for (let j = 0; j < candidate.tech_stack.length; j++) {
       if (currentUserTechsSet.has(candidate.tech_stack[j])) {
