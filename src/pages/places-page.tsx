@@ -166,6 +166,7 @@ export function PlacesPage() {
 
   return (
     <div className="relative flex flex-1 overflow-hidden">
+      {/* ─────────────────── LEFT SIDEBAR ─────────────────── */}
       <aside
         className={cn(
           "w-full md:w-[380px] md:shrink-0 flex-col border-r border-white/8 overflow-hidden transition-all duration-300",
@@ -207,7 +208,7 @@ export function PlacesPage() {
             className="bg-white/5 border-white/10"
           />
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="hidden md:grid grid-cols-2 gap-2">
             <Select value={city} onValueChange={setCity}>
               <SelectTrigger className="bg-white/5 border-white/10">
                 <SelectValue placeholder="Ville" />
@@ -235,15 +236,34 @@ export function PlacesPage() {
             </Select>
           </div>
 
-          {hasActiveFilters && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <RotateCcw className="h-3 w-3" />
-              Réinitialiser les filtres
-            </button>
-          )}
+          {/* Mobile minimal filter info (could be expanded to a full sheet later) */}
+          <div className="md:hidden flex flex-wrap gap-2">
+             <Select value={city} onValueChange={setCity}>
+              <SelectTrigger className="bg-white/5 border-white/10 h-8 text-xs w-[120px]">
+                <SelectValue placeholder="Ville" />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((c) => (
+                  <SelectItem key={c} value={c} className="text-xs">
+                    {c === "all" ? "Toutes les villes" : c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="bg-white/5 border-white/10 h-8 text-xs flex-1">
+                <SelectValue placeholder="Catégorie" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c} className="text-xs">
+                    {c === "all" ? "Toutes cat." : c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col">
@@ -384,6 +404,7 @@ export function PlacesPage() {
           />
         </div>
 
+        {/* Mobile Map/List Toggle FAB */}
         <div className="absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 md:hidden">
           <Button
             onClick={() => setMobileView(mobileView === "map" ? "list" : "map")}
