@@ -39,6 +39,16 @@ export function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [localSearch, setLocalSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (localSearch !== searchQuery) {
+        setSearchQuery(localSearch);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [localSearch, searchQuery]);
 
   // ⚡ Bolt: Removed redundant `localSearch` state and its associated `setTimeout` useEffect.
   // The search input has been replaced with the `DebouncedInput` component, which encapsulates
@@ -346,8 +356,8 @@ export function AdminPage() {
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <DebouncedInput
                 placeholder="Rechercher..."
-                value={searchQuery}
-                onChange={setSearchQuery}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
                 className="h-7 bg-white/5 border-white/10 pl-8 text-xs"
               />
             </div>
