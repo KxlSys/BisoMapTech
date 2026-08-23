@@ -229,8 +229,7 @@ export function Navbar() {
       </header>
 
       {/* Mobile bottom navigation */}
-      {showBottomNav && (
-      <nav className="fixed bottom-0 left-0 right-0 z-[600] flex h-16 items-stretch border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom)] overflow-x-auto scrollbar-none"
+      <nav className="fixed bottom-0 left-0 right-0 z-[600] flex h-16 items-stretch border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom)]"
         style={{ background: "oklch(0.10 0.025 240 / 95%)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         {NAV_LINKS.map((link) => {
           const isActive =
@@ -284,7 +283,6 @@ export function Navbar() {
           </Link>
         )}
       </nav>
-      )}
     </>
   );
 }
