@@ -46,7 +46,15 @@ export function calculateMatches(
 ): MatchResult[] {
   // ⚡ Bolt: Pre-calculate the current user's tech stack as a Set to avoid O(N*M) lookups
   const currentUserTechsSet = new Set(currentUser.tech_stack);
-  const currentUserCityLower = currentUser.city ? currentUser.city.toLowerCase() : null;
+
+  // ⚡ Bolt: Hoist invariant computations outside the loop to prevent redundant object
+  // allocations and string conversions during every iteration.
+  const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
+  const currentUserCity = currentUser.city?.toLowerCase();
+
+  const levelMap = { junior: 1, mid: 2, senior: 3 };
+  const currentUserLevel = levelMap[currentUser.experience_level];
+
   const results: MatchResult[] = [];
 
   // ⚡ Bolt: Hoist the lowercase transformation of the current user's city
@@ -68,9 +76,7 @@ export function calculateMatches(
       reasons.push("Competences complementaires");
     }
 
-    // ⚡ Bolt: Count intersection with a manual loop instead of .filter().length
-    // This prevents creating a new intermediate array per candidate,
-    // reducing garbage collection overhead.
+    // ⚡ Bolt: Manual loop with a counter instead of .filter().length to avoid array allocation overhead
     let commonTechsCount = 0;
     for (let j = 0; j < candidate.tech_stack.length; j++) {
       if (currentUserTechsSet.has(candidate.tech_stack[j])) {
@@ -84,18 +90,15 @@ export function calculateMatches(
     }
 
     if (
-      currentUserCityLower &&
+      currentUserCity &&
       candidate.city &&
-      currentUserCityLower === candidate.city.toLowerCase()
+      currentUserCity === candidate.city.toLowerCase()
     ) {
       score += 20;
       reasons.push("Meme ville");
     }
 
-    const diff = Math.abs(
-      currentUserLevel -
-        levelMap[candidate.experience_level]
-    );
+    const diff = Math.abs(currentUserLevel - levelMap[candidate.experience_level]);
     if (diff <= 1) {
       score += 15;
       reasons.push("Niveau d'experience compatible");
