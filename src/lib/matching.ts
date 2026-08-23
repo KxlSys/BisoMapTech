@@ -57,6 +57,10 @@ export function calculateMatches(
 
   const results: MatchResult[] = [];
 
+  // ⚡ Bolt: Hoist the lowercase transformation of the current user's city
+  // to avoid redundant string allocations and computations in the loop
+  const currentUserCityLower = currentUser.city?.toLowerCase();
+
   // ⚡ Bolt: Consolidate .filter().map().filter() into a single O(n) loop to reduce allocations
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
