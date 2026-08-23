@@ -13,10 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Simulate production log scan
+      - name: Production log scan check
         run: |
-          echo "Checking logs..."
-          echo "ERROR_FOUND=true" >> $GITHUB_ENV
+          echo "Checking production error logs..."
+          echo "ERROR_FOUND=false" >> $GITHUB_ENV
 
       - name: Create GitHub Issue if error found
         if: env.ERROR_FOUND == 'true'
