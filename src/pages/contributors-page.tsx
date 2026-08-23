@@ -194,8 +194,8 @@ export function ContributorsPage() {
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <DebouncedInput
           placeholder="Rechercher par nom, compétence..."
-          value={searchQuery}
-          onChange={setSearchQuery}
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
           aria-label="Rechercher des contributeurs par nom ou compétence"
           className="bg-white/5 border-white/10 pl-10 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30"
         />

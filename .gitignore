@@ -57,3 +57,6 @@ MEMORY.md
 *.sw?
 .vercel
 .env*
+
+.playwright-mcp/
+
