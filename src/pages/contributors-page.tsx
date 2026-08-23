@@ -195,7 +195,7 @@ export function ContributorsPage() {
         <DebouncedInput
           placeholder="Rechercher par nom, compétence..."
           value={searchQuery}
-          onChange={setSearchQuery}
+          onChange={(val) => setSearchQuery(val)}
           aria-label="Rechercher des contributeurs par nom ou compétence"
           className="bg-white/5 border-white/10 pl-10 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30"
         />

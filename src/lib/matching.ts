@@ -46,6 +46,7 @@ export function calculateMatches(
 ): MatchResult[] {
   // ⚡ Bolt: Pre-calculate the current user's tech stack as a Set to avoid O(N*M) lookups
   const currentUserTechsSet = new Set(currentUser.tech_stack);
+  const currentUserCityLower = currentUser.city ? currentUser.city.toLowerCase() : null;
   const results: MatchResult[] = [];
 
   // ⚡ Bolt: Hoist the lowercase transformation of the current user's city
@@ -62,7 +63,6 @@ export function calculateMatches(
     let score = 0;
     const reasons: string[] = [];
 
-    const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
     if (complementary.includes(candidate.role_type)) {
       score += 30;
       reasons.push("Competences complementaires");
@@ -92,9 +92,8 @@ export function calculateMatches(
       reasons.push("Meme ville");
     }
 
-    const levelMap = { junior: 1, mid: 2, senior: 3 };
     const diff = Math.abs(
-      levelMap[currentUser.experience_level] -
+      currentUserLevel -
         levelMap[candidate.experience_level]
     );
     if (diff <= 1) {
