@@ -49,11 +49,9 @@ export function calculateMatches(
   const currentUserCityLower = currentUser.city ? currentUser.city.toLowerCase() : null;
   const results: MatchResult[] = [];
 
-  // ⚡ Bolt: Hoist static initialization outside the loop
-  const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
+  // ⚡ Bolt: Hoist the lowercase transformation of the current user's city
+  // to avoid redundant string allocations and computations in the loop
   const currentUserCityLower = currentUser.city?.toLowerCase();
-  const levelMap: Record<string, number> = { junior: 1, mid: 2, senior: 3 };
-  const currentUserLevel = levelMap[currentUser.experience_level];
 
   // ⚡ Bolt: Consolidate .filter().map().filter() into a single O(n) loop to reduce allocations
   for (let i = 0; i < candidates.length; i++) {
@@ -70,8 +68,9 @@ export function calculateMatches(
       reasons.push("Competences complementaires");
     }
 
-    // ⚡ Bolt: Fast Set lookup instead of array.includes() for nested tech stack matching
-    // ⚡ Bolt: Replaced .filter().length with a manual loop counter to avoid unnecessary array allocations
+    // ⚡ Bolt: Count intersection with a manual loop instead of .filter().length
+    // This prevents creating a new intermediate array per candidate,
+    // reducing garbage collection overhead.
     let commonTechsCount = 0;
     for (let j = 0; j < candidate.tech_stack.length; j++) {
       if (currentUserTechsSet.has(candidate.tech_stack[j])) {
