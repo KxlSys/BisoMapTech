@@ -150,7 +150,7 @@ function AttachmentRenderer({ message, partnerPublicKey, isMine }: AttachmentRen
     
     // If it's not encrypted, we can just use the public url directly!
     if (!message.attachment_key || !partnerPublicKey) {
-      setDecryptedUrl(message.attachment_url);
+      setDecryptedUrl(isSafeUrl(message.attachment_url) ? message.attachment_url : "about:blank");
       return;
     }
 
@@ -265,6 +265,17 @@ function AttachmentRenderer({ message, partnerPublicKey, isMine }: AttachmentRen
 
 const EMOJIS = ["👍", "❤️", "😂", "🙏"];
 
+function isSafeUrl(urlStr: string | null) {
+  if (!urlStr) return false;
+  try {
+    const url = new URL(urlStr);
+    return ["http:", "https:", "blob:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
+
 function renderMessageContent(content: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   if (!content) return "";
@@ -329,7 +340,7 @@ function LinkPreview({ url }: { url: string }) {
             description: json.data.description,
             image: json.data.image?.url,
             logo: json.data.logo?.url,
-            url: json.data.url || url,
+            url: isSafeUrl(json.data.url || url) ? (json.data.url || url) : "about:blank",
             publisher: json.data.publisher || new URL(url).hostname.replace("www.", "")
           });
         }

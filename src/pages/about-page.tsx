@@ -239,15 +239,11 @@ function computeStats(profiles: RawProfile[]): ComputedStats {
     value: Math.round((m.count / maxCount) * 100),
   }));
 
-  // ⚡ Bolt: Derive distinct counts from keys instead of doing additional passes
-  const totalCities = Object.keys(cityCounts).length;
-  const allTechs = Object.keys(techCounts).length;
-
   return {
     total,
     collabRate: Math.round((collab / total) * 100),
-    totalCities,
-    allTechs,
+    totalCities: Object.keys(cityCounts).length,
+    allTechs: Object.keys(techCounts).length,
     activeLastWeek,
     roles,
     techs,
