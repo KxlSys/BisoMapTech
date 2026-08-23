@@ -46,6 +46,7 @@ export function calculateMatches(
 ): MatchResult[] {
   // ⚡ Bolt: Pre-calculate the current user's tech stack as a Set to avoid O(N*M) lookups
   const currentUserTechsSet = new Set(currentUser.tech_stack);
+  const currentUserCityLower = currentUser.city ? currentUser.city.toLowerCase() : null;
   const results: MatchResult[] = [];
 
   // ⚡ Bolt: Hoist static initialization outside the loop

@@ -17,7 +17,7 @@ export function HomePage() {
         <div className="mt-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-muted-foreground">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p className="leading-relaxed">
-            Pour limiter le spam, les messages privés sont possibles uniquement après acceptation d'une demande de connexion.
+            Pour limiter le spam, les messages privés sont possibles uniquement après acceptation d’une demande de connexion.
           </p>
         </div>
       </div>
