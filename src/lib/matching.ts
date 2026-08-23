@@ -46,7 +46,20 @@ export function calculateMatches(
 ): MatchResult[] {
   // ⚡ Bolt: Pre-calculate the current user's tech stack as a Set to avoid O(N*M) lookups
   const currentUserTechsSet = new Set(currentUser.tech_stack);
+
+  // ⚡ Bolt: Hoist invariant computations outside the loop to prevent redundant object
+  // allocations and string conversions during every iteration.
+  const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
+  const currentUserCity = currentUser.city?.toLowerCase();
+
+  const levelMap = { junior: 1, mid: 2, senior: 3 };
+  const currentUserLevel = levelMap[currentUser.experience_level];
+
   const results: MatchResult[] = [];
+
+  // ⚡ Bolt: Hoist the lowercase transformation of the current user's city
+  // to avoid redundant string allocations and computations in the loop
+  const currentUserCityLower = currentUser.city?.toLowerCase();
 
   // ⚡ Bolt: Consolidate .filter().map().filter() into a single O(n) loop to reduce allocations
   for (let i = 0; i < candidates.length; i++) {
@@ -58,35 +71,34 @@ export function calculateMatches(
     let score = 0;
     const reasons: string[] = [];
 
-    const complementary = COMPLEMENTARY_ROLES[currentUser.role_type] || [];
     if (complementary.includes(candidate.role_type)) {
       score += 30;
       reasons.push("Competences complementaires");
     }
 
-    // ⚡ Bolt: Fast Set lookup instead of array.includes() for nested tech stack matching
-    const commonTechs = candidate.tech_stack.filter((t) =>
-      currentUserTechsSet.has(t)
-    );
-    if (commonTechs.length > 0) {
-      score += Math.min(commonTechs.length * 10, 25);
-      reasons.push(`${commonTechs.length} technologie(s) en commun`);
+    // ⚡ Bolt: Manual loop with a counter instead of .filter().length to avoid array allocation overhead
+    let commonTechsCount = 0;
+    for (let j = 0; j < candidate.tech_stack.length; j++) {
+      if (currentUserTechsSet.has(candidate.tech_stack[j])) {
+        commonTechsCount++;
+      }
+    }
+
+    if (commonTechsCount > 0) {
+      score += Math.min(commonTechsCount * 10, 25);
+      reasons.push(`${commonTechsCount} technologie(s) en commun`);
     }
 
     if (
-      currentUser.city &&
+      currentUserCity &&
       candidate.city &&
-      currentUser.city.toLowerCase() === candidate.city.toLowerCase()
+      currentUserCity === candidate.city.toLowerCase()
     ) {
       score += 20;
       reasons.push("Meme ville");
     }
 
-    const levelMap = { junior: 1, mid: 2, senior: 3 };
-    const diff = Math.abs(
-      levelMap[currentUser.experience_level] -
-        levelMap[candidate.experience_level]
-    );
+    const diff = Math.abs(currentUserLevel - levelMap[candidate.experience_level]);
     if (diff <= 1) {
       score += 15;
       reasons.push("Niveau d'experience compatible");

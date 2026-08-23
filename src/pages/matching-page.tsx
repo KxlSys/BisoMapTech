@@ -233,7 +233,8 @@ function TalentsTab({
     });
   }, [baseMatches, roleFilter, disponibleOnly]);
 
-  const visible = filtered.slice(0, visibleCount);
+  // ⚡ Bolt: Memoize slicing to prevent re-instantiating the visible array on unrelated renders.
+  const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
 
   return (
     <div className="flex flex-col gap-5">

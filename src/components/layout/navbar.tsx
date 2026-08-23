@@ -230,60 +230,60 @@ export function Navbar() {
 
       {/* Mobile bottom navigation */}
       {showBottomNav && (
-      <nav className="fixed bottom-0 left-0 right-0 z-[600] flex h-16 items-stretch border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom)] overflow-x-auto scrollbar-none"
-        style={{ background: "oklch(0.10 0.025 240 / 95%)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
-        {NAV_LINKS.map((link) => {
-          const isActive =
-            activeOverride === link.href ||
-            location.pathname === link.href ||
-            (link.href !== "/" && location.pathname.startsWith(`${link.href}/`));
-          return (
+        <nav className="fixed bottom-0 left-0 right-0 z-[600] flex h-16 items-stretch border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom)]"
+          style={{ background: "oklch(0.10 0.025 240 / 95%)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+          {NAV_LINKS.map((link) => {
+            const isActive =
+              activeOverride === link.href ||
+              location.pathname === link.href ||
+              (link.href !== "/" && location.pathname.startsWith(`${link.href}/`));
+            return (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={cn(
+                  "flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 transition-colors",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <link.icon className={cn("h-5 w-5", isActive && "drop-shadow-[0_0_6px_oklch(0.82_0.16_155)]")} />
+                <span className="text-[10px] font-medium">{link.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary" />
+                )}
+              </Link>
+            );
+          })}
+          {user && (
             <Link
-              key={link.href}
-              to={link.href}
+              to="/messages"
               className={cn(
-                "flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 transition-colors",
-                isActive ? "text-primary" : "text-muted-foreground"
+                "relative flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 transition-colors",
+                location.pathname === "/messages" ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <link.icon className={cn("h-5 w-5", isActive && "drop-shadow-[0_0_6px_oklch(0.82_0.16_155)]")} />
-              <span className="text-[10px] font-medium">{link.label}</span>
-              {isActive && (
+              <MessageSquare className={cn("h-5 w-5", location.pathname === "/messages" && "drop-shadow-[0_0_6px_oklch(0.82_0.16_155)]")} />
+              <span className="text-[10px] font-medium">Messages</span>
+              {messagesBadge > 0 && (
+                <span className="absolute right-4 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                  {messagesBadge > 99 ? "99+" : messagesBadge > 9 ? "9+" : messagesBadgeLabel}
+                </span>
+              )}
+              {location.pathname === "/messages" && (
                 <span className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary" />
               )}
             </Link>
-          );
-        })}
-        {user && (
-          <Link
-            to="/messages"
-            className={cn(
-              "relative flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 transition-colors",
-              location.pathname === "/messages" ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            <MessageSquare className={cn("h-5 w-5", location.pathname === "/messages" && "drop-shadow-[0_0_6px_oklch(0.82_0.16_155)]")} />
-            <span className="text-[10px] font-medium">Messages</span>
-            {messagesBadge > 0 && (
-              <span className="absolute right-4 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-                {messagesBadge > 99 ? "99+" : messagesBadge > 9 ? "9+" : messagesBadgeLabel}
-              </span>
-            )}
-            {location.pathname === "/messages" && (
-              <span className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary" />
-            )}
-          </Link>
-        )}
-        {!user && (
-          <Link
-            to="/login"
-            className="flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors"
-          >
-            <LogIn className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Connexion</span>
-          </Link>
-        )}
-      </nav>
+          )}
+          {!user && (
+            <Link
+              to="/login"
+              className="flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors"
+            >
+              <LogIn className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Connexion</span>
+            </Link>
+          )}
+        </nav>
       )}
     </>
   );

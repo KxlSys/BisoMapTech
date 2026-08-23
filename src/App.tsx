@@ -200,6 +200,11 @@ export default function App() {
           <li>Source URL: {supabaseConfigStatus.urlSource}</li>
           <li>Source clé: {supabaseConfigStatus.anonKeySource}</li>
           <li>URL injectée: {supabaseConfigStatus.urlPreview}</li>
+          {supabaseConfigStatus.urlHasUnexpectedPath && (
+            <li className="text-amber-300">
+              Attention: l'URL contient un path (ex. <code>/rest/v1</code>). Mets uniquement <code>https://&lt;ref&gt;.supabase.co</code>, supabase-js ajoute lui-même <code>/auth/v1</code>, <code>/rest/v1</code>, etc.
+            </li>
+          )}
           <li>Clé injectée: {supabaseConfigStatus.anonKeyPreview}</li>
           <li>Build mode: {supabaseConfigStatus.buildMode} (PROD={String(supabaseConfigStatus.isProd)})</li>
         </ul>

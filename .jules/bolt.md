@@ -1,0 +1,3 @@
+## 2026-08-19 - [Hoisting string conversions outside loops in array processing]
+**Learning:** Hoisting invariant properties outside large iterative array loops (such as `currentUser.city?.toLowerCase()`) and replacing higher-level array methods like `.filter(...).length` with a manual loop and counter when determining overlaps (like tech stack matching) significantly reduces memory allocation and garbage collection overhead in hot path matching algorithms.
+**Action:** When implementing high-frequency matching/filtering algorithms on large candidate arrays, aggressively hoist invariant transformations (like object lookups and `.toLowerCase()`) out of the loop and prefer manual iterating counters over chainable array methods for simple intersection checks.
