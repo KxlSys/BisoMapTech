@@ -34,6 +34,45 @@ function extractGithubUsername(githubUrl: string): string | null {
   return last || null;
 }
 
+function isRecentlyActive(lastSeenAt?: string): boolean {
+  if (!lastSeenAt) return false;
+  return Date.now() - new Date(lastSeenAt).getTime() < 30 * 24 * 60 * 60 * 1000;
+}
+
+function formatMemberSince(createdAt: string): string {
+  const d = new Date(createdAt);
+  return d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+}
+
+function GithubHeatmap({ githubUsername }: { githubUsername: string | null }) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+
+  if (!githubUsername) {
+    return (
+      <div className="flex h-32 items-center justify-center rounded-xl border border-white/5 bg-white/2 text-xs text-muted-foreground">
+        Aucun compte GitHub associé
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <img
+        src={`https://ghchart.rshah.org/4edea3/${githubUsername}`}
+        alt={`Contributions GitHub de ${githubUsername}`}
+        className="w-full min-w-[500px] rounded-lg opacity-90 transition-opacity hover:opacity-100"
+        onLoad={() => setStatus("loaded")}
+        onError={() => setStatus("error")}
+      />
+      {status === "error" && (
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Impossible de charger le graphique GitHub
+        </p>
+      )}
+    </div>
+  );
+}
+
 function generateHeatmap(seed: string) {
   let x = 0;
   for (let i = 0; i < seed.length; i++) {
