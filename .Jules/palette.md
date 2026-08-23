@@ -1,3 +1,3 @@
-## 2026-08-18 - [Accessible Custom Accordions]
-**Learning:** Custom accordions (like filter panels) require specific ARIA attributes for screen readers to understand their state and relationship. Specifically, aria-expanded on the trigger and aria-controls linking to the content ID.
-**Action:** For custom accordion or collapsible filter panels, always include aria-expanded={isOpen} and aria-controls="[content-id]" on the toggle button, and map the corresponding id to the content container to ensure proper screen reader accessibility.
+## 2024-08-21 - Accessible Custom Collapsible Panels
+**Learning:** Custom accordion or collapsible filter panels built with native `<button>` and conditionally rendered contents often omit crucial ARIA markup, resulting in a poor screen reader experience where users cannot determine the open/close state or map the trigger to the content.
+**Action:** Always include `aria-expanded={isOpen}` and `aria-controls="[content-id]"` on the toggle button, and map the corresponding `id` to the content container to ensure proper screen reader accessibility.
