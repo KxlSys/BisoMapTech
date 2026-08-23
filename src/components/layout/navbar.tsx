@@ -283,7 +283,6 @@ export function Navbar() {
           </Link>
         )}
       </nav>
-      )}
     </>
   );
 }

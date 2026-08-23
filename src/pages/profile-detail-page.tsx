@@ -52,6 +52,8 @@ function generateHeatmap(seed: string) {
       cells.push({ week, day, level: next() % 5 });
     }
   }
+  return cells;
+}
 
 export function ProfileDetailPage() {
   const { username } = useParams<{ username: string }>();
@@ -364,7 +366,7 @@ export function ProfileDetailPage() {
                     ? `Travaille principalement avec ${profile.tech_stack.slice(0, 3).join(", ")}.`
                     : "Stack en cours de formalisation."}
                 </p>
-              )}
+              </div>
             </div>
           </div>
 
