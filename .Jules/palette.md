@@ -1,3 +1,3 @@
-## 2024-08-23 - Adding accessibility to custom accordion filter panels
-**Learning:** Custom collapsible filter panels using simple div/button combos need explicit accessibility attributes (aria-expanded and aria-controls) to communicate their state and related content to screen readers.
-**Action:** Always include `aria-expanded={isOpen}` and `aria-controls="[content-id]"` on the toggle button, and map the corresponding `id` to the content container for any custom accordion-like structures.
+## 2024-08-15 - Accessible Accordions
+**Learning:** In custom, hand-coded accordion-style filter panels, it's easy to forget standard ARIA attributes (`aria-expanded` and `aria-controls`) because they visually function fine without them. Screen readers need these to announce the state of collapsible content.
+**Action:** Always verify `aria-expanded` and `aria-controls` on custom collapsible filter toggles.
