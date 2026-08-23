@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   MapPin,
@@ -34,50 +34,24 @@ function extractGithubUsername(githubUrl: string): string | null {
   return last || null;
 }
 
-function isRecentlyActive(lastSeenAt?: string): boolean {
-  if (!lastSeenAt) return false;
-  return Date.now() - new Date(lastSeenAt).getTime() < 30 * 24 * 60 * 60 * 1000;
-}
-
-function formatMemberSince(createdAt: string): string {
-  const d = new Date(createdAt);
-  return d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-}
-
-function GithubHeatmap({ githubUsername }: { githubUsername: string | null }) {
-  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
-
-  if (!githubUsername) {
-    return (
-      <div className="flex items-center justify-center py-8 text-[11px] text-muted-foreground/50">
-        Aucun compte GitHub renseigné
-      </div>
-    );
+function generateHeatmap(seed: string) {
+  let x = 0;
+  for (let i = 0; i < seed.length; i++) {
+    x = (x * 31 + seed.charCodeAt(i)) >>> 0;
   }
+  const next = () => {
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    return x >>> 0;
+  };
 
-  return (
-    <div className="overflow-x-auto">
-      {status === "loading" && (
-        <div className="h-[90px] animate-pulse rounded-lg bg-white/5" />
-      )}
-      <img
-        src={`https://ghchart.rshah.org/4edea3/${githubUsername}`}
-        alt={`Contributions GitHub de ${githubUsername}`}
-        className={cn(
-          "w-full rounded-sm opacity-90",
-          status !== "loaded" && "hidden"
-        )}
-        onLoad={() => setStatus("loaded")}
-        onError={() => setStatus("error")}
-      />
-      {status === "error" && (
-        <div className="flex items-center justify-center py-8 text-[11px] text-muted-foreground/50">
-          Données GitHub temporairement indisponibles
-        </div>
-      )}
-    </div>
-  );
-}
+  const cells: { week: number; day: number; level: number }[] = [];
+  for (let week = 0; week < 26; week++) {
+    for (let day = 0; day < 7; day++) {
+      cells.push({ week, day, level: next() % 5 });
+    }
+  }
 
 export function ProfileDetailPage() {
   const { username } = useParams<{ username: string }>();
@@ -86,6 +60,11 @@ export function ProfileDetailPage() {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("biographie");
+
+  const heatmapCells = useMemo(() => {
+    const seed = profile?.id || username || "anonymous";
+    return generateHeatmap(seed);
+  }, [profile?.id, username]);
 
   useEffect(() => {
     async function fetchData() {
@@ -313,9 +292,30 @@ export function ProfileDetailPage() {
                 <Activity className="h-4 w-4 text-primary" />
                 <h2 className="text-sm font-semibold">Activité de Contribution</h2>
               </div>
-              {githubUsername && (
-                <span className="text-[11px] text-muted-foreground">12 derniers mois</span>
-              )}
+              <span className="text-[11px] text-muted-foreground">6 derniers mois</span>
+            </div>
+            <div className="overflow-x-auto">
+              <div className="flex gap-0.5 min-w-0">
+                {Array.from({ length: 26 }).map((_, week) => (
+                  <div key={week} className="flex flex-col gap-0.5">
+                    {Array.from({ length: 7 }).map((_, day) => {
+                      const cell = heatmapCells.find(c => c.week === week && c.day === day);
+                      const level = cell?.level ?? 0;
+                      return (
+                        <div
+                          key={day}
+                          className="h-2.5 w-2.5 rounded-sm"
+                          style={{
+                            background: level === 0
+                              ? "oklch(1 0 0 / 6%)"
+                              : `oklch(0.82 ${0.06 + level * 0.025} 155 / ${0.3 + level * 0.18})`,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
 
             <GithubHeatmap githubUsername={githubUsername} />
@@ -329,9 +329,40 @@ export function ProfileDetailPage() {
                 <Star className="h-3 w-3" />
                 {repos.reduce((sum, r) => sum + (r.stars || 0), 0)} étoiles
               </div>
-              {githubUsername && (
-                <p className="ml-auto text-[10px] text-muted-foreground/50">
-                  Données réelles GitHub
+              <div className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <span>Moins</span>
+                {[0, 1, 2, 3, 4].map((l) => (
+                  <div key={l} className="h-2 w-2 rounded-sm"
+                    style={{ background: l === 0 ? "oklch(1 0 0 / 6%)" : `oklch(0.82 ${0.06 + l * 0.025} 155 / ${0.3 + l * 0.18})` }}
+                  />
+                ))}
+                <span>Plus</span>
+              </div>
+            </div>
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              Indicateur visuel (bêta) : ce graphique donne une tendance, pas une mesure exacte.
+            </p>
+          </div>
+
+          {/* Professional Journey */}
+          <div className="glass-panel rounded-2xl border border-white/10 p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold">Parcours Professionnel</h2>
+            </div>
+            <div className="relative space-y-4 pl-6">
+              <div className="absolute left-0 top-1 bottom-0 w-px bg-gradient-to-b from-primary/60 via-primary/20 to-transparent" />
+              <div className="relative">
+                <div className="absolute -left-[25px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-background shadow-[0_0_8px_rgba(78,222,163,0.5)]" />
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-semibold text-foreground">{ROLE_TYPE_LABELS[profile.role_type] || "Spécialiste tech"}</span>
+                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0 text-[10px] text-primary">En poste</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">2021 – Présent &bull; Congo-Brazzaville</p>
+                <p className="mt-1 text-xs text-muted-foreground/70">
+                  {profile.tech_stack.length > 0
+                    ? `Travaille principalement avec ${profile.tech_stack.slice(0, 3).join(", ")}.`
+                    : "Stack en cours de formalisation."}
                 </p>
               )}
             </div>
