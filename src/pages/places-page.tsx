@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import type L from "leaflet";
-import { MapPin, Plus, Loader2, Locate, List, Map, AlertCircle, RotateCcw, LogIn } from "lucide-react";
+import { MapPin, Plus, Loader2, Locate, List, Map, AlertCircle, LogIn } from "lucide-react";
 import { PlacesMap } from "@/components/map/places-map";
 import { Button } from "@/components/ui/button";
 import { DebouncedInput } from "@/components/ui/debounced-input";

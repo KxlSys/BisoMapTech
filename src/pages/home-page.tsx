@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Users, MapPin, ArrowRight, ShieldCheck } from "lucide-react";
+import { Users, MapPin, ArrowRight, ShieldCheck, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function HomePage() {
