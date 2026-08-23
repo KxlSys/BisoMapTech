@@ -156,7 +156,7 @@ export function FilterPanel({
         <button
           onClick={() => setIsRoleOpen(!isRoleOpen)}
           aria-expanded={isRoleOpen}
-          aria-controls="role-content"
+          aria-controls="filter-role-content"
           className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors text-left"
         >
           <div className="flex items-center gap-2">
@@ -177,7 +177,7 @@ export function FilterPanel({
         </button>
 
         {isRoleOpen && (
-          <div id="role-content" className="px-2.5 pb-2.5 pt-1 border-t border-white/5 bg-white/[0.02]">
+          <div id="filter-role-content" className="px-2.5 pb-2.5 pt-1 border-t border-white/5 bg-white/[0.02]">
             <div className="grid grid-cols-3 gap-1">
               {Object.entries(ROLE_TYPE_LABELS).map(([value, label]) => {
                 const isActive = roleType === value;
@@ -211,7 +211,7 @@ export function FilterPanel({
         <button
           onClick={() => setIsLevelOpen(!isLevelOpen)}
           aria-expanded={isLevelOpen}
-          aria-controls="level-content"
+          aria-controls="filter-level-content"
           className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors text-left"
         >
           <div className="flex items-center gap-2">
@@ -236,7 +236,7 @@ export function FilterPanel({
         </button>
 
         {isLevelOpen && (
-          <div id="level-content" className="px-2.5 pb-2.5 pt-1.5 border-t border-white/5 bg-white/[0.02]">
+          <div id="filter-level-content" className="px-2.5 pb-2.5 pt-1.5 border-t border-white/5 bg-white/[0.02]">
             <div className="flex gap-1">
               {Object.entries(EXPERIENCE_LABELS).map(([value, label]) => {
                 const isActive = experienceLevel === value;
@@ -264,7 +264,7 @@ export function FilterPanel({
         <button
           onClick={() => setIsLocationOpen(!isLocationOpen)}
           aria-expanded={isLocationOpen}
-          aria-controls="location-content"
+          aria-controls="filter-location-content"
           className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors text-left"
         >
           <div className="flex items-center gap-2">
@@ -285,7 +285,7 @@ export function FilterPanel({
         </button>
 
         {isLocationOpen && (
-          <div id="location-content" className="px-2.5 pb-2.5 pt-2 border-t border-white/5 bg-white/[0.02] space-y-2.5">
+          <div id="filter-location-content" className="px-2.5 pb-2.5 pt-2 border-t border-white/5 bg-white/[0.02] space-y-2.5">
             <div className="space-y-1">
               <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/80">
                 Département
