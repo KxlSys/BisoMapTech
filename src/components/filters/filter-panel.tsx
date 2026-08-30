@@ -117,6 +117,7 @@ export function FilterPanel({
               variant="ghost"
               size="sm"
               onClick={handleReset}
+              aria-label="Réinitialiser les filtres"
               className="h-6 gap-1 px-2 text-[10px] text-muted-foreground hover:text-foreground hover:bg-white/5"
             >
               <RotateCcw className="h-3 w-3" />
@@ -132,6 +133,7 @@ export function FilterPanel({
             variant="ghost"
             size="sm"
             onClick={handleReset}
+            aria-label="Réinitialiser les filtres"
             className="h-6 gap-1 px-2 text-[10px] text-muted-foreground hover:text-foreground hover:bg-white/5"
           >
             <RotateCcw className="h-3 w-3" />
@@ -184,6 +186,7 @@ export function FilterPanel({
                 return (
                   <button
                     key={value}
+                    aria-pressed={isActive}
                     onClick={() => setRoleType(isActive ? "" : value)}
                     className={cn(
                       "rounded-lg border px-1 py-1.5 text-center transition-all",
@@ -243,6 +246,7 @@ export function FilterPanel({
                 return (
                   <button
                     key={value}
+                    aria-pressed={isActive}
                     onClick={() => setExperienceLevel(isActive ? "" : value)}
                     className={cn(
                       "flex-1 rounded-lg border py-1.5 text-[11px] font-medium transition-all text-center",
@@ -293,6 +297,7 @@ export function FilterPanel({
               <div className="flex max-h-20 flex-wrap gap-1 overflow-y-auto pr-1 scrollbar-thin">
                 <button
                   onClick={() => setDépartement("all")}
+                  aria-pressed={!département || département === "all"}
                   className={cn(
                     "rounded-full border px-2 py-0.5 text-[9px] transition-all",
                     !département || département === "all"
@@ -307,6 +312,7 @@ export function FilterPanel({
                   return (
                     <button
                       key={dep}
+                      aria-pressed={isActive}
                       onClick={() => setDépartement(isActive ? "all" : dep)}
                       className={cn(
                         "rounded-full border px-2 py-0.5 text-[9px] transition-all",
@@ -329,6 +335,7 @@ export function FilterPanel({
               <div className="flex max-h-20 flex-wrap gap-1 overflow-y-auto pr-1 scrollbar-thin">
                 <button
                   onClick={() => setCity("all")}
+                  aria-pressed={!city || city === "all"}
                   className={cn(
                     "rounded-full border px-2 py-0.5 text-[9px] transition-all",
                     !city || city === "all"
@@ -343,6 +350,7 @@ export function FilterPanel({
                   return (
                     <button
                       key={c.name}
+                      aria-pressed={isActive}
                       onClick={() => setCity(isActive ? "all" : c.name)}
                       className={cn(
                         "rounded-full border px-2 py-0.5 text-[9px] transition-all",
