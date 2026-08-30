@@ -102,9 +102,16 @@ export function ProfileDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("biographie");
 
-  const heatmapCells = useMemo(() => {
+  // ⚡ Bolt: Convert O(N) array search inside double loop to O(1) Map lookup.
+  const heatmapMap = useMemo(() => {
     const seed = profile?.id || username || "anonymous";
-    return generateHeatmap(seed);
+    const cells = generateHeatmap(seed);
+    const map = new Map<string, number>();
+    for (let i = 0; i < cells.length; i++) {
+      const c = cells[i];
+      map.set(`${c.week}-${c.day}`, c.level);
+    }
+    return map;
   }, [profile?.id, username]);
 
   useEffect(() => {
@@ -340,8 +347,7 @@ export function ProfileDetailPage() {
                 {Array.from({ length: 26 }).map((_, week) => (
                   <div key={week} className="flex flex-col gap-0.5">
                     {Array.from({ length: 7 }).map((_, day) => {
-                      const cell = heatmapCells.find(c => c.week === week && c.day === day);
-                      const level = cell?.level ?? 0;
+                      const level = heatmapMap.get(`${week}-${day}`) ?? 0;
                       return (
                         <div
                           key={day}
