@@ -41,30 +41,22 @@ import { importGithubProfile, GithubImportError } from "@/lib/github-import";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const DRAFT_KEY_PREFIX = "bisomap.onboarding.draft.";
-
-interface OnboardingDraft {
-  fullName: string;
-  bio: string;
-  city: string;
-  techStack: string[];
-  roleType: RoleType;
-  experienceLevel: ExperienceLevel;
-  openToCollaboration: boolean;
-  avatarUrl: string;
-}
-
 function isDbRoleType(value: string): value is (typeof DB_ROLE_TYPES)[number] {
   return DB_ROLE_TYPES.includes(value as (typeof DB_ROLE_TYPES)[number]);
 }
 
-function loadDraft(userId: string): Partial<OnboardingDraft> | null {
+/** Le formulaire sauvegarde chaque champ sous sa propre clé locale. */
+function draftKey(userId: string | undefined): string {
+  return `onboarding_draft_${userId}`;
+}
+
+function hasSavedDraft(userId: string | undefined): boolean {
+  if (!userId) return false;
   try {
-    const raw = localStorage.getItem(`${DRAFT_KEY_PREFIX}${userId}`);
-    if (!raw) return null;
-    return JSON.parse(raw) as Partial<OnboardingDraft>;
+    return localStorage.getItem(`${draftKey(userId)}_fullName`) !== null;
   } catch {
-    return null;
+    // Navigation privée ou stockage bloqué : pas de brouillon, pas de message.
+    return false;
   }
 }
 
@@ -83,9 +75,11 @@ export function OnboardingStepper() {
   const [suggestedTechs, setSuggestedTechs] = useState<string[]>([]);
 
 
-  const draft = useMemo(() => (user ? loadDraft(user.id) : null), [user]);
+  const DRAFT_KEY = draftKey(user?.id);
 
-  const DRAFT_KEY = `onboarding_draft_${user?.id}`;
+  // Calculé une seule fois au montage : le formulaire réécrit ces clés à chaque
+  // frappe, donc les relire ensuite dirait toujours « brouillon restauré ».
+  const [hadDraftOnMount] = useState(() => hasSavedDraft(user?.id));
 
   const [fullName, setFullName] = useState(() => {
     const draft = localStorage.getItem(`${DRAFT_KEY}_fullName`);
@@ -351,7 +345,7 @@ export function OnboardingStepper() {
             <p className="mt-2 text-sm text-muted-foreground">
               Positionnez-vous sur la cartographie des développeurs de la République du Congo.
             </p>
-            {draft && (
+            {hadDraftOnMount && (
               <p className="mt-1 text-[11px] text-muted-foreground/70">
                 Brouillon restauré automatiquement.
               </p>
