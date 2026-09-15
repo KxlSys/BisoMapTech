@@ -20,6 +20,7 @@ import { PLACE_CATEGORIES } from "@/lib/constants";
 import { CONGO_CITIES } from "@/lib/cities";
 import type { Place } from "@/types";
 import { cn } from "@/lib/utils";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 const CATEGORY_BADGE_COLORS: Record<string, string> = {
   "Espace Tech": "bg-indigo-500/15 text-indigo-400 border-indigo-500/25",
@@ -83,6 +84,12 @@ const MemoizedPlaceListItem = React.memo(({
 ));
 
 export function PlacesPage() {
+  usePageMeta({
+    title: "Lieux tech — BisoMapTech",
+    description:
+      "Espaces de coworking, écoles, communautés et entreprises tech en République du Congo.",
+  });
+
   const { user } = useAuthStore();
   const [places, setPlaces] = useState<Place[]>([]);
   const [isLoading, setIsLoading] = useState(true);

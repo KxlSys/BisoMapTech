@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Place } from "@/types";
 import { useAuthStore } from "@/store/auth-store";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { toast } from "sonner";
 
 function formatDate(iso: string): string {
@@ -51,6 +52,17 @@ export function PlaceDetailPage() {
   const [fetchError, setFetchError] = useState(false);
 
   const isAdmin = profile?.role === "admin";
+
+  usePageMeta(
+    place
+      ? {
+          title: `${place.name} — ${place.city} | BisoMapTech`,
+          description:
+            place.description?.trim() ||
+            `${place.category} à ${place.city}, sur la carte de la communauté tech congolaise.`,
+        }
+      : null
+  );
 
   useEffect(() => {
     let cancelled = false;

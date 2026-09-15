@@ -32,6 +32,7 @@ import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useFilterStore } from "@/store/filter-store";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import React, { useState } from "react";
 
 const QUICK_FILTERS = [
@@ -149,6 +150,12 @@ const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Prof
 });
 
 export function ContributorsPage() {
+  usePageMeta({
+    title: "Contributeurs — BisoMapTech",
+    description:
+      "Tous les talents tech congolais référencés : métier, ville, technologies et disponibilité.",
+  });
+
   const { profiles, isLoading, error, total, page, totalPages, setPage, refetch } =
     useFilteredProfiles({ pageSize: 18 });
   const { techStack, searchQuery, setTechStack, setSearchQuery } = useFilterStore();

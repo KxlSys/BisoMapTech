@@ -19,6 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConnectionActions } from "@/components/profile/connection-actions";
 import { fetchProfileByUsername, fetchRepositories } from "@/lib/profile-service";
 import { useAuthStore } from "@/store/auth-store";
+import { usePageMeta } from "@/hooks/use-page-meta";
+import { buildProfileMeta } from "@/lib/page-meta";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import type { Profile, Repository } from "@/types";
 import { cn } from "@/lib/utils";
@@ -100,6 +102,10 @@ export function ProfileDetailPage() {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("biographie");
+
+  // Titre d'onglet et balises de partage du profil affiché. Les robots
+  // d'aperçu passent, eux, par la fonction edge `api/share-preview`.
+  usePageMeta(useMemo(() => (profile ? buildProfileMeta(profile) : null), [profile]));
 
   const heatmapCells = useMemo(() => {
     const seed = profile?.id || username || "anonymous";

@@ -12,8 +12,15 @@ import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useAuthStore } from "@/store/auth-store";
 import { useFilterStore } from "@/store/filter-store";
 import { cn } from "@/lib/utils";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 export function MapPage() {
+  usePageMeta({
+    title: "Carte des talents tech — BisoMapTech",
+    description:
+      "Explorez la carte interactive des développeurs, sysadmins, data et designers de la République du Congo.",
+  });
+
   const { profiles, isLoading, error, refetch } = useFilteredProfiles({ pageSize: 200 });
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");

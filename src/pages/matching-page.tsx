@@ -34,6 +34,7 @@ import type { Profile, Project, ProjectMatch, ConnectionWithProfiles } from "@/t
 import type { User } from "@supabase/supabase-js";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS, DB_ROLE_TYPES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { toast } from "sonner";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -82,6 +83,12 @@ function relativeTime(iso: string): string {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function MatchingPage() {
+  usePageMeta({
+    title: "Matching — BisoMapTech",
+    description:
+      "Trouvez les profils et les projets qui correspondent à votre stack et à votre ville.",
+  });
+
   const { user, profile, signInWithGitHub } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get("vue") as TabId) ?? "talents";
