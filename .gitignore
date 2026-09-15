@@ -34,7 +34,10 @@ supabase/.temp/
 # FICHIERS DE SUIVI & NOTES DE L'IA (BOLT / CLAUDE)
 # -----------------------------------------------------------------------------
 .bolt/
-.claude/
+# Config locale de Claude Code, sauf les consignes partagées du dépôt
+# (git ne descend pas dans un dossier ignoré : d'où `.claude/*` et non `.claude/`)
+.claude/*
+!.claude/skills/
 CLAUDE.md
 HANDOFF.md
 JOURNAL.md
