@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -37,7 +37,7 @@ import {
 } from "@/lib/constants";
 import type { RoleType, ExperienceLevel } from "@/types";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
-import { importGithubProfile } from "@/lib/github-import";
+import { importGithubProfile, GithubImportError } from "@/lib/github-import";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +77,9 @@ export function OnboardingStepper() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [techSearch, setTechSearch] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  // Un import en vol est annulé si l'on quitte l'onboarding : sur une connexion
+  // lente la requête peut survivre au démontage du composant.
+  const importAbortRef = useRef<AbortController | null>(null);
   const [suggestedTechs, setSuggestedTechs] = useState<string[]>([]);
 
 
@@ -136,6 +139,12 @@ export function OnboardingStepper() {
     localStorage.setItem(`${DRAFT_KEY}_openToCollaboration`, String(openToCollaboration));
     localStorage.setItem(`${DRAFT_KEY}_avatarUrl`, avatarUrl);
   }, [user, fullName, bio, city, techStack, roleType, experienceLevel, openToCollaboration, avatarUrl]);
+
+  useEffect(() => {
+    return () => {
+      importAbortRef.current?.abort();
+    };
+  }, []);
 
   // ⚡ Bolt: Memoize the filtered technologies list to prevent unnecessary O(N) array filtering allocations on every render
   const filteredAllTechs = useMemo<string[] | null>(() => {
@@ -211,8 +220,15 @@ export function OnboardingStepper() {
   async function handleGithubImport() {
     if (!githubLogin || isImporting) return;
     setIsImporting(true);
+
+    importAbortRef.current?.abort();
+    const controller = new AbortController();
+    importAbortRef.current = controller;
+
     try {
-      const imported = await importGithubProfile(githubLogin);
+      const imported = await importGithubProfile(githubLogin, {
+        signal: controller.signal,
+      });
 
       // On ne remplace jamais une saisie existante : l'import complète.
       if (!fullName.trim() && imported.fullName) setFullName(imported.fullName);
@@ -232,11 +248,16 @@ export function OnboardingStepper() {
         toast.success("Profil GitHub importé.");
       }
     } catch (error) {
+      // Une annulation volontaire n'est pas une erreur à signaler.
+      if (controller.signal.aborted) return;
       const message =
-        error instanceof Error ? error.message : "Import GitHub impossible.";
+        error instanceof GithubImportError || error instanceof Error
+          ? error.message
+          : "Import GitHub impossible.";
       toast.error(message);
     } finally {
-      setIsImporting(false);
+      if (!controller.signal.aborted) setIsImporting(false);
+      if (importAbortRef.current === controller) importAbortRef.current = null;
     }
   }
 
