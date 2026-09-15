@@ -71,6 +71,45 @@ describe("share-preview", () => {
     expect(response.headers.get("cache-control")).toContain("s-maxage=3600");
   });
 
+  it("échappe un profil hostile avant de le servir aux robots", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://projet.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_ANON_KEY", "cle-anon");
+
+    globalThis.fetch = (async () =>
+      ({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            username: "pirate",
+            full_name: `Attaquant"><script>alert('XSS')</script>`,
+            role_type: "backend",
+            city: "Pointe-Noire",
+            bio: `" /><img src=x onerror=alert('XSS')>`,
+            avatar_url: "",
+            tech_stack: [],
+          },
+        ],
+      }) as Response) as typeof fetch;
+
+    const handler = await loadHandler();
+    const response = await handler(
+      new Request("https://bisomaptech.vercel.app/api/share-preview?u=pirate")
+    );
+    const html = await response.text();
+
+    // Le test couvre le chemin complet du gestionnaire, pas seulement la
+    // fonction de rendu : une régression qui court-circuiterait l'échappement
+    // serait vue ici. Le texte « onerror=... » peut rester lisible, ce qui
+    // compte est qu'aucune balise ni aucun guillemet ne s'échappe de
+    // l'attribut qui le contient.
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("<img");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("&lt;img");
+    expect(html).toContain("&quot;");
+  });
+
   it("retombe sur l'aperçu du site quand le profil n'existe pas", async () => {
     vi.stubEnv("VITE_SUPABASE_URL", "https://projet.supabase.co");
     vi.stubEnv("VITE_SUPABASE_ANON_KEY", "cle-anon");

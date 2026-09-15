@@ -20,8 +20,10 @@ jobs:
           node-version: 22
           cache: npm
 
+      # `npm ci` installe exactement ce que décrit le verrou et échoue s'il a
+      # divergé de package.json : ce que la CI teste est ce qui sera déployé.
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run TypeScript check
         run: npx tsc --noEmit

@@ -18,6 +18,18 @@ import {
 
 export const config = { runtime: "edge" };
 
+// La lecture se fait avec la clé publique (« anon »), comme le navigateur.
+// C'est la politique RLS de la table `profiles` qui décide de ce qui sort :
+// `Anyone can view profiles ... USING (true)` en lecture seule, sur une table
+// qui ne contient que des champs d'annuaire public (ni e-mail, ni téléphone,
+// ni donnée d'authentification). Cette fonction n'expose donc rien de plus que
+// ce que l'application sert déjà côté navigateur. Toute colonne sensible
+// ajoutée un jour à `profiles` devra être protégée par une politique dédiée,
+// ici comme dans l'application.
+//
+// La chaîne de repli des noms de variables suit `.env.example` et
+// `src/lib/supabase.ts` : selon l'âge du projet Supabase, la clé publique
+// s'appelle « anon » ou « publishable ».
 const SUPABASE_URL =
   process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
 const SUPABASE_KEY =
@@ -47,6 +59,9 @@ async function fetchProfile(username: string): Promise<ProfileMetaInput | null> 
   try {
     const response = await fetch(endpoint, {
       headers: {
+        // Les deux en-têtes sont nécessaires : `apikey` identifie le projet
+        // auprès de la passerelle, `Authorization` fixe le rôle Postgres
+        // utilisé par PostgREST. C'est ce que supabase-js envoie lui-même.
         apikey: SUPABASE_KEY,
         Authorization: `Bearer ${SUPABASE_KEY}`,
         Accept: "application/json",
