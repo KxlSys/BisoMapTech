@@ -45,7 +45,61 @@ function createMarkerIcon(isCollaborating: boolean, isFocused: boolean) {
  * recalculer son icône sans relire le profil. Le nom est préfixé pour ne pas
  * entrer en collision avec les champs internes de Leaflet.
  */
-type ProfileMarker = L.Marker & { bisoIsCollaborating?: boolean };
+type ProfileMarker = L.Marker & {
+  bisoIsCollaborating?: boolean;
+  /** Empreinte des champs rendus dans la bulle, pour ne la réécrire qu'utilement. */
+  bisoSignature?: string;
+  /** Dernier profil connu : le gestionnaire de clic le relit plutôt que de le capturer. */
+  bisoProfile?: Profile;
+};
+
+/** Champs qui apparaissent dans la bulle : tout changement impose de la réécrire. */
+function popupSignature(profile: Profile): string {
+  return [
+    profile.full_name,
+    profile.city,
+    profile.username,
+    profile.avatar_url,
+    profile.tech_stack.slice(0, 3).join("|"),
+  ].join("\u0000");
+}
+
+function buildPopupContent(profile: Profile): string {
+  const safeName = escapeHtml(profile.full_name);
+  const safeCity = escapeHtml(profile.city);
+  const safeTechs = profile.tech_stack
+    .slice(0, 3)
+    .map((t) => `<span style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">${escapeHtml(t)}</span>`)
+    .join("");
+  const safeUsername = encodeURIComponent(profile.username);
+  const avatarUrl = profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=16a34a&color=fff`;
+
+  return `
+        <div style="min-width:190px;font-family:system-ui,sans-serif;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <img src="${escapeHtml(avatarUrl)}"
+                 alt=""
+                 style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,0.15);"
+                 onerror="this.style.display='none'" />
+            <div>
+              <div style="font-weight:700;font-size:13.5px;color:#f3f4f6;line-height:1.2;">${safeName}</div>
+              <div style="font-size:11px;color:#9ca3af;margin-top:2px;">📍 ${safeCity}</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">
+            ${safeTechs}
+          </div>
+          <a href="/contributeurs/${safeUsername}"
+             style="display:block;text-align:center;background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:white;padding:7px 12px;border-radius:8px;font-size:11px;text-decoration:none;font-weight:700;box-shadow:0 3px 8px rgba(16,185,129,0.25);transition:transform 0.15s ease;">
+            Voir le profil &rarr;
+          </a>
+        </div>
+      `;
+}
+
+function hasCoordinates(profile: Profile): boolean {
+  return typeof profile.latitude === "number" && typeof profile.longitude === "number";
+}
 
 interface CongoMapProps {
   profiles: Profile[];
@@ -63,7 +117,18 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
   const containerRef = useRef<HTMLDivElement>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const markersRef = useRef<L.MarkerClusterGroup | null>(null);
-  const markersMapRef = useRef<Map<string, L.Marker>>(new Map());
+  const markersMapRef = useRef<Map<string, ProfileMarker>>(new Map());
+  // Lus dans l'effet de synchronisation sans en être des dépendances : ils ne
+  // doivent jamais déclencher une reconstruction des marqueurs.
+  const onProfileClickRef = useRef(onProfileClick);
+  const focusedIdRef = useRef(focusedProfileId);
+  const highlightedIdRef = useRef(highlightedProfileId);
+
+  useEffect(() => {
+    onProfileClickRef.current = onProfileClick;
+    focusedIdRef.current = focusedProfileId;
+    highlightedIdRef.current = highlightedProfileId;
+  }, [onProfileClick, focusedProfileId, highlightedProfileId]);
   const { theme } = useTheme();
 
   // Injecter les animations CSS et les surcharges Leaflet de style premium
@@ -213,62 +278,93 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
     tileLayerRef.current.setUrl(isDark ? DARK_TILES : LIGHT_TILES);
   }, [theme]);
 
+  // Synchronisation incrémentale des marqueurs.
+  //
+  // La version précédente vidait le groupe et recréait les 200 marqueurs à
+  // chaque changement de `profiles` : chaque frappe dans la recherche jetait
+  // des objets Leaflet encore vivants, refermait la bulle ouverte et forçait un
+  // recalcul complet des grappes. On compare désormais l'état affiché à l'état
+  // demandé, et on ne touche qu'aux marqueurs réellement concernés.
   useEffect(() => {
-    if (!markersRef.current || !mapRef.current) return;
+    const cluster = markersRef.current;
+    if (!cluster) return;
 
-    markersRef.current.clearLayers();
-    markersMapRef.current.clear();
+    const markers = markersMapRef.current;
+    const wanted = new Set<string>();
+    const toAdd: ProfileMarker[] = [];
+    const toRemove: ProfileMarker[] = [];
 
-    profiles.forEach((profile) => {
-      if (!profile.latitude || !profile.longitude) return;
+    for (const profile of profiles) {
+      if (!hasCoordinates(profile)) continue;
+      wanted.add(profile.id);
 
-      const marker = L.marker([profile.latitude, profile.longitude], {
-        icon: createMarkerIcon(profile.open_to_collaboration, profile.id === focusedProfileId),
-      });
-      (marker as ProfileMarker).bisoIsCollaborating = profile.open_to_collaboration;
+      const isActive =
+        profile.id === focusedIdRef.current ||
+        profile.id === highlightedIdRef.current;
+      const existing = markers.get(profile.id);
 
-      const safeName = escapeHtml(profile.full_name);
-      const safeCity = escapeHtml(profile.city);
-      const safeTechs = profile.tech_stack
-        .slice(0, 3)
-        .map((t) => `<span style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">${escapeHtml(t)}</span>`)
-        .join("");
-      const safeUsername = encodeURIComponent(profile.username);
-      const avatarUrl = profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=16a34a&color=fff`;
+      if (!existing) {
+        const marker = L.marker([profile.latitude, profile.longitude], {
+          icon: createMarkerIcon(profile.open_to_collaboration, isActive),
+        }) as ProfileMarker;
 
-      const popupContent = `
-        <div style="min-width:190px;font-family:system-ui,sans-serif;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <img src="${escapeHtml(avatarUrl)}"
-                 alt=""
-                 style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,0.15);"
-                 onerror="this.style.display='none'" />
-            <div>
-              <div style="font-weight:700;font-size:13.5px;color:#f3f4f6;line-height:1.2;">${safeName}</div>
-              <div style="font-size:11px;color:#9ca3af;margin-top:2px;">📍 ${safeCity}</div>
-            </div>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">
-            ${safeTechs}
-          </div>
-          <a href="/contributeurs/${safeUsername}"
-             style="display:block;text-align:center;background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:white;padding:7px 12px;border-radius:8px;font-size:11px;text-decoration:none;font-weight:700;box-shadow:0 3px 8px rgba(16,185,129,0.25);transition:transform 0.15s ease;">
-            Voir le profil &rarr;
-          </a>
-        </div>
-      `;
+        marker.bisoIsCollaborating = profile.open_to_collaboration;
+        marker.bisoSignature = popupSignature(profile);
+        marker.bisoProfile = profile;
 
-      marker.bindPopup(popupContent, { closeButton: true, maxWidth: 250 });
+        marker.bindPopup(buildPopupContent(profile), {
+          closeButton: true,
+          maxWidth: 250,
+        });
+        // Le profil est relu sur le marqueur : un clic après mise à jour ne
+        // remonte pas une version périmée.
+        marker.on("click", () => {
+          const current = marker.bisoProfile;
+          if (current) onProfileClickRef.current?.(current);
+        });
 
-      marker.on("click", () => {
-        onProfileClick?.(profile);
-      });
+        markers.set(profile.id, marker);
+        toAdd.push(marker);
+        continue;
+      }
 
-      markersRef.current!.addLayer(marker);
-      markersMapRef.current.set(profile.id, marker);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profiles, onProfileClick]); // Omit focusedProfileId to prevent recreating all markers on focus
+      existing.bisoProfile = profile;
+
+      const position = existing.getLatLng();
+      if (position.lat !== profile.latitude || position.lng !== profile.longitude) {
+        // Un marqueur déjà groupé doit sortir de sa grappe avant de bouger,
+        // sinon leaflet.markercluster conserve l'ancienne position.
+        cluster.removeLayer(existing);
+        existing.setLatLng([profile.latitude, profile.longitude]);
+        toAdd.push(existing);
+      }
+
+      if (existing.bisoIsCollaborating !== profile.open_to_collaboration) {
+        existing.bisoIsCollaborating = profile.open_to_collaboration;
+        existing.setIcon(
+          createMarkerIcon(profile.open_to_collaboration, isActive)
+        );
+      }
+
+      const signature = popupSignature(profile);
+      if (existing.bisoSignature !== signature) {
+        existing.bisoSignature = signature;
+        existing.setPopupContent(buildPopupContent(profile));
+      }
+    }
+
+    for (const [id, marker] of markers) {
+      if (!wanted.has(id)) {
+        toRemove.push(marker);
+        markers.delete(id);
+      }
+    }
+
+    // Ajouts et retraits groupés : markercluster ne recalcule ses grappes
+    // qu'une fois, au lieu d'une fois par marqueur.
+    if (toRemove.length > 0) cluster.removeLayers(toRemove);
+    if (toAdd.length > 0) cluster.addLayers(toAdd);
+  }, [profiles]);
 
   const prevFocusedIdRef = useRef<string | undefined>(undefined);
 
@@ -276,20 +372,19 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
     const map = mapRef.current;
     const cluster = markersRef.current;
 
-    // ⚡ Bolt: Efficiently update only the changed marker icons instead of recreating all markers
+    // Seules les icônes concernées changent, jamais l'ensemble des marqueurs.
     if (prevFocusedIdRef.current && prevFocusedIdRef.current !== focusedProfileId) {
       const prevMarker = markersMapRef.current.get(prevFocusedIdRef.current);
-      if (prevMarker) {
-        const isCollab = (prevMarker as ProfileMarker).bisoIsCollaborating;
-        prevMarker.setIcon(createMarkerIcon(!!isCollab, false));
+      // Un marqueur encore survolé garde sa mise en avant.
+      if (prevMarker && prevFocusedIdRef.current !== highlightedIdRef.current) {
+        prevMarker.setIcon(createMarkerIcon(!!prevMarker.bisoIsCollaborating, false));
       }
     }
 
     if (focusedProfileId) {
       const newMarker = markersMapRef.current.get(focusedProfileId);
       if (newMarker) {
-        const isCollab = (newMarker as ProfileMarker).bisoIsCollaborating;
-        newMarker.setIcon(createMarkerIcon(!!isCollab, true));
+        newMarker.setIcon(createMarkerIcon(!!newMarker.bisoIsCollaborating, true));
       }
     }
 
@@ -332,16 +427,14 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
       const prevMarker = markersMapRef.current.get(previous);
       // Le marqueur focalisé garde son icône : le survol ne doit pas l'éteindre.
       if (prevMarker && previous !== focusedProfileId) {
-        const isCollab = (prevMarker as ProfileMarker).bisoIsCollaborating;
-        prevMarker.setIcon(createMarkerIcon(!!isCollab, false));
+        prevMarker.setIcon(createMarkerIcon(!!prevMarker.bisoIsCollaborating, false));
       }
     }
 
     if (highlightedProfileId) {
       const marker = markersMapRef.current.get(highlightedProfileId);
       if (marker) {
-        const isCollab = (marker as ProfileMarker).bisoIsCollaborating;
-        marker.setIcon(createMarkerIcon(!!isCollab, true));
+        marker.setIcon(createMarkerIcon(!!marker.bisoIsCollaborating, true));
       }
     }
 
