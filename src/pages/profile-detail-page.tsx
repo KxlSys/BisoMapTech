@@ -19,7 +19,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConnectionActions } from "@/components/profile/connection-actions";
 import { fetchProfileByUsername, fetchRepositories } from "@/lib/profile-service";
 import { useAuthStore } from "@/store/auth-store";
-import { MOCK_PROFILES } from "@/lib/mock-data";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import type { Profile, Repository } from "@/types";
 import { cn } from "@/lib/utils";
@@ -111,17 +110,15 @@ export function ProfileDetailPage() {
     async function fetchData() {
       try {
         const profileData = await fetchProfileByUsername(username!);
+        // Une adresse qui ne correspond à personne doit afficher « profil
+        // introuvable », jamais un contributeur inventé.
         if (profileData) {
           setProfile(profileData);
           const repoData = await fetchRepositories(profileData.id);
           setRepos(repoData);
-        } else {
-          const mock = MOCK_PROFILES.find((p) => p.username === username);
-          if (mock) setProfile(mock as Profile);
         }
-      } catch {
-        const mock = MOCK_PROFILES.find((p) => p.username === username);
-        if (mock) setProfile(mock as Profile);
+      } catch (err) {
+        console.error("Chargement du profil impossible:", err);
       }
       setIsLoading(false);
     }

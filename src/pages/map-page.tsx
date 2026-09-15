@@ -14,7 +14,7 @@ import { useFilterStore } from "@/store/filter-store";
 import { cn } from "@/lib/utils";
 
 export function MapPage() {
-  const { profiles, isLoading } = useFilteredProfiles({ pageSize: 200 });
+  const { profiles, isLoading, error, refetch } = useFilteredProfiles({ pageSize: 200 });
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
   const [focusedProfileId, setFocusedProfileId] = useState<string | undefined>(undefined);
@@ -151,17 +151,30 @@ export function MapPage() {
               {visibleProfiles.length === 0 && (
                 <div className="py-8 text-center">
                   <p className="text-sm text-muted-foreground">
-                    {searchInArea && listProfiles.length > 0
+                    {error
+                      ? "Chargement impossible"
+                      : searchInArea && listProfiles.length > 0
                       ? "Aucun talent dans cette zone"
                       : "Aucun résultat"}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground/60">
-                    {searchInArea && listProfiles.length > 0
+                    {error
+                      ? "Vérifiez votre connexion, puis réessayez."
+                      : searchInArea && listProfiles.length > 0
                       ? "Dézoomez ou élargissez la recherche"
                       : "Modifiez vos filtres"}
                   </p>
                   <div className="mt-3 flex justify-center">
-                    {searchInArea && listProfiles.length > 0 ? (
+                    {error ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="border border-white/15 bg-white/5 hover:bg-white/8"
+                        onClick={() => refetch()}
+                      >
+                        Réessayer
+                      </Button>
+                    ) : searchInArea && listProfiles.length > 0 ? (
                       <Button
                         variant="ghost"
                         size="sm"

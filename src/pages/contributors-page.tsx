@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   SlidersHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import type { Profile } from "@/types";
 
@@ -148,7 +149,7 @@ const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Prof
 });
 
 export function ContributorsPage() {
-  const { profiles, isLoading, total, page, totalPages, setPage } =
+  const { profiles, isLoading, error, total, page, totalPages, setPage, refetch } =
     useFilteredProfiles({ pageSize: 18 });
   const { techStack, searchQuery, setTechStack, setSearchQuery } = useFilterStore();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -246,8 +247,31 @@ export function ContributorsPage() {
             {profiles.length === 0 && !isLoading && (
               <div className="col-span-full py-20 text-center">
                 <Handshake className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
-                <p className="font-semibold text-muted-foreground">Aucun contributeur trouvé</p>
-                <p className="mt-1 text-sm text-muted-foreground/60">Essayez de modifier vos filtres</p>
+                {error ? (
+                  <>
+                    <p className="font-semibold text-foreground">
+                      Impossible de charger les contributeurs
+                    </p>
+                    <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+                      La connexion à la base a échoué. Vérifiez votre réseau,
+                      puis réessayez.
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={refetch}
+                      className="mt-4 gap-2 border border-white/15 bg-white/5 hover:bg-white/8"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Réessayer
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-muted-foreground">Aucun contributeur trouvé</p>
+                    <p className="mt-1 text-sm text-muted-foreground/60">Essayez de modifier vos filtres</p>
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -30,7 +30,6 @@ import {
   listAcceptedConnections,
   partnerOf,
 } from "@/lib/connection-service";
-import { MOCK_PROFILES } from "@/lib/mock-data";
 import type { Profile, Project, ProjectMatch, ConnectionWithProfiles } from "@/types";
 import type { User } from "@supabase/supabase-js";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS, DB_ROLE_TYPES } from "@/lib/constants";
@@ -100,9 +99,12 @@ export function MatchingPage() {
             <Sparkles className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">Aperçu — données fictives</p>
+            <p className="text-sm font-semibold text-foreground">
+              Correspondances personnalisées
+            </p>
             <p className="text-xs text-muted-foreground">
-              Connectez-vous pour voir vos correspondances personnalisées et contacter des talents.
+              Connectez-vous pour calculer vos affinités à partir de votre stack
+              et de votre ville, et contacter les talents.
             </p>
           </div>
           <Button
@@ -199,17 +201,15 @@ function TalentsTab({
   const [visibleCount, setVisibleCount] = useState(6);
   const profilesCache = useRef<Profile[] | null>(null);
 
-  const mockMatches = useMemo(
-    () => calculateMatches(MOCK_PROFILES[0], MOCK_PROFILES.slice(1) as Profile[]),
-    []
-  );
-
   const loadMatches = useCallback(async () => {
     if (!profile) return;
     if (!profilesCache.current) {
-      const { data } = await supabase.from("profiles").select("*");
-      profilesCache.current =
-        data && data.length > 0 ? (data as Profile[]) : (MOCK_PROFILES as Profile[]);
+      const { data, error } = await supabase.from("profiles").select("*");
+      if (error) {
+        console.error("Chargement des profils impossible:", error);
+        return;
+      }
+      profilesCache.current = (data ?? []) as Profile[];
     }
     setMatches(
       calculateMatches(
@@ -223,7 +223,7 @@ function TalentsTab({
     loadMatches();
   }, [loadMatches]);
 
-  const baseMatches = user && matches.length > 0 ? matches : mockMatches;
+  const baseMatches = matches;
 
   const filtered = useMemo(() => {
     return baseMatches.filter((m) => {
@@ -273,7 +273,6 @@ function TalentsTab({
       {/* Results count */}
       <p className="text-xs text-muted-foreground">
         {filtered.length} talent{filtered.length !== 1 ? "s" : ""} correspondant{filtered.length !== 1 ? "s" : ""}
-        {!user && <span className="ml-1 text-muted-foreground/50">(aperçu)</span>}
       </p>
 
       {/* Talent cards grid */}
@@ -286,13 +285,41 @@ function TalentsTab({
       {filtered.length === 0 && (
         <div className="py-16 text-center">
           <Handshake className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground">Aucun talent pour ces filtres</p>
-          <button
-            onClick={() => { setRoleFilter("all"); setDisponibleOnly(false); }}
-            className="mt-2 text-xs text-primary hover:underline underline-offset-2"
-          >
-            Réinitialiser les filtres
-          </button>
+          {baseMatches.length > 0 ? (
+            <>
+              <p className="text-sm text-muted-foreground">Aucun talent pour ces filtres</p>
+              <button
+                onClick={() => { setRoleFilter("all"); setDisponibleOnly(false); }}
+                className="mt-2 text-xs text-primary hover:underline underline-offset-2"
+              >
+                Réinitialiser les filtres
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-foreground">
+                Pas encore de suggestion pour vous
+              </p>
+              <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
+                Les affinités se calculent à partir de votre stack et de votre
+                ville. Complétez votre profil, ou explorez la carte en attendant.
+              </p>
+              <div className="mt-4 flex justify-center gap-2">
+                <Link to="/talents">
+                  <Button variant="ghost" size="sm" className="border border-white/15 bg-white/5">
+                    Explorer la carte
+                  </Button>
+                </Link>
+                {user && (
+                  <Link to="/profil/edit">
+                    <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                      Compléter mon profil
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -311,10 +338,10 @@ function TalentsTab({
         </div>
       )}
 
-      {!user && (
+      {!user && baseMatches.length > 6 && (
         <div className="rounded-xl border border-white/10 bg-white/3 px-5 py-4 text-center">
           <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{Math.max(0, baseMatches.length - 6)}</span> autres talents visibles après connexion
+            <span className="font-medium text-foreground">{baseMatches.length - 6}</span> autres talents visibles après connexion
           </p>
           <button
             onClick={signInWithGitHub}
@@ -431,15 +458,21 @@ function ProjetsTab({
   const [isLoading, setIsLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(6);
   const [interested, setInterested] = useState<Set<string>>(new Set());
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchProjects().then((data) => {
-      setProjects(data);
-      if (profile) {
-        setProjectMatches(calculateProjectMatches(profile, data));
-      }
-      setIsLoading(false);
-    });
+    fetchProjects()
+      .then((data) => {
+        setProjects(data);
+        if (profile) {
+          setProjectMatches(calculateProjectMatches(profile, data));
+        }
+      })
+      .catch((err) => {
+        console.error("Chargement des projets impossible:", err);
+        setLoadError("Impossible de charger les projets pour le moment.");
+      })
+      .finally(() => setIsLoading(false));
 
     if (user) {
       // Charger les intérêts réels depuis la table project_members
@@ -557,7 +590,32 @@ function ProjetsTab({
       {displayList.length === 0 && (
         <div className="py-16 text-center">
           <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground">Aucun projet disponible</p>
+          {loadError ? (
+            <>
+              <p className="text-sm text-muted-foreground">{loadError}</p>
+              <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground/70">
+                Vérifiez votre connexion, puis réessayez.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-foreground">
+                Aucun projet ouvert à la collaboration
+              </p>
+              <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
+                Les projets publiés par la communauté apparaissent ici, avec les
+                compétences recherchées. Lancez le premier.
+              </p>
+              <div className="mt-4 flex justify-center">
+                <Link to={user ? "/projet/nouveau" : "/login"}>
+                  <Button size="sm" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Briefcase className="h-3.5 w-3.5" />
+                    {user ? "Publier un projet" : "Se connecter pour publier"}
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       )}
 
