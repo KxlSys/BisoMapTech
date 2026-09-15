@@ -29,24 +29,45 @@ async function run() {
   
   console.log("Calling Gemini API for review...");
   const prompt = `Analyse ce diff de Pull Request en tant qu'expert en sécurité et qualité de code pour le projet BisoMapTech (React, TypeScript, Supabase, TailwindCSS).
-  
-  Fournis une revue détaillée en français couvrant :
-  1. **Failles de sécurité** (injections, XSS, exposition de données sensibles, secrets exposés, etc.)
-  2. **Bugs potentiels** (erreurs logiques, cas limites non gérés, régressions possibles, etc.)
-  3. **Qualité du code** (lisibilité, maintenabilité, respect du typage strict TypeScript, bonnes pratiques)
-  
-  Pour chaque point identifié, indique clairement la sévérité :
+
+  RÈGLES IMPÉRATIVES — tu ne reçois QUE le diff, jamais les fichiers complets :
+  - Ne cite que des chemins de fichiers qui apparaissent littéralement dans les
+    en-têtes du diff. N'invente jamais un nom de fichier, de composant, de hook
+    ou de variable qui n'y figure pas.
+  - Ne propose aucune correction dans un fichier absent du diff.
+  - Si l'analyse d'un point demande du contexte hors diff, dis-le explicitement
+    ("non vérifiable depuis le diff") plutôt que de supposer le contenu.
+  - Rattache chaque constat à un chemin de fichier et, si possible, à une ligne
+    visible dans le diff.
+  - Ne signale pas comme "ajouté par cette PR" ce que le diff ne montre pas en
+    ligne ajoutée (préfixe +).
+
+  Contraintes du projet, à respecter dans tes suggestions :
+  - Les utilisateurs sont au Congo-Brazzaville, sur réseau lent et téléphones
+    d'entrée de gamme. Ne suggère une nouvelle dépendance que si le gain
+    justifie le poids ajouté au bundle, et dis-le explicitement.
+  - Le rendu JSX de React échappe déjà le texte : ne réclame une désinfection
+    HTML que pour du HTML réellement construit à la main.
+
+  Fournis une revue en français couvrant :
+  1. **Failles de sécurité** (injections, XSS, exposition de données sensibles, secrets exposés)
+  2. **Bugs potentiels** (erreurs logiques, cas limites non gérés, régressions)
+  3. **Qualité du code** (lisibilité, maintenabilité, typage strict TypeScript)
+
+  Pour chaque point, indique la sévérité :
   🔴 Critique / 🟠 Haute / 🟡 Moyenne / 🟢 Faible
-  
-  Propose des suggestions concrètes de code de correction sous forme de blocs de code markdown (auto-correction).
-  Si aucun problème n'est détecté, indique-le clairement avec un résumé positif.
-  
+
+  Sois concis : au plus 8 constats, du plus grave au plus léger. Pas de section
+  de félicitations, pas de récapitulatif de ce que fait la PR. Propose des
+  corrections sous forme de blocs de code. Si tu ne trouves rien de sérieux,
+  dis-le en deux lignes.
+
   Voici le diff de la Pull Request :
   \`\`\`diff
   ${truncatedDiff}
   \`\`\`
   `;
-  
+
   const geminiResponse = await callGemini(geminiKey, prompt);
   
   console.log("Posting review comment to PR...");
