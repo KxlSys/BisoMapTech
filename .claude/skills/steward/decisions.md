@@ -7,6 +7,25 @@ Format : constat, verdict, raison, référence.
 
 ---
 
+## Le journal nourrit la revue
+
+Observation sur la revue de `ec88d44` : deux constats (la liste figée de
+`PROFILE_FIELDS`, la chaîne de repli des variables d'environnement) citent
+explicitement les justifications de ce fichier et les acceptent, au lieu de les
+soulever à nouveau comme des problèmes.
+
+`decisions.md` fait partie du diff quand il change, donc le bot le lit. Tenir ce
+journal à jour réduit mécaniquement le bruit des revues suivantes : un
+compromis écrit et motivé n'est plus re-signalé. Raison de plus pour y consigner
+les arbitrages plutôt que de les laisser dans un fil de conversation.
+
+Inexactitude résiduelle du même passage : la revue écrit « `package-lock.json`
+(supprimé) » alors que c'est `pnpm-lock.yaml` qui a été supprimé. Le prompt
+durci a supprimé les fichiers inventés, pas toutes les imprécisions de lecture.
+La vérification avant correction reste la protection réelle.
+
+---
+
 ## La boucle de revue est stabilisée
 
 Première revue produite avec le prompt durci *et* le script résistant : six
