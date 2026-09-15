@@ -84,22 +84,10 @@ export function useFilteredProfiles(
         experienceLevel: queryArgs.experienceLevel,
         techStack: queryArgs.techStack,
         openToCollaboration,
+        sortBy,
       });
 
-      const sorted = [...result.profiles];
-      if (sortBy === "available_first") {
-        sorted.sort((a, b) => {
-          if (a.open_to_collaboration === b.open_to_collaboration) return 0;
-          return a.open_to_collaboration ? -1 : 1;
-        });
-      } else if (sortBy === "recent") {
-        sorted.sort(
-          (a, b) =>
-            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
-      }
-
-      setProfiles(sorted);
+      setProfiles(result.profiles);
       setTotal(result.total);
     } catch (err) {
       // Une base injoignable ne doit pas être maquillée en annuaire peuplé :

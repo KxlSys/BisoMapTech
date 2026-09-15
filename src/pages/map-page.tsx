@@ -5,6 +5,7 @@ import type L from "leaflet";
 import type { Profile } from "@/types";
 import { CongoMap } from "@/components/map/congo-map";
 import { FilterPanel } from "@/components/filters/filter-panel";
+import { ActiveFilterChips } from "@/components/filters/active-filter-chips";
 import { ProfileCard } from "@/components/profile/profile-card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -109,6 +110,7 @@ export function MapPage() {
         {/* Filters (Desktop Only) */}
         <div className="hidden md:block flex-shrink-0 border-b border-white/8 px-4 py-4">
           <FilterPanel compact />
+          <ActiveFilterChips className="mt-3" />
         </div>
 
         {/* Mobile Filter Toggle */}
@@ -393,6 +395,7 @@ export function MapPage() {
             {/* Filter content */}
             <div className="flex-1 overflow-y-auto px-5 pb-4">
               <FilterPanel />
+              <ActiveFilterChips className="mt-4" />
             </div>
             {/* Sticky bottom CTA */}
             <div className="shrink-0 border-t border-white/10 p-4"

@@ -20,6 +20,7 @@ import { ConnectionActions } from "@/components/profile/connection-actions";
 import { fetchProfileByUsername, fetchRepositories } from "@/lib/profile-service";
 import { useAuthStore } from "@/store/auth-store";
 import { usePageMeta } from "@/hooks/use-page-meta";
+import { ProfileCompletionBanner } from "@/components/profile/completion-banner";
 import { buildProfileMeta } from "@/lib/page-meta";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import type { Profile, Repository } from "@/types";
@@ -172,6 +173,9 @@ export function ProfileDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-4 md:pb-8">
+      {/* Le bandeau n'est montré qu'au propriétaire du profil. */}
+      {isOwnProfile && <ProfileCompletionBanner profile={profile} />}
+
       {/* Back */}
       <Link to="/contributeurs">
         <Button
