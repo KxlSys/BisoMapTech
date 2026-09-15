@@ -39,9 +39,15 @@ secondes.
      ligne avec la raison.
 3. **Valider avant de pousser** : `npm run build` puis `npm test`. Un correctif
    qui casse la CI coûte plus cher que le constat qu'il traite.
-4. **Répondre une fois par revue**, en un seul commentaire sur la PR : ce qui a
-   été appliqué (avec le SHA), ce qui a été écarté et pourquoi. Pas un
-   commentaire par constat.
+4. **Répondre quand il y a quelque chose à arbitrer**, en un seul commentaire
+   sur la PR : ce qui a été appliqué (avec le SHA), ce qui a été écarté et
+   pourquoi. Pas un commentaire par constat.
+
+   Une revue dont tous les constats sont verts et sans action ne mérite pas de
+   réponse publique : elle encombrerait la PR que des humains doivent lire. On
+   la note dans `decisions.md` s'il y a une leçon, et on passe. Répondre reste
+   obligatoire dès qu'un constat est corrigé, écarté, ou qu'il ferait croire à
+   un relecteur qu'on l'a ignoré.
 5. **Consigner les décisions structurantes** dans `decisions.md`, à côté de ce
    fichier, pour qu'une session suivante ne rejuge pas le même point.
 

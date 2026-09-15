@@ -7,6 +7,24 @@ Format : constat, verdict, raison, référence.
 
 ---
 
+## La boucle de revue est stabilisée
+
+Première revue produite avec le prompt durci *et* le script résistant : six
+constats, tous verts, chacun rattaché à un fichier et à des numéros de ligne,
+aucun fichier inventé, aucune fausse alerte en sévérité haute. Le seul point de
+fond est une remarque tiède sur `PROFILE_FIELDS`, qui couple la fonction edge au
+schéma de `profiles`.
+
+**Verdict sur `PROFILE_FIELDS` : écarté.** Lister les colonnes est délibéré.
+Les découvrir à l'exécution coûterait une requête de schéma supplémentaire à
+chaque aperçu, sur un chemin qui doit répondre en moins de 2,5 secondes à un
+robot. Le couplage est le prix, assumé, d'une requête minimale.
+
+Rien d'autre à faire. Aucune réponse publiée : une revue entièrement verte
+encombrerait la PR sans rien apprendre à un relecteur humain.
+
+---
+
 ## Le job de revue ne doit pas bloquer une PR
 
 Le job `review` a échoué sur `ecbd386` : l'API Gemini a renvoyé 503 « forte
