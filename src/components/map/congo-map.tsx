@@ -45,9 +45,13 @@ interface CongoMapProps {
   onProfileClick?: (profile: Profile) => void;
   onMapReady?: (map: L.Map) => void;
   focusedProfileId?: string;
+  /** Profil survolé dans la liste latérale : marqueur mis en avant, sans recadrage. */
+  highlightedProfileId?: string;
+  /** Appelé après chaque déplacement/zoom, pour la recherche dans la zone visible. */
+  onBoundsChange?: (bounds: L.LatLngBounds) => void;
 }
 
-export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick, onMapReady, focusedProfileId }: CongoMapProps) {
+export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick, onMapReady, focusedProfileId, highlightedProfileId, onBoundsChange }: CongoMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
@@ -173,6 +177,24 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
     };
   }, []);
 
+  // Le déplacement de la carte pilote la liste latérale quand la recherche
+  // dans la zone visible est active. La callback est stable côté parent, donc
+  // on (re)branche l'écouteur seulement si elle change réellement.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !onBoundsChange) return;
+
+    const emit = () => onBoundsChange(map.getBounds());
+    map.on("moveend", emit);
+    map.on("zoomend", emit);
+    emit();
+
+    return () => {
+      map.off("moveend", emit);
+      map.off("zoomend", emit);
+    };
+  }, [onBoundsChange]);
+
   useEffect(() => {
     if (!tileLayerRef.current || !mapRef.current) return;
 
@@ -291,6 +313,33 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
       map.off("moveend", reveal);
     };
   }, [focusedProfileId]);
+
+  const prevHighlightedIdRef = useRef<string | undefined>(undefined);
+
+  // Survol depuis la liste : on change uniquement l'icône, sans flyTo ni popup,
+  // pour que le pointeur puisse balayer la liste sans faire bouger la carte.
+  useEffect(() => {
+    const previous = prevHighlightedIdRef.current;
+
+    if (previous && previous !== highlightedProfileId) {
+      const prevMarker = markersMapRef.current.get(previous);
+      // Le marqueur focalisé garde son icône : le survol ne doit pas l'éteindre.
+      if (prevMarker && previous !== focusedProfileId) {
+        const isCollab = (prevMarker as any)._isCollaborating;
+        prevMarker.setIcon(createMarkerIcon(!!isCollab, false));
+      }
+    }
+
+    if (highlightedProfileId) {
+      const marker = markersMapRef.current.get(highlightedProfileId);
+      if (marker) {
+        const isCollab = (marker as any)._isCollaborating;
+        marker.setIcon(createMarkerIcon(!!isCollab, true));
+      }
+    }
+
+    prevHighlightedIdRef.current = highlightedProfileId;
+  }, [highlightedProfileId, focusedProfileId]);
 
   return (
     <div

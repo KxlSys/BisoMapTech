@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ListFilter as Filter, X, ChevronRight, Plus, Minus, Locate, MapPin, Loader2, List, Map } from "lucide-react";
+import { ListFilter as Filter, X, ChevronRight, Plus, Minus, Locate, MapPin, Loader2, List, Map, Check } from "lucide-react";
 import type L from "leaflet";
 import type { Profile } from "@/types";
 import { CongoMap } from "@/components/map/congo-map";
@@ -18,6 +18,9 @@ export function MapPage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
   const [focusedProfileId, setFocusedProfileId] = useState<string | undefined>(undefined);
+  const [hoveredProfileId, setHoveredProfileId] = useState<string | undefined>(undefined);
+  const [searchInArea, setSearchInArea] = useState(false);
+  const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
   const { user } = useAuthStore();
   const { resetFilters } = useFilterStore();
   const leafletMapRef = useRef<L.Map | null>(null);
@@ -29,8 +32,32 @@ export function MapPage() {
     [user, profiles]
   );
 
+  // Liste effectivement affichée : restreinte à la zone visible quand
+  // « Rechercher dans cette zone » est actif (les marqueurs, eux, restent tous
+  // sur la carte). Sur une connexion lente, ça évite de parcourir une liste
+  // qui n'a plus rien à voir avec ce qu'on regarde.
+  const visibleProfiles = useMemo(() => {
+    if (!searchInArea || !mapBounds) return listProfiles;
+    return listProfiles.filter(
+      (p) =>
+        typeof p.latitude === "number" &&
+        typeof p.longitude === "number" &&
+        mapBounds.contains([p.latitude, p.longitude])
+    );
+  }, [listProfiles, searchInArea, mapBounds]);
+
+  const isAreaFiltered = searchInArea && visibleProfiles.length !== listProfiles.length;
+
   const handleMapReady = useCallback((map: L.Map) => {
     leafletMapRef.current = map;
+  }, []);
+
+  const handleBoundsChange = useCallback((bounds: L.LatLngBounds) => {
+    setMapBounds(bounds);
+  }, []);
+
+  const handleProfileHover = useCallback((profile: Profile | null) => {
+    setHoveredProfileId(profile?.id);
   }, []);
 
   const handleProfileClick = useCallback((profile: Profile, e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -92,40 +119,67 @@ export function MapPage() {
         {/* Talents list */}
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex items-center justify-between border-b border-white/8 px-6 py-3">
-            <h3 className="text-sm font-semibold text-foreground">Talents récents</h3>
+            <h3 className="text-sm font-semibold text-foreground">
+              {visibleProfiles.length} talent{visibleProfiles.length !== 1 ? "s" : ""}
+              {isAreaFiltered && (
+                <span className="ml-1 font-normal text-muted-foreground">
+                  sur {listProfiles.length}
+                </span>
+              )}
+            </h3>
             <Link to="/contributeurs" className="text-xs font-medium text-primary hover:underline underline-offset-2">
               Voir tout
             </Link>
           </div>
           <ScrollArea className="flex-1">
             <div className="space-y-2 p-4 pb-8">
-              {listProfiles.slice(0, 20).map((profile: Profile) => (
+              {visibleProfiles.slice(0, 20).map((profile: Profile) => (
                 <ProfileCard
                   key={profile.id}
                   profile={profile}
                   onClick={handleProfileClick}
+                  onHoverChange={handleProfileHover}
                 />
               ))}
-              {listProfiles.length > 20 && (
+              {visibleProfiles.length > 20 && (
                 <Link to="/contributeurs">
                   <p className="py-2 text-center text-xs text-muted-foreground hover:text-primary transition-colors">
-                    +{listProfiles.length - 20} autres contributeurs →
+                    +{visibleProfiles.length - 20} autres contributeurs →
                   </p>
                 </Link>
               )}
-              {listProfiles.length === 0 && (
+              {visibleProfiles.length === 0 && (
                 <div className="py-8 text-center">
-                  <p className="text-sm text-muted-foreground">Aucun résultat</p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">Modifiez vos filtres</p>
+                  <p className="text-sm text-muted-foreground">
+                    {searchInArea && listProfiles.length > 0
+                      ? "Aucun talent dans cette zone"
+                      : "Aucun résultat"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground/60">
+                    {searchInArea && listProfiles.length > 0
+                      ? "Dézoomez ou élargissez la recherche"
+                      : "Modifiez vos filtres"}
+                  </p>
                   <div className="mt-3 flex justify-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="border border-white/15 bg-white/5 hover:bg-white/8"
-                      onClick={() => resetFilters()}
-                    >
-                      Réinitialiser les filtres
-                    </Button>
+                    {searchInArea && listProfiles.length > 0 ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="border border-white/15 bg-white/5 hover:bg-white/8"
+                        onClick={() => setSearchInArea(false)}
+                      >
+                        Chercher dans tout le Congo
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="border border-white/15 bg-white/5 hover:bg-white/8"
+                        onClick={() => resetFilters()}
+                      >
+                        Réinitialiser les filtres
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
@@ -231,12 +285,42 @@ export function MapPage() {
           </Button>
         </div>
 
+        {/* « Rechercher dans cette zone » (haut-centre) */}
+        <div className="absolute left-1/2 top-24 z-[1000] -translate-x-1/2 pointer-events-auto md:left-4 md:top-28 md:translate-x-0">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={searchInArea}
+            onClick={() => setSearchInArea((active) => !active)}
+            className={cn(
+              "glass-panel flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold shadow-lg transition-all active:scale-95",
+              searchInArea
+                ? "border-primary/50 bg-primary/15 text-primary"
+                : "border-white/15 text-foreground hover:border-primary/40 hover:text-primary"
+            )}
+          >
+            <span
+              className={cn(
+                "flex h-4 w-4 items-center justify-center rounded border transition-colors",
+                searchInArea
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-white/30"
+              )}
+            >
+              {searchInArea && <Check className="h-3 w-3" />}
+            </span>
+            Rechercher dans cette zone
+          </button>
+        </div>
+
         {/* Map component — full fill */}
         <div className="h-full w-full">
           <CongoMap
             profiles={profiles}
             onMapReady={handleMapReady}
             focusedProfileId={focusedProfileId}
+            highlightedProfileId={hoveredProfileId}
+            onBoundsChange={handleBoundsChange}
           />
         </div>
 
