@@ -151,7 +151,7 @@ sequenceDiagram
 ### Prérequis
 
 - **Node.js 20+** (Vite 7 requiert Node ≥ 20.19)
-- **npm** (ou pnpm / yarn / bun)
+- **npm** — le dépôt ne verrouille ses dépendances que via `package-lock.json`, la CI et le déploiement installent avec npm
 - Un projet **[Supabase](https://supabase.com)** (gratuit) pour la base de données et l'auth
 
 ### Installation

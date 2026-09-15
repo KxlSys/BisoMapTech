@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   SlidersHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import type { Profile } from "@/types";
 
@@ -27,10 +28,13 @@ import { Button } from "@/components/ui/button";
 import { DebouncedInput } from "@/components/ui/debounced-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterPanel } from "@/components/filters/filter-panel";
+import { ActiveFilterChips } from "@/components/filters/active-filter-chips";
+import { SortSelect } from "@/components/filters/sort-select";
 import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useFilterStore } from "@/store/filter-store";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import React, { useState } from "react";
 
 const QUICK_FILTERS = [
@@ -148,9 +152,15 @@ const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Prof
 });
 
 export function ContributorsPage() {
-  const { profiles, isLoading, total, page, totalPages, setPage } =
+  usePageMeta({
+    title: "Contributeurs — BisoMapTech",
+    description:
+      "Tous les talents tech congolais référencés : métier, ville, technologies et disponibilité.",
+  });
+
+  const { profiles, isLoading, error, total, page, totalPages, setPage, refetch } =
     useFilteredProfiles({ pageSize: 18 });
-  const { techStack, searchQuery, setTechStack, setSearchQuery } = useFilterStore();
+  const { techStack, searchQuery, setTechStack, setSearchQuery, resetFilters } = useFilterStore();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   if (isLoading && page === 1) {
@@ -237,6 +247,17 @@ export function ContributorsPage() {
         </aside>
 
         <div>
+          {/* Ce qui filtre, et dans quel ordre : visible sans rouvrir le panneau */}
+          <div className="mb-4 flex flex-col gap-3 border-b border-white/8 pb-4 sm:flex-row sm:items-start sm:justify-between">
+            <ActiveFilterChips className="min-w-0 flex-1" />
+            <div className="flex shrink-0 items-center gap-3 sm:justify-end">
+              <p className="text-xs text-muted-foreground">
+                {total.toLocaleString()} résultat{total !== 1 ? "s" : ""}
+              </p>
+              <SortSelect />
+            </div>
+          </div>
+
           {/* Talent grid — large cards on desktop, list-style on mobile */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {profiles.map((profile) => (
@@ -246,8 +267,45 @@ export function ContributorsPage() {
             {profiles.length === 0 && !isLoading && (
               <div className="col-span-full py-20 text-center">
                 <Handshake className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
-                <p className="font-semibold text-muted-foreground">Aucun contributeur trouvé</p>
-                <p className="mt-1 text-sm text-muted-foreground/60">Essayez de modifier vos filtres</p>
+                {error ? (
+                  <>
+                    <p className="font-semibold text-foreground">
+                      Impossible de charger les contributeurs
+                    </p>
+                    <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+                      La connexion à la base a échoué. Vérifiez votre réseau,
+                      puis réessayez.
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={refetch}
+                      className="mt-4 gap-2 border border-white/15 bg-white/5 hover:bg-white/8"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Réessayer
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-foreground">Aucun contributeur trouvé</p>
+                    <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+                      Les filtres actifs sont affichés au-dessus de la liste :
+                      retirez-en un pour élargir la recherche.
+                    </p>
+                    {/* Pas de chips ici : elles sont déjà juste au-dessus, les
+                        répéter à 250 pixels d'écart brouille plus qu'il n'aide. */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetFilters}
+                      className="mt-4 gap-2 border border-white/15 bg-white/5 hover:bg-white/8"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Retirer tous les filtres
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </div>

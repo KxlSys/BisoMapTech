@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -8,6 +8,9 @@ import {
   MapPin,
   AlertTriangle,
   RefreshCw,
+  GitBranch,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,33 +37,26 @@ import {
 } from "@/lib/constants";
 import type { RoleType, ExperienceLevel } from "@/types";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
+import { importGithubProfile, GithubImportError } from "@/lib/github-import";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-const DRAFT_KEY_PREFIX = "bisomap.onboarding.draft.";
-
-interface OnboardingDraft {
-  fullName: string;
-  bio: string;
-  city: string;
-  techStack: string[];
-  roleType: RoleType;
-  experienceLevel: ExperienceLevel;
-  openToCollaboration: boolean;
-  avatarUrl: string;
-}
 
 function isDbRoleType(value: string): value is (typeof DB_ROLE_TYPES)[number] {
   return DB_ROLE_TYPES.includes(value as (typeof DB_ROLE_TYPES)[number]);
 }
 
-function loadDraft(userId: string): Partial<OnboardingDraft> | null {
+/** Le formulaire sauvegarde chaque champ sous sa propre clé locale. */
+function draftKey(userId: string | undefined): string {
+  return `onboarding_draft_${userId}`;
+}
+
+function hasSavedDraft(userId: string | undefined): boolean {
+  if (!userId) return false;
   try {
-    const raw = localStorage.getItem(`${DRAFT_KEY_PREFIX}${userId}`);
-    if (!raw) return null;
-    return JSON.parse(raw) as Partial<OnboardingDraft>;
+    return localStorage.getItem(`${draftKey(userId)}_fullName`) !== null;
   } catch {
-    return null;
+    // Navigation privée ou stockage bloqué : pas de brouillon, pas de message.
+    return false;
   }
 }
 
@@ -72,11 +68,18 @@ export function OnboardingStepper() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [techSearch, setTechSearch] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+  // Un import en vol est annulé si l'on quitte l'onboarding : sur une connexion
+  // lente la requête peut survivre au démontage du composant.
+  const importAbortRef = useRef<AbortController | null>(null);
+  const [suggestedTechs, setSuggestedTechs] = useState<string[]>([]);
 
 
-  const draft = useMemo(() => (user ? loadDraft(user.id) : null), [user]);
+  const DRAFT_KEY = draftKey(user?.id);
 
-  const DRAFT_KEY = `onboarding_draft_${user?.id}`;
+  // Calculé une seule fois au montage : le formulaire réécrit ces clés à chaque
+  // frappe, donc les relire ensuite dirait toujours « brouillon restauré ».
+  const [hadDraftOnMount] = useState(() => hasSavedDraft(user?.id));
 
   const [fullName, setFullName] = useState(() => {
     const draft = localStorage.getItem(`${DRAFT_KEY}_fullName`);
@@ -130,6 +133,12 @@ export function OnboardingStepper() {
     localStorage.setItem(`${DRAFT_KEY}_openToCollaboration`, String(openToCollaboration));
     localStorage.setItem(`${DRAFT_KEY}_avatarUrl`, avatarUrl);
   }, [user, fullName, bio, city, techStack, roleType, experienceLevel, openToCollaboration, avatarUrl]);
+
+  useEffect(() => {
+    return () => {
+      importAbortRef.current?.abort();
+    };
+  }, []);
 
   // ⚡ Bolt: Memoize the filtered technologies list to prevent unnecessary O(N) array filtering allocations on every render
   const filteredAllTechs = useMemo<string[] | null>(() => {
@@ -196,6 +205,67 @@ export function OnboardingStepper() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  // L'inscription passe par GitHub OAuth : le login est donc déjà connu.
+  const githubLogin: string | undefined =
+    user?.user_metadata?.user_name || user?.user_metadata?.preferred_username;
+
+  async function handleGithubImport() {
+    if (!githubLogin || isImporting) return;
+    setIsImporting(true);
+
+    importAbortRef.current?.abort();
+    const controller = new AbortController();
+    importAbortRef.current = controller;
+
+    try {
+      const imported = await importGithubProfile(githubLogin, {
+        signal: controller.signal,
+      });
+
+      // On ne remplace jamais une saisie existante : l'import complète.
+      if (!fullName.trim() && imported.fullName) setFullName(imported.fullName);
+      if (!bio.trim() && imported.bio) setBio(imported.bio);
+      if (!avatarUrl && imported.avatarUrl) setAvatarUrl(imported.avatarUrl);
+
+      const newTechs = imported.techStack.filter((t) => !techStack.includes(t));
+      setSuggestedTechs(newTechs);
+
+      if (newTechs.length > 0) {
+        toast.success(
+          `${newTechs.length} technologie${newTechs.length > 1 ? "s" : ""} détectée${newTechs.length > 1 ? "s" : ""} dans vos dépôts`
+        );
+      } else if (imported.repoCount === 0) {
+        toast.info("Aucun dépôt public trouvé sur votre compte GitHub.");
+      } else {
+        toast.success("Profil GitHub importé.");
+      }
+    } catch (error) {
+      // Une annulation volontaire n'est pas une erreur à signaler.
+      if (controller.signal.aborted) return;
+      const message =
+        error instanceof GithubImportError || error instanceof Error
+          ? error.message
+          : "Import GitHub impossible.";
+      toast.error(message);
+    } finally {
+      if (!controller.signal.aborted) setIsImporting(false);
+      if (importAbortRef.current === controller) importAbortRef.current = null;
+    }
+  }
+
+  function acceptSuggestion(tech: string) {
+    setTechStack((prev) => (prev.includes(tech) ? prev : [...prev, tech]));
+    setSuggestedTechs((prev) => prev.filter((t) => t !== tech));
+  }
+
+  function acceptAllSuggestions() {
+    setTechStack((prev) => [
+      ...prev,
+      ...suggestedTechs.filter((t) => !prev.includes(t)),
+    ]);
+    setSuggestedTechs([]);
   }
 
   function toggleTech(tech: string) {
@@ -275,7 +345,7 @@ export function OnboardingStepper() {
             <p className="mt-2 text-sm text-muted-foreground">
               Positionnez-vous sur la cartographie des développeurs de la République du Congo.
             </p>
-            {draft && (
+            {hadDraftOnMount && (
               <p className="mt-1 text-[11px] text-muted-foreground/70">
                 Brouillon restauré automatiquement.
               </p>
@@ -283,6 +353,42 @@ export function OnboardingStepper() {
           </div>
 
           <div className="glass-panel space-y-6 rounded-2xl border border-white/10 p-6 sm:p-8">
+            {githubLogin && (
+              <div className="rounded-xl border border-primary/25 bg-primary/8 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                      <GitBranch className="h-4 w-4 text-primary" />
+                      Gagner du temps
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Pré-remplir depuis <span className="font-medium text-foreground">@{githubLogin}</span> : nom, bio, photo et technos de vos dépôts.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleGithubImport}
+                    disabled={isImporting}
+                    className="gap-1.5 border-primary/40 bg-primary/10 text-primary hover:bg-primary/15"
+                  >
+                    {isImporting ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Import...
+                      </>
+                    ) : (
+                      <>
+                        <GitBranch className="h-3.5 w-3.5" />
+                        Importer depuis GitHub
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {user && (
               <div className="flex flex-col items-center">
                 <AvatarUploader
@@ -381,6 +487,36 @@ export function OnboardingStepper() {
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Technologies
               </Label>
+
+              {suggestedTechs.length > 0 && (
+                <div className="rounded-lg border border-primary/25 bg-primary/5 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
+                      <Sparkles className="h-3 w-3" />
+                      Détectées dans vos dépôts
+                    </p>
+                    <button
+                      type="button"
+                      onClick={acceptAllSuggestions}
+                      className="text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                      Tout ajouter
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestedTechs.map((tech) => (
+                      <button
+                        key={tech}
+                        type="button"
+                        onClick={() => acceptSuggestion(tech)}
+                        className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                      >
+                        + {tech}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
