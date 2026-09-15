@@ -69,7 +69,17 @@ async function run() {
   `;
 
   const geminiResponse = await callGemini(geminiKey, prompt);
-  
+
+  if (!geminiResponse) {
+    // Sortie en succès volontaire : sans avis du modèle, il n'y a rien à
+    // reprocher à la PR. Le job reste vert, la trace est dans ce journal.
+    console.log(
+      "Revue indisponible : le modèle n'a pas répondu après plusieurs tentatives. " +
+      "Aucun commentaire publié, la PR n'est pas bloquée pour autant."
+    );
+    return;
+  }
+
   console.log("Posting review comment to PR...");
   await fetchGitHub(`/repos/${repo}/issues/${prNumber}/comments`, {
     method: 'POST',
@@ -79,21 +89,56 @@ async function run() {
   console.log("Review posted successfully!");
 }
 
+const MAX_ATTEMPTS = 4;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Appelle le modèle, en réessayant sur les erreurs passagères.
+ *
+ * Renvoie le texte de la revue, ou `null` quand le service reste indisponible :
+ * la revue est un avis, pas une porte. Un modèle surchargé ne doit pas faire
+ * échouer la CI d'une PR par ailleurs saine.
+ */
 async function callGemini(key, prompt) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }]
-    })
-  });
-  const data = await response.json();
-  if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
-    return data.candidates[0].content.parts[0].text;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let data;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+      data = await response.json();
+    } catch (err) {
+      data = { error: { code: 0, message: String(err), status: 'FETCH_FAILED' } };
+    }
+
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) return text;
+
+    const code = data?.error?.code ?? 0;
+    // 429 quota, 500/503 surcharge, 0 échec réseau : cela repasse tout seul.
+    const retryable = code === 0 || code === 429 || code >= 500;
+
+    console.error(
+      `Gemini API — tentative ${attempt}/${MAX_ATTEMPTS} :`,
+      JSON.stringify(data?.error ?? data)
+    );
+
+    if (!retryable) return null;
+    if (attempt < MAX_ATTEMPTS) {
+      const delay = 5000 * 2 ** (attempt - 1);
+      console.log(`Nouvelle tentative dans ${delay / 1000}s...`);
+      await sleep(delay);
+    }
   }
-  console.error("Gemini API Error details:", JSON.stringify(data));
-  throw new Error("Failed to get response from Gemini API");
+
+  return null;
 }
 
 async function fetchGitHub(path, options = {}, responseType = 'json') {

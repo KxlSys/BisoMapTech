@@ -7,6 +7,22 @@ Format : constat, verdict, raison, référence.
 
 ---
 
+## Le job de revue ne doit pas bloquer une PR
+
+Le job `review` a échoué sur `ecbd386` : l'API Gemini a renvoyé 503 « forte
+demande ». Panne passagère en amont, sans rapport avec le diff.
+
+Traité à la source plutôt que par une relance : le script réessaie jusqu'à
+quatre fois avec un délai croissant sur les erreurs passagères (429, 5xx, échec
+réseau), et sort en succès si le modèle reste muet. Une revue est un avis, pas
+une porte : un modèle surchargé ne doit pas faire échouer la CI d'une PR saine.
+
+Si ce job réapparaît en rouge, lire le journal du job avant de relancer : une
+erreur non passagère (400, clé invalide) sort désormais sans réessai et le
+message le dit.
+
+---
+
 ## Effet du durcissement du prompt — observé
 
 La première revue produite après `c995a3e` est nettement différente des
