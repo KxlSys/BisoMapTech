@@ -103,7 +103,7 @@ async function fetchGithub<T>(path: string, signal?: AbortSignal): Promise<T> {
   // fréquent derrière une IP partagée ou un réseau d'entreprise.
   if (response.status === 403 || response.status === 429) {
     throw new GithubImportError(
-      "Quota GitHub atteint, réessayez dans quelques minutes.",
+      "Quota GitHub atteint (60 requêtes par heure et par adresse IP). Réessayez dans une heure.",
       response.status
     );
   }

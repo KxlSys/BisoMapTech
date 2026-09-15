@@ -40,6 +40,13 @@ function createMarkerIcon(isCollaborating: boolean, isFocused: boolean) {
   });
 }
 
+/**
+ * Marqueur porteur du drapeau « ouvert à la collaboration », utilisé pour
+ * recalculer son icône sans relire le profil. Le nom est préfixé pour ne pas
+ * entrer en collision avec les champs internes de Leaflet.
+ */
+type ProfileMarker = L.Marker & { bisoIsCollaborating?: boolean };
+
 interface CongoMapProps {
   profiles: Profile[];
   onProfileClick?: (profile: Profile) => void;
@@ -218,7 +225,7 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
       const marker = L.marker([profile.latitude, profile.longitude], {
         icon: createMarkerIcon(profile.open_to_collaboration, profile.id === focusedProfileId),
       });
-      (marker as any)._isCollaborating = profile.open_to_collaboration;
+      (marker as ProfileMarker).bisoIsCollaborating = profile.open_to_collaboration;
 
       const safeName = escapeHtml(profile.full_name);
       const safeCity = escapeHtml(profile.city);
@@ -273,7 +280,7 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
     if (prevFocusedIdRef.current && prevFocusedIdRef.current !== focusedProfileId) {
       const prevMarker = markersMapRef.current.get(prevFocusedIdRef.current);
       if (prevMarker) {
-        const isCollab = (prevMarker as any)._isCollaborating;
+        const isCollab = (prevMarker as ProfileMarker).bisoIsCollaborating;
         prevMarker.setIcon(createMarkerIcon(!!isCollab, false));
       }
     }
@@ -281,7 +288,7 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
     if (focusedProfileId) {
       const newMarker = markersMapRef.current.get(focusedProfileId);
       if (newMarker) {
-        const isCollab = (newMarker as any)._isCollaborating;
+        const isCollab = (newMarker as ProfileMarker).bisoIsCollaborating;
         newMarker.setIcon(createMarkerIcon(!!isCollab, true));
       }
     }
@@ -325,7 +332,7 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
       const prevMarker = markersMapRef.current.get(previous);
       // Le marqueur focalisé garde son icône : le survol ne doit pas l'éteindre.
       if (prevMarker && previous !== focusedProfileId) {
-        const isCollab = (prevMarker as any)._isCollaborating;
+        const isCollab = (prevMarker as ProfileMarker).bisoIsCollaborating;
         prevMarker.setIcon(createMarkerIcon(!!isCollab, false));
       }
     }
@@ -333,7 +340,7 @@ export const CongoMap = React.memo(function CongoMap({ profiles, onProfileClick,
     if (highlightedProfileId) {
       const marker = markersMapRef.current.get(highlightedProfileId);
       if (marker) {
-        const isCollab = (marker as any)._isCollaborating;
+        const isCollab = (marker as ProfileMarker).bisoIsCollaborating;
         marker.setIcon(createMarkerIcon(!!isCollab, true));
       }
     }
