@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from "react";
 
 import { fetchPaginatedProfiles } from "@/lib/profile-service";
 import { useFilterStore } from "@/store/filter-store";
-import { MOCK_PROFILES } from "@/lib/mock-data";
 
 import type { Profile } from "@/types";
 
@@ -24,115 +23,6 @@ interface UseFilteredProfilesResult {
   setPage: (page: number) => void;
 
   refetch: () => void;
-}
-
-interface MockFilterArgs {
-  search?: string;
-
-  city?: string;
-  département?: string;
-
-  roleType?: string;
-  experienceLevel?: string;
-
-  techStack?: string[];
-
-  openToCollaboration?: boolean | null;
-
-  page: number;
-  pageSize: number;
-}
-
-function filterMockProfiles(
-  args: MockFilterArgs
-): {
-  profiles: Profile[];
-  total: number;
-} {
-  const q = args.search?.toLowerCase();
-
-  const results = MOCK_PROFILES.filter((p) => {
-    // Search
-    if (q) {
-      const match =
-        p.full_name.toLowerCase().includes(q) ||
-        (p.bio?.toLowerCase().includes(q) ?? false) ||
-        p.tech_stack.some((t) =>
-          t.toLowerCase().includes(q)
-        );
-
-      if (!match) return false;
-    }
-
-    // City
-    if (args.city && p.city !== args.city) {
-      return false;
-    }
-
-    // département
-    if (
-      args.département &&
-      p.département !== args.département
-    ) {
-      return false;
-    }
-
-    // Role
-    if (
-      args.roleType &&
-      p.role_type !== args.roleType
-    ) {
-      return false;
-    }
-
-    // Experience
-    if (
-      args.experienceLevel &&
-      p.experience_level !==
-        args.experienceLevel
-    ) {
-      return false;
-    }
-
-    // Tech stack
-    if (
-      args.techStack &&
-      args.techStack.length > 0
-    ) {
-      const hasMatchingTech =
-        args.techStack.some((t) =>
-          p.tech_stack.includes(t)
-        );
-
-      if (!hasMatchingTech) {
-        return false;
-      }
-    }
-
-    // Collaboration
-    if (
-      args.openToCollaboration != null &&
-      p.open_to_collaboration !==
-        args.openToCollaboration
-    ) {
-      return false;
-    }
-
-    return true;
-  });
-
-  const total = results.length;
-
-  const start =
-    (args.page - 1) * args.pageSize;
-
-  return {
-    profiles: results.slice(
-      start,
-      start + args.pageSize
-    ),
-    total,
-  };
 }
 
 export function useFilteredProfiles(
@@ -171,84 +61,45 @@ export function useFilteredProfiles(
 
     setError(null);
 
-    const mockArgs: MockFilterArgs = {
+    const queryArgs = {
       search: searchQuery || undefined,
-
       city: city || undefined,
-      département:
-        département || undefined,
-
-      roleType:
-        roleType || undefined,
-
-      experienceLevel:
-        experienceLevel || undefined,
-
-      techStack:
-        techStack.length > 0
-          ? techStack
-          : undefined,
-
+      département: département || undefined,
+      roleType: roleType || undefined,
+      experienceLevel: experienceLevel || undefined,
+      techStack: techStack.length > 0 ? techStack : undefined,
       openToCollaboration,
-
       page,
       pageSize,
     };
 
     try {
-      const result =
-        await fetchPaginatedProfiles({
-          page,
-          pageSize,
+      const result = await fetchPaginatedProfiles({
+        page,
+        pageSize,
+        search: queryArgs.search,
+        city: queryArgs.city,
+        département: queryArgs.département,
+        roleType: queryArgs.roleType,
+        experienceLevel: queryArgs.experienceLevel,
+        techStack: queryArgs.techStack,
+        openToCollaboration,
+        sortBy,
+      });
 
-          search: mockArgs.search,
-
-          city: mockArgs.city,
-          département:
-            mockArgs.département,
-          roleType:
-            mockArgs.roleType,
-
-          experienceLevel:
-            mockArgs.experienceLevel,
-
-          techStack:
-            mockArgs.techStack,
-
-          openToCollaboration,
-        });
-
-      const raw =
-        result.total === 0
-          ? filterMockProfiles(mockArgs)
-          : { profiles: result.profiles, total: result.total };
-
-      const sorted = [...raw.profiles];
-      if (sortBy === "available_first") {
-        sorted.sort((a, b) => {
-          if (a.open_to_collaboration === b.open_to_collaboration) return 0;
-          return a.open_to_collaboration ? -1 : 1;
-        });
-      } else if (sortBy === "recent") {
-        sorted.sort(
-          (a, b) =>
-            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
-      }
-
-      setProfiles(sorted);
-      setTotal(raw.total);
-    } catch {
-      const mock = filterMockProfiles(mockArgs);
-      const sorted = [...mock.profiles];
-      if (sortBy === "available_first") {
-        sorted.sort((a, b) => {
-          if (a.open_to_collaboration === b.open_to_collaboration) return 0;
-          return a.open_to_collaboration ? -1 : 1;
-        });
-      }
-      setProfiles(sorted);
-      setTotal(mock.total);
+      setProfiles(result.profiles);
+      setTotal(result.total);
+    } catch (err) {
+      // Une base injoignable ne doit pas être maquillée en annuaire peuplé :
+      // on remonte l'erreur, l'appelant affiche un état explicite.
+      console.error("Chargement des profils impossible:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Impossible de charger les contributeurs."
+      );
+      setProfiles([]);
+      setTotal(0);
     } finally {
       setIsLoading(false);
     }

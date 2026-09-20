@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import type { SortBy } from "@/store/filter-store";
 import type { Profile, Repository } from "@/types";
 
 export function escapeHtml(input: string): string {
@@ -39,8 +40,9 @@ export async function fetchPaginatedProfiles(params: {
   experienceLevel?: string;
   techStack?: string[];
   openToCollaboration?: boolean | null;
+  sortBy?: SortBy;
 }): Promise<{ profiles: Profile[]; total: number }> {
-  const { page, pageSize, search, city, département, roleType, experienceLevel, techStack, openToCollaboration } = params;
+  const { page, pageSize, search, city, département, roleType, experienceLevel, techStack, openToCollaboration, sortBy } = params;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -78,7 +80,21 @@ export async function fetchPaginatedProfiles(params: {
     query = query.overlaps("tech_stack", techStack);
   }
 
-  query = query.order("created_at", { ascending: false }).range(from, to);
+  // Le tri est appliqué par la base, pas sur la page déjà reçue : sinon
+  // « les plus actifs » ne trierait que les 18 profils affichés, ce qui donne
+  // un classement faux dès la deuxième page.
+  if (sortBy === "recent") {
+    // Vus récemment d'abord ; ceux qui ne sont jamais revenus ferment la marche.
+    query = query.order("last_seen_at", { ascending: false, nullsFirst: false });
+  } else if (sortBy === "available_first") {
+    query = query
+      .order("open_to_collaboration", { ascending: false })
+      .order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+
+  query = query.range(from, to);
 
   const { data, count, error } = await query;
 

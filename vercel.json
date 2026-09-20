@@ -29,7 +29,18 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!.*\\.(?:txt|xml|ico|png|jpg|jpeg|gif|svg|webp|webmanifest|js|mjs|css|json|map|woff|woff2|ttf|eot)$).*)",
+      "source": "/contributeurs/:username",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([Ww]hats[Aa]pp|facebookexternalhit|Facebot|Twitterbot|Slackbot|LinkedInBot|TelegramBot|Discordbot|Googlebot|bingbot|Applebot|redditbot|Pinterest|SkypeUriPreview|vkShare|Iframely|Embedly).*"
+        }
+      ],
+      "destination": "/api/share-preview?u=:username"
+    },
+    {
+      "source": "/((?!api/)(?!.*\\.(?:txt|xml|ico|png|jpg|jpeg|gif|svg|webp|webmanifest|js|mjs|css|json|map|woff|woff2|ttf|eot)$).*)",
       "destination": "/index.html"
     }
   ]

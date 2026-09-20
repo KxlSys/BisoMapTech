@@ -19,7 +19,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConnectionActions } from "@/components/profile/connection-actions";
 import { fetchProfileByUsername, fetchRepositories } from "@/lib/profile-service";
 import { useAuthStore } from "@/store/auth-store";
-import { MOCK_PROFILES } from "@/lib/mock-data";
+import { usePageMeta } from "@/hooks/use-page-meta";
+import { ProfileCompletionBanner } from "@/components/profile/completion-banner";
+import { buildProfileMeta } from "@/lib/page-meta";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import type { Profile, Repository } from "@/types";
 import { cn } from "@/lib/utils";
@@ -102,6 +104,11 @@ export function ProfileDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("biographie");
 
+
+  // Titre d'onglet et balises de partage du profil affiché. Les robots
+  // d'aperçu passent, eux, par la fonction edge `api/share-preview`.
+  usePageMeta(useMemo(() => (profile ? buildProfileMeta(profile) : null), [profile]));
+
   // ⚡ Bolt: Convert O(N) array search inside double loop to O(1) Map lookup.
   const heatmapMap = useMemo(() => {
     const seed = profile?.id || username || "anonymous";
@@ -118,17 +125,15 @@ export function ProfileDetailPage() {
     async function fetchData() {
       try {
         const profileData = await fetchProfileByUsername(username!);
+        // Une adresse qui ne correspond à personne doit afficher « profil
+        // introuvable », jamais un contributeur inventé.
         if (profileData) {
           setProfile(profileData);
           const repoData = await fetchRepositories(profileData.id);
           setRepos(repoData);
-        } else {
-          const mock = MOCK_PROFILES.find((p) => p.username === username);
-          if (mock) setProfile(mock as Profile);
         }
-      } catch {
-        const mock = MOCK_PROFILES.find((p) => p.username === username);
-        if (mock) setProfile(mock as Profile);
+      } catch (err) {
+        console.error("Chargement du profil impossible:", err);
       }
       setIsLoading(false);
     }
@@ -176,6 +181,9 @@ export function ProfileDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-4 md:pb-8">
+      {/* Le bandeau n'est montré qu'au propriétaire du profil. */}
+      {isOwnProfile && <ProfileCompletionBanner profile={profile} />}
+
       {/* Back */}
       <Link to="/contributeurs">
         <Button

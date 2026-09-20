@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Shield, Send, UserPlus, UserMinus, Users, Building2, Handshake, Download, Search, TrendingUp, ArrowUpRight, TriangleAlert, Clock, GitCommitHorizontal, UserRoundPlus, Layers as Layers3, Flag, UserCheck, MapPin, Trash2 } from "lucide-react";
+import { Shield, Send, UserPlus, UserMinus, Users, Building2, Handshake, Download, Search, TrendingUp, ArrowUpRight, TriangleAlert, Clock, UserRoundPlus, Layers as Layers3, Flag, UserCheck, MapPin, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DebouncedInput } from "@/components/ui/debounced-input";
@@ -17,17 +17,18 @@ import { ROLE_TYPE_LABELS, TECH_OPTIONS } from "@/lib/constants";
 import { fetchPendingPlaces, approvePlace, rejectPlace } from "@/lib/place-service";
 import { toast } from "sonner";
 
-const PENDING_VALIDATIONS = [
-  { id: 1, name: "Amina K.", initials: "AK", role: "Développeuse Frontend", gradient: "from-primary to-tertiary", badge: "Nouveau", badgeClass: "border-primary/40 bg-primary/10 text-primary" },
-  { id: 2, name: "Marcus E.", initials: "ME", role: "Ingénieur DevOps", gradient: "from-tertiary to-map-accent", badge: "En attente", badgeClass: "border-tertiary/40 bg-tertiary/10 text-tertiary" },
-  { id: 3, name: "Elise N.", initials: "EN", role: "Designeuse UI/UX", gradient: "from-map-accent to-primary", badge: "Nouveau", badgeClass: "border-primary/40 bg-primary/10 text-primary" },
-];
-
-const ACTIVITY_FEED = [
-  { icon: GitCommitHorizontal, color: "text-primary", time: "Il y a 10 min", text: "Mise à jour du profil de Brazzaville par Jean-Luc B." },
-  { icon: UserRoundPlus, color: "text-chart-2", time: "Il y a 45 min", text: "Nouveau contributeur validé : Elise N. (UI/UX)" },
-  { icon: Layers3, color: "text-chart-3", time: "Il y a 2 h", text: "Projet EdTech Platform soumis pour approbation." },
-];
+/** Il y a une heure / il y a 3 jours, à partir d'une date ISO. */
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  const days = Math.floor(hours / 24);
+  if (days < 31) return `il y a ${days} j`;
+  return new Date(iso).toLocaleDateString("fr-FR");
+}
 
 export function AdminPage() {
   const { user, profile } = useAuthStore();
@@ -213,6 +214,42 @@ export function AdminPage() {
   };
   const collabRate = stats.total > 0 ? (stats.collaborating / stats.total) * 100 : 0;
   const pendingInvitations = invitations.filter((i) => i.status === "pending").length;
+  // Les profils arrivent déjà triés par date d'inscription décroissante.
+  const recentProfiles = useMemo(() => profiles.slice(0, 5), [profiles]);
+
+  // Fil d'activité construit à partir de ce que la page a réellement chargé :
+  // inscriptions, lieux en attente de validation et signalements.
+  const activityFeed = useMemo(() => {
+    const entries = [
+      ...profiles.slice(0, 5).map((p) => ({
+        key: `profile-${p.id}`,
+        icon: UserRoundPlus,
+        color: "text-chart-2",
+        date: p.created_at,
+        text: `Nouveau contributeur : ${p.full_name} (${ROLE_TYPE_LABELS[p.role_type] || p.role_type})`,
+      })),
+      ...pendingPlaces.slice(0, 5).map((place) => ({
+        key: `place-${place.id}`,
+        icon: Layers3,
+        color: "text-chart-3",
+        date: place.created_at,
+        text: `Lieu soumis pour validation : ${place.name} (${place.city})`,
+      })),
+      ...reports.slice(0, 5).map((r) => ({
+        key: `report-${r.id}`,
+        icon: Flag,
+        color: "text-destructive",
+        date: r.created_at,
+        text: `Signalement reçu : ${r.reason}`,
+      })),
+    ];
+
+    return entries
+      .filter((e) => !!e.date)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3);
+  }, [profiles, pendingPlaces, reports]);
+
   const pendingReports = reports.filter((r) => r.status === "pending").length;
   const totalPendingActions = pendingInvitations + pendingReports + pendingPlaces.length;
   const trendingTechs = TECH_OPTIONS.slice(0, 4).map((tech, i) => ({
@@ -475,57 +512,73 @@ export function AdminPage() {
         </div>
       </div>
 
-      {/* Identity Validation */}
+      {/* Derniers inscrits */}
       <div className="mb-4 glass-panel overflow-hidden rounded-2xl border border-white/10">
         <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
           <p className="flex items-center gap-2 text-sm font-semibold">
             <UserCheck className="h-4 w-4 text-tertiary" />
-            Validation des Identités
+            Derniers inscrits
           </p>
           <Badge variant="outline" className="border-tertiary/40 bg-tertiary/10 text-tertiary text-[10px]">
-            {PENDING_VALIDATIONS.length} en attente
+            {profiles.length} membre{profiles.length !== 1 ? "s" : ""}
           </Badge>
         </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/8 hover:bg-transparent">
-                <TableHead className="pl-5 text-xs">Contributeur</TableHead>
-                <TableHead className="text-xs">Spécialité</TableHead>
-                <TableHead className="pr-5 text-right text-xs">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {PENDING_VALIDATIONS.map((v) => (
-                <TableRow key={v.id} className="border-white/8 hover:bg-white/3">
-                  <TableCell className="pl-5">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${v.gradient} text-[11px] font-bold text-background`}>
-                        {v.initials}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium leading-none">{v.name}</p>
-                        <Badge variant="outline" className={`mt-1 text-[9px] px-1.5 py-0 ${v.badgeClass}`}>
-                          {v.badge}
-                        </Badge>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{v.role}</TableCell>
-                  <TableCell className="pr-5 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 gap-1 border border-white/15 bg-white/5 px-3 text-xs hover:border-tertiary/40 hover:bg-tertiary/10 hover:text-tertiary"
-                    >
-                      Examiner
-                    </Button>
-                  </TableCell>
+        {recentProfiles.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <p className="text-sm text-muted-foreground">Aucun membre inscrit pour l'instant</p>
+            <p className="mt-1 text-xs text-muted-foreground/70">
+              Les nouvelles inscriptions apparaîtront ici.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/8 hover:bg-transparent">
+                  <TableHead className="pl-5 text-xs">Contributeur</TableHead>
+                  <TableHead className="text-xs">Spécialité</TableHead>
+                  <TableHead className="pr-5 text-right text-xs">Action</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {recentProfiles.map((p) => (
+                  <TableRow key={p.id} className="border-white/8 hover:bg-white/3">
+                    <TableCell className="pl-5">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar className="h-8 w-8 border border-white/15">
+                          <AvatarImage src={p.avatar_url} alt="" />
+                          <AvatarFallback className="bg-primary/20 text-[11px] font-bold text-primary">
+                            {p.full_name?.charAt(0) || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium leading-none">{p.full_name}</p>
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            {p.city} · {relativeTime(p.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {ROLE_TYPE_LABELS[p.role_type] || p.role_type}
+                    </TableCell>
+                    <TableCell className="pr-5 text-right">
+                      <Link to={`/contributeurs/${p.username}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1 border border-white/15 bg-white/5 px-3 text-xs hover:border-tertiary/40 hover:bg-tertiary/10 hover:text-tertiary"
+                        >
+                          Examiner
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
 
       {/* Places moderation */}
@@ -596,17 +649,24 @@ export function AdminPage() {
           <Clock className="h-4 w-4 text-muted-foreground" />
           Activité récente
         </p>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {ACTIVITY_FEED.map((item, i) => (
-            <div key={i} className="flex gap-3 rounded-xl border border-white/8 bg-white/5 p-4">
-              <item.icon className={`mt-0.5 h-4 w-4 shrink-0 ${item.color}`} />
-              <div>
-                <p className="mb-1 text-[11px] text-muted-foreground">{item.time}</p>
-                <p className="text-sm font-medium leading-snug">{item.text}</p>
+        {activityFeed.length === 0 ? (
+          <p className="rounded-xl border border-white/8 bg-white/5 p-4 text-sm text-muted-foreground">
+            Rien à signaler pour l'instant. Inscriptions, lieux soumis et
+            signalements apparaîtront ici.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-3">
+            {activityFeed.map((item) => (
+              <div key={item.key} className="flex gap-3 rounded-xl border border-white/8 bg-white/5 p-4">
+                <item.icon className={`mt-0.5 h-4 w-4 shrink-0 ${item.color}`} />
+                <div>
+                  <p className="mb-1 text-[11px] text-muted-foreground">{relativeTime(item.date)}</p>
+                  <p className="text-sm font-medium leading-snug">{item.text}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Reports */}
