@@ -430,6 +430,7 @@ export function OnboardingStepper() {
                     key={value}
                     type="button"
                     onClick={() => setRoleType(value as RoleType)}
+                    aria-pressed={roleType === value}
                     className={cn(
                       "rounded-lg border px-3 py-2 text-center text-xs font-medium transition-all",
                       roleType === value
@@ -537,6 +538,7 @@ export function OnboardingStepper() {
                       type="button"
                       onClick={() => toggleTech(tech)}
                       aria-label={`Supprimer ${tech}`}
+                      aria-pressed={true}
                       className="flex items-center gap-1 rounded-md border border-primary/50 bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                     >
                       {tech}
@@ -595,6 +597,7 @@ export function OnboardingStepper() {
                     key={value}
                     type="button"
                     onClick={() => setExperienceLevel(value as ExperienceLevel)}
+                    aria-pressed={experienceLevel === value}
                     className={cn(
                       "flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
                       experienceLevel === value
@@ -611,6 +614,7 @@ export function OnboardingStepper() {
             <button
               type="button"
               onClick={() => setOpenToCollaboration(!openToCollaboration)}
+              aria-pressed={openToCollaboration}
               className={cn(
                 "w-full rounded-xl border p-4 text-left transition-all",
                 openToCollaboration
@@ -719,6 +723,7 @@ function TechChip({
     <button
       type="button"
       onClick={onToggle}
+      aria-pressed={selected}
       className={cn(
         "rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all",
         selected
