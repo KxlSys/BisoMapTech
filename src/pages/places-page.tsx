@@ -64,6 +64,7 @@ const MemoizedPlaceListItem = React.memo(({
     type="button"
     onClick={() => onClick(place.id)}
     className="w-full rounded-xl border border-white/8 bg-white/5 px-4 py-3 hover:bg-white/8 transition-colors text-left"
+    aria-label={`Voir les détails de ${place.name}`}
   >
     <p className="text-sm font-semibold text-foreground">{place.name}</p>
     <div className="mt-1.5 flex items-center gap-2 flex-wrap">
