@@ -164,6 +164,7 @@ export function MatchingPage() {
           <button
             key={tab.id}
             onClick={() => setTab(tab.id)}
+            aria-pressed={activeTab === tab.id}
             className={cn(
               "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all",
               activeTab === tab.id
@@ -252,6 +253,7 @@ function TalentsTab({
             <button
               key={opt.value}
               onClick={() => setRoleFilter(opt.value)}
+              aria-pressed={roleFilter === opt.value}
               className={cn(
                 "rounded-full border px-3 py-1 text-xs font-medium transition-all",
                 roleFilter === opt.value
@@ -265,6 +267,7 @@ function TalentsTab({
         </div>
         <button
           onClick={() => setDisponibleOnly(!disponibleOnly)}
+          aria-pressed={disponibleOnly}
           className={cn(
             "ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all",
             disponibleOnly
