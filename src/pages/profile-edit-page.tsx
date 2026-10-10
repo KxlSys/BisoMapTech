@@ -687,7 +687,9 @@ export function ProfileEditPage() {
 
             {pinnedProjects.length > 0 && (
               <div className="mt-2 space-y-2">
-                {pinnedProjects.map((p) => (
+                {pinnedProjects.map((p) => {
+                  const safeUrl = getSafeUrl(p.url);
+                  return (
                   <div
                     key={p.id}
                     className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-white/3 p-3"
@@ -716,7 +718,8 @@ export function ProfileEditPage() {
                       Supprimer
                     </Button>
                   </div>
-                ))}
+                );
+                })}
               </div>
             )}
           </div>

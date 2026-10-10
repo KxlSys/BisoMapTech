@@ -263,7 +263,7 @@ export function ProfileDetailPage() {
               </div>
 
               {/* GitHub link */}
-              {profile.github_url && (
+              {getSafeUrl(profile.github_url) && (
                 <div className="mt-4 flex justify-center">
                   <a
                     href={sanitizeUrl(profile.github_url)}
@@ -432,7 +432,7 @@ export function ProfileDetailPage() {
                   <Code2 className="h-4 w-4 text-primary" />
                   <h2 className="text-sm font-semibold">Projets en Vedette</h2>
                 </div>
-                {profile.github_url && (
+                {getSafeUrl(profile.github_url) && (
                   <a
                     href={sanitizeUrl(profile.github_url)}
                     target="_blank"
@@ -444,7 +444,10 @@ export function ProfileDetailPage() {
                 )}
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                {repos.slice(0, 4).map((repo) => (
+                {repos.slice(0, 4).map((repo) => {
+                  const safeRepoUrl = getSafeUrl(repo.url);
+                  if (!safeRepoUrl) return null;
+                  return (
                   <a
                     key={repo.id}
                     href={sanitizeUrl(repo.url)}
@@ -479,7 +482,8 @@ export function ProfileDetailPage() {
                       )}
                     </div>
                   </a>
-                ))}
+                );
+                })}
               </div>
             </div>
           )}
@@ -593,7 +597,7 @@ export function ProfileDetailPage() {
               </div>
               <GithubHeatmap githubUsername={githubUsername} />
             </div>
-            {profile.github_url && (
+            {getSafeUrl(profile.github_url) && (
               <div className="glass-panel rounded-xl border border-white/10 p-4">
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Liens
@@ -643,7 +647,10 @@ export function ProfileDetailPage() {
                 <p className="text-sm text-muted-foreground">Aucun projet disponible</p>
               </div>
             ) : (
-              repos.map((repo) => (
+              repos.map((repo) => {
+                const safeRepoUrl = getSafeUrl(repo.url);
+                if (!safeRepoUrl) return null;
+                return (
                 <a
                   key={repo.id}
                   href={sanitizeUrl(repo.url)}
@@ -675,7 +682,8 @@ export function ProfileDetailPage() {
                     )}
                   </div>
                 </a>
-              ))
+              );
+              })
             )}
           </div>
         )}

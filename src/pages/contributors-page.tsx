@@ -33,7 +33,7 @@ import { SortSelect } from "@/components/filters/sort-select";
 import { useFilteredProfiles } from "@/hooks/use-filtered-profiles";
 import { useFilterStore } from "@/store/filter-store";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { cn, getSafeUrl } from "@/lib/utils";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { sanitizeUrl } from "@/lib/url-utils";
 import React, { useState } from "react";
@@ -135,7 +135,7 @@ const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Prof
               {lastSeen}
             </span>
           )}
-          {profile.github_url && (
+          {getSafeUrl(profile.github_url) && (
             <a
               href={sanitizeUrl(profile.github_url)}
               target="_blank"
