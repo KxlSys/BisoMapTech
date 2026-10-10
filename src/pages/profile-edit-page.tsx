@@ -42,7 +42,7 @@ import {
 import type { RoleType, ExperienceLevel, Repository } from "@/types";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { toast } from "sonner";
-import { getSafeUrl } from "@/lib/utils";
+import { sanitizeUrl } from "@/lib/url-utils";
 
 function extractGithubUsername(githubUrl?: string | null): string | null {
   if (!githubUrl) return null;
@@ -696,20 +696,14 @@ export function ProfileEditPage() {
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
-                      {safeUrl ? (
-                        <a
-                          href={safeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block truncate text-xs text-primary/90 hover:underline underline-offset-2"
-                        >
-                          {p.url}
-                        </a>
-                      ) : (
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {p.url}
-                        </span>
-                      )}
+                      <a
+                        href={sanitizeUrl(p.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block truncate text-xs text-primary/90 hover:underline underline-offset-2"
+                      >
+                        {p.url}
+                      </a>
                       {p.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
                       )}

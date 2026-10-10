@@ -23,6 +23,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { sanitizeUrl } from "@/lib/url-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, getSafeUrl } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -1386,7 +1387,7 @@ export function AboutPage() {
             return (
             <a
               key={member.name}
-              href={safeGithubUrl}
+              href={sanitizeUrl(member.github)}
               target="_blank"
               rel="noopener noreferrer"
               className="group"
