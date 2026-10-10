@@ -42,6 +42,7 @@ import {
 import type { RoleType, ExperienceLevel, Repository } from "@/types";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { toast } from "sonner";
+import { sanitizeUrl } from "@/lib/url-utils";
 
 function extractGithubUsername(githubUrl?: string | null): string | null {
   if (!githubUrl) return null;
@@ -694,7 +695,7 @@ export function ProfileEditPage() {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
                       <a
-                        href={p.url}
+                        href={sanitizeUrl(p.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block truncate text-xs text-primary/90 hover:underline underline-offset-2"

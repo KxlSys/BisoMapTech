@@ -35,6 +35,7 @@ import { useFilterStore } from "@/store/filter-store";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { usePageMeta } from "@/hooks/use-page-meta";
+import { sanitizeUrl } from "@/lib/url-utils";
 import React, { useState } from "react";
 
 const QUICK_FILTERS = [
@@ -136,7 +137,7 @@ const ProfileCard = React.memo(function ProfileCard({ profile }: { profile: Prof
           )}
           {profile.github_url && (
             <a
-              href={profile.github_url}
+              href={sanitizeUrl(profile.github_url)}
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground/60 hover:text-primary transition-colors relative z-20"

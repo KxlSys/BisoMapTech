@@ -25,6 +25,7 @@ import { buildProfileMeta } from "@/lib/page-meta";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import type { Profile, Repository } from "@/types";
 import { cn } from "@/lib/utils";
+import { sanitizeUrl } from "@/lib/url-utils";
 
 type Tab = "biographie" | "arsenal" | "projets";
 
@@ -265,7 +266,7 @@ export function ProfileDetailPage() {
               {profile.github_url && (
                 <div className="mt-4 flex justify-center">
                   <a
-                    href={profile.github_url}
+                    href={sanitizeUrl(profile.github_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
@@ -433,7 +434,7 @@ export function ProfileDetailPage() {
                 </div>
                 {profile.github_url && (
                   <a
-                    href={profile.github_url}
+                    href={sanitizeUrl(profile.github_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
@@ -446,7 +447,7 @@ export function ProfileDetailPage() {
                 {repos.slice(0, 4).map((repo) => (
                   <a
                     key={repo.id}
-                    href={repo.url}
+                    href={sanitizeUrl(repo.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group relative overflow-hidden rounded-xl border border-white/10 bg-white/3 p-4 transition-all hover:border-primary/30 hover:bg-white/5"
@@ -598,7 +599,7 @@ export function ProfileDetailPage() {
                   Liens
                 </h3>
                 <a
-                  href={profile.github_url}
+                  href={sanitizeUrl(profile.github_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -645,7 +646,7 @@ export function ProfileDetailPage() {
               repos.map((repo) => (
                 <a
                   key={repo.id}
-                  href={repo.url}
+                  href={sanitizeUrl(repo.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="glass-panel block rounded-xl border border-white/10 p-4 transition-all hover:border-primary/30"
