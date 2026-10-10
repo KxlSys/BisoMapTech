@@ -42,6 +42,7 @@ import {
 import type { RoleType, ExperienceLevel, Repository } from "@/types";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { toast } from "sonner";
+import { getSafeUrl } from "@/lib/utils";
 
 function extractGithubUsername(githubUrl?: string | null): string | null {
   if (!githubUrl) return null;
@@ -686,21 +687,29 @@ export function ProfileEditPage() {
 
             {pinnedProjects.length > 0 && (
               <div className="mt-2 space-y-2">
-                {pinnedProjects.map((p) => (
+                {pinnedProjects.map((p) => {
+                  const safeUrl = getSafeUrl(p.url);
+                  return (
                   <div
                     key={p.id}
                     className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-white/3 p-3"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
-                      <a
-                        href={p.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block truncate text-xs text-primary/90 hover:underline underline-offset-2"
-                      >
-                        {p.url}
-                      </a>
+                      {safeUrl ? (
+                        <a
+                          href={safeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block truncate text-xs text-primary/90 hover:underline underline-offset-2"
+                        >
+                          {p.url}
+                        </a>
+                      ) : (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {p.url}
+                        </span>
+                      )}
                       {p.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
                       )}
@@ -715,7 +724,8 @@ export function ProfileEditPage() {
                       Supprimer
                     </Button>
                   </div>
-                ))}
+                );
+                })}
               </div>
             )}
           </div>

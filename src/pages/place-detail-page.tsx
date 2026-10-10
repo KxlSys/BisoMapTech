@@ -12,6 +12,7 @@ import type { Place } from "@/types";
 import { useAuthStore } from "@/store/auth-store";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { toast } from "sonner";
+import { getSafeUrl } from "@/lib/utils";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", {
@@ -253,12 +254,12 @@ export function PlaceDetailPage() {
             </div>
           )}
 
-          {place.website && (
+          {getSafeUrl(place.website) && (
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
               <Globe className="h-4 w-4 shrink-0 text-primary" />
               <a
                 className="text-sm font-medium text-foreground hover:underline flex items-center gap-1.5"
-                href={place.website}
+                href={getSafeUrl(place.website)!}
                 target="_blank"
                 rel="noreferrer"
               >

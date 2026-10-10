@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { cn, getSafeUrl } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { MOCK_PROFILES } from "@/lib/mock-data";
 import type { Profile } from "@/types";
@@ -1380,10 +1380,13 @@ export function AboutPage() {
         </div>
 
         <div className="flex flex-wrap justify-center gap-4">
-          {TEAM.map((member) => (
+          {TEAM.map((member) => {
+            const safeGithubUrl = getSafeUrl(member.github);
+            if (!safeGithubUrl) return null;
+            return (
             <a
               key={member.name}
-              href={member.github}
+              href={safeGithubUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="group"
@@ -1409,7 +1412,8 @@ export function AboutPage() {
                 </div>
               </div>
             </a>
-          ))}
+          );
+          })}
         </div>
       </section>
 
