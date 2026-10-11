@@ -42,6 +42,7 @@ import {
 import type { RoleType, ExperienceLevel, Repository } from "@/types";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { toast } from "sonner";
+import { getSafeUrl } from "@/lib/utils";
 import { sanitizeUrl } from "@/lib/url-utils";
 
 function extractGithubUsername(githubUrl?: string | null): string | null {
@@ -689,6 +690,7 @@ export function ProfileEditPage() {
               <div className="mt-2 space-y-2">
                 {pinnedProjects.map((p) => {
                   const safeUrl = getSafeUrl(p.url);
+                  if (!safeUrl) return null;
                   return (
                   <div
                     key={p.id}
