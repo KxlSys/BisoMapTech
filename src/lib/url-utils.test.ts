@@ -10,6 +10,7 @@ describe("url-utils", () => {
 
     it("returns true for valid blob URLs", () => {
       expect(isSafeUrl("blob:https://example.com/uuid")).toBe(true);
+      expect(isSafeUrl("blob:http://localhost:3000/1234-5678")).toBe(true);
     });
 
     it("returns false for javascript: URLs", () => {

@@ -228,7 +228,11 @@ function AttachmentRenderer({ message, partnerPublicKey, isMine }: AttachmentRen
           src={decryptedUrl}
           alt={message.attachment_name || "Pièce jointe"}
           className="max-h-60 w-full object-cover rounded-xl transition-all hover:scale-[1.02] cursor-pointer"
-          onClick={() => window.open(decryptedUrl, "_blank")}
+          onClick={() => {
+            if (isSafeUrl(decryptedUrl)) {
+              window.open(decryptedUrl, "_blank", "noopener,noreferrer");
+            }
+          }}
         />
       </div>
     );
