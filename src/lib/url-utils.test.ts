@@ -22,6 +22,8 @@ describe("url-utils", () => {
     it("returns false for data: and vbscript: URLs", () => {
       expect(isSafeUrl("data:text/html,<script>alert(1)</script>")).toBe(false);
       expect(isSafeUrl("vbscript:msgbox(1)")).toBe(false);
+      expect(isSafeUrl("DATA:text/html,xss")).toBe(false);
+      expect(isSafeUrl("VBSCRIPT:msgbox(1)")).toBe(false);
     });
 
     it("returns false for invalid or relative URLs without base", () => {

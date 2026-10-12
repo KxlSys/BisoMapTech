@@ -23,3 +23,11 @@
 **Learning:** Event handlers opening new windows via `window.open` on dynamic URL strings must validate the target scheme with `isSafeUrl` and set security options (`noopener,noreferrer`) just like standard anchor tags.
 
 **Prevention:** Always wrap `window.open` calls with `isSafeUrl` checks to restrict window navigation strictly to `http:`, `https:`, or `blob:` protocols.
+
+## 2026-11-18 - Undeletable Invalid URL States & Unchecked Error Fallbacks
+
+**Vulnerability:** In profile editing, dropping repository rows whose `url` failed `getSafeUrl` validation hid invalid or malformed projects from the user's management interface, creating an un-deletable database row. In messaging link previews, error fallbacks constructed preview cards without validating URL protocols.
+
+**Learning:** Filtering out invalid user data during render rather than sanitizing its href prevents users from managing or deleting their own content. Error fallbacks in async fetchers (like Microlink API) must enforce URL scheme checks before assigning state that triggers `window.open`.
+
+**Prevention:** Render user-managed data items using `sanitizeUrl` for safe href fallback so invalid URLs remain visible and deletable by the owner. Ensure all catch/fallback paths in preview helpers explicitly validate URL schemes with `isSafeUrl`.

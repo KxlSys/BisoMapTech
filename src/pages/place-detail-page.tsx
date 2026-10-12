@@ -234,7 +234,7 @@ export function PlaceDetailPage() {
           {place.phone && (
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
               <Phone className="h-4 w-4 shrink-0 text-primary" />
-              <a className="text-sm font-medium text-foreground hover:underline" href={`tel:${place.phone}`}>
+              <a className="text-sm font-medium text-foreground hover:underline" href={`tel:${place.phone.replace(/[^\d+]/g, "")}`}>
                 {place.phone}
               </a>
             </div>
