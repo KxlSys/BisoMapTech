@@ -24,7 +24,7 @@ import { ProfileCompletionBanner } from "@/components/profile/completion-banner"
 import { buildProfileMeta } from "@/lib/page-meta";
 import { ROLE_TYPE_LABELS, EXPERIENCE_LABELS } from "@/lib/constants";
 import type { Profile, Repository } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, getSafeUrl } from "@/lib/utils";
 import { sanitizeUrl } from "@/lib/url-utils";
 
 type Tab = "biographie" | "arsenal" | "projets";

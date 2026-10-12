@@ -15,3 +15,11 @@
 **Learning:** URL validation schemas (e.g., `z.string().url()`) or loose Regex checks do not inherently restrict schemes to `http:` or `https:`, allowing dangerous pseudo-protocols like `javascript:`, `data:`, or `vbscript:` to bypass form validation.
 
 **Prevention:** Always sanitize user-provided external links using a centralized URL validation utility (`isSafeUrl` / `sanitizeUrl`) that uses the native `URL` constructor to enforce an explicit allowlist of safe schemes (`http:`, `https:`, `blob:`). Fall back to `#` or `about:blank` for invalid or dangerous schemes when rendering anchor tags.
+
+## 2026-11-02 - Unchecked Blob/URL Execution in Attachment Click Handlers
+
+**Vulnerability:** Attachment image click handlers opened object/blob URLs using `window.open(decryptedUrl)` without checking the URL scheme. If `decryptedUrl` or message metadata were manipulated or contained an untrusted protocol, it could lead to arbitrary script execution or window navigation.
+
+**Learning:** Event handlers opening new windows via `window.open` on dynamic URL strings must validate the target scheme with `isSafeUrl` and set security options (`noopener,noreferrer`) just like standard anchor tags.
+
+**Prevention:** Always wrap `window.open` calls with `isSafeUrl` checks to restrict window navigation strictly to `http:`, `https:`, or `blob:` protocols.
