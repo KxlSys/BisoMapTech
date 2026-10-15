@@ -23,6 +23,8 @@ describe("url-utils", () => {
       expect(isSafeUrl("data:text/html,<script>alert(1)</script>")).toBe(false);
       expect(isSafeUrl("data:image/svg+xml;utf8,<svg onload=alert(1)></svg>")).toBe(false);
       expect(isSafeUrl("vbscript:msgbox(1)")).toBe(false);
+      expect(isSafeUrl("DATA:text/html,xss")).toBe(false);
+      expect(isSafeUrl("VBSCRIPT:msgbox(1)")).toBe(false);
     });
 
     it("handles avatar URLs appropriately", () => {
