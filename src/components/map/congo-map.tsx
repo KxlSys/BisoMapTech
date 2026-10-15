@@ -7,6 +7,7 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import type { Profile } from "@/types";
 import { useTheme } from "@/components/theme-provider";
 import { escapeHtml } from "@/lib/profile-service";
+import { isSafeUrl } from "@/lib/url-utils";
 
 const LIGHT_TILES = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
@@ -72,7 +73,11 @@ function buildPopupContent(profile: Profile): string {
     .map((t) => `<span style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">${escapeHtml(t)}</span>`)
     .join("");
   const safeUsername = encodeURIComponent(profile.username);
-  const avatarUrl = profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=16a34a&color=fff`;
+  const rawAvatarUrl = (profile.avatar_url || "").trim();
+  const avatarUrl =
+    rawAvatarUrl && isSafeUrl(rawAvatarUrl)
+      ? rawAvatarUrl
+      : `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=16a34a&color=fff`;
 
   return `
         <div style="min-width:190px;font-family:system-ui,sans-serif;">

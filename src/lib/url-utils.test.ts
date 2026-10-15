@@ -21,9 +21,16 @@ describe("url-utils", () => {
 
     it("returns false for data: and vbscript: URLs", () => {
       expect(isSafeUrl("data:text/html,<script>alert(1)</script>")).toBe(false);
+      expect(isSafeUrl("data:image/svg+xml;utf8,<svg onload=alert(1)></svg>")).toBe(false);
       expect(isSafeUrl("vbscript:msgbox(1)")).toBe(false);
       expect(isSafeUrl("DATA:text/html,xss")).toBe(false);
       expect(isSafeUrl("VBSCRIPT:msgbox(1)")).toBe(false);
+    });
+
+    it("handles avatar URLs appropriately", () => {
+      expect(isSafeUrl("https://example.com/avatars/user.png")).toBe(true);
+      expect(isSafeUrl("http://ui-avatars.com/api/?name=Test")).toBe(true);
+      expect(isSafeUrl("javascript:alert('avatar_xss')")).toBe(false);
     });
 
     it("returns false for invalid or relative URLs without base", () => {
