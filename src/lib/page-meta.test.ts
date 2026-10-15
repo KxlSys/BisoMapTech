@@ -81,6 +81,16 @@ describe("buildProfileMeta", () => {
     expect(meta.card).toBe("summary_large_image");
   });
 
+  it("neutralise un avatar_url avec un protocole non HTTP/HTTPS (e.g. javascript:)", () => {
+    const metaJavascript = buildProfileMeta({ ...base, avatar_url: "javascript:alert(1)" });
+    expect(metaJavascript.image).toBe(DEFAULT_OG_IMAGE);
+    expect(metaJavascript.card).toBe("summary_large_image");
+
+    const metaData = buildProfileMeta({ ...base, avatar_url: "data:text/html,<script>alert(1)</script>" });
+    expect(metaData.image).toBe(DEFAULT_OG_IMAGE);
+    expect(metaData.card).toBe("summary_large_image");
+  });
+
   it("construit une URL canonique encodée", () => {
     const meta = buildProfileMeta({ ...base, username: "jean luc" });
     expect(meta.url).toBe("https://bisomaptech.vercel.app/contributeurs/jean%20luc");
