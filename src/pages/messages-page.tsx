@@ -350,10 +350,16 @@ function LinkPreview({ url }: { url: string }) {
         }
       } catch {
         if (active) {
+          let host = "Lien externe";
+          try {
+            host = new URL(url).hostname.replace("www.", "");
+          } catch {
+            // Safe fallback if URL parsing fails
+          }
           setData({
-            url,
-            title: new URL(url).hostname.replace("www.", ""),
-            publisher: new URL(url).hostname.replace("www.", "")
+            url: isSafeUrl(url) ? url : "about:blank",
+            title: host,
+            publisher: host
           });
         }
       } finally {

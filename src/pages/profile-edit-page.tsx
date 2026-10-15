@@ -42,7 +42,6 @@ import {
 import type { RoleType, ExperienceLevel, Repository } from "@/types";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { toast } from "sonner";
-import { getSafeUrl } from "@/lib/utils";
 import { sanitizeUrl } from "@/lib/url-utils";
 
 function extractGithubUsername(githubUrl?: string | null): string | null {
@@ -210,6 +209,7 @@ export function ProfileEditPage() {
   function normalizeWebsiteUrl(raw: string): string {
     const v = raw.trim();
     if (!v) return "";
+    if (/^(javascript|data|vbscript):/i.test(v)) return v;
     if (/^https?:\/\//i.test(v)) return v;
     return `https://${v}`;
   }
@@ -223,6 +223,7 @@ export function ProfileEditPage() {
         .string()
         .trim()
         .min(4, "Lien requis")
+        .refine((v) => !/^(javascript|data|vbscript):/i.test(v), "Protocole non autorisé")
         .transform(normalizeWebsiteUrl)
         .refine((value) => {
           try {
@@ -688,10 +689,7 @@ export function ProfileEditPage() {
 
             {pinnedProjects.length > 0 && (
               <div className="mt-2 space-y-2">
-                {pinnedProjects.map((p) => {
-                  const safeUrl = getSafeUrl(p.url);
-                  if (!safeUrl) return null;
-                  return (
+                {pinnedProjects.map((p) => (
                   <div
                     key={p.id}
                     className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-white/3 p-3"
@@ -720,8 +718,7 @@ export function ProfileEditPage() {
                       Supprimer
                     </Button>
                   </div>
-                );
-                })}
+                ))}
               </div>
             )}
           </div>
