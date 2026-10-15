@@ -101,16 +101,27 @@ export function buildProfileMeta(profile: ProfileMetaInput): PageMeta {
     description = `Profil de ${name} sur la carte de la communauté tech congolaise.`;
   }
 
-  const avatar = (profile.avatar_url || "").trim();
+  const rawAvatar = (profile.avatar_url || "").trim();
+  let safeAvatar = "";
+  if (rawAvatar) {
+    try {
+      const parsed = new URL(rawAvatar);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        safeAvatar = rawAvatar;
+      }
+    } catch {
+      // Invalid URL scheme or format
+    }
+  }
 
   return {
     title,
     description,
     // L'avatar est carré : une grande carte de partage le rognerait mal.
-    image: avatar || DEFAULT_OG_IMAGE,
+    image: safeAvatar || DEFAULT_OG_IMAGE,
     url: `${SITE_URL}/contributeurs/${encodeURIComponent(profile.username)}`,
     type: "profile",
-    card: avatar ? "summary" : "summary_large_image",
+    card: safeAvatar ? "summary" : "summary_large_image",
   };
 }
 
