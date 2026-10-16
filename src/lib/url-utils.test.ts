@@ -17,6 +17,13 @@ describe("url-utils", () => {
       expect(isSafeUrl("javascript:alert(1)")).toBe(false);
       expect(isSafeUrl("javascript%3Aalert(1)")).toBe(false);
       expect(isSafeUrl("JAVAscript:alert(1)")).toBe(false);
+      expect(isSafeUrl(" java\x00script:alert(1)")).toBe(false);
+      expect(isSafeUrl("jav\tascript:alert(1)")).toBe(false);
+    });
+
+    it("handles whitespace and control character trimming for safe URLs", () => {
+      expect(isSafeUrl("  https://github.com/user  ")).toBe(true);
+      expect(isSafeUrl("\thttps://example.com\n")).toBe(true);
     });
 
     it("returns false for data: and vbscript: URLs", () => {

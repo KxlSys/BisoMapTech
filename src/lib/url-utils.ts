@@ -10,8 +10,11 @@ const ALLOWED_PROTOCOLS = new Set(["http:", "https:", "blob:"]);
  */
 export function isSafeUrl(urlStr: string | null | undefined): boolean {
   if (!urlStr) return false;
+  // Remove ASCII control characters (0x00-0x1F, 0x7F) and whitespace that browsers might strip or ignore
+  const sanitized = urlStr.replace(/[\x00-\x1F\x7F]/g, "").trim();
+  if (!sanitized) return false;
   try {
-    const parsed = new URL(urlStr);
+    const parsed = new URL(sanitized);
     return ALLOWED_PROTOCOLS.has(parsed.protocol);
   } catch {
     return false;
