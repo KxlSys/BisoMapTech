@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { VoiceMessage } from "@/components/messages/voice-message";
+import { isSafeUrl } from "@/lib/url-utils";
 import { useAuthStore } from "@/store/auth-store";
 import { supabase } from "@/lib/supabase";
 import {
@@ -268,16 +269,6 @@ function AttachmentRenderer({ message, partnerPublicKey, isMine }: AttachmentRen
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "🙏"];
-
-function isSafeUrl(urlStr: string | null) {
-  if (!urlStr) return false;
-  try {
-    const url = new URL(urlStr);
-    return ["http:", "https:", "blob:"].includes(url.protocol);
-  } catch {
-    return false;
-  }
-}
 
 
 function renderMessageContent(content: string) {
