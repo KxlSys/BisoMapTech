@@ -24,6 +24,7 @@ describe("url-utils", () => {
     it("handles whitespace and control character trimming for safe URLs", () => {
       expect(isSafeUrl("  https://github.com/user  ")).toBe(true);
       expect(isSafeUrl("\thttps://example.com\n")).toBe(true);
+      expect(isSafeUrl("\x00https://example.com")).toBe(true);
     });
 
     it("returns false for data: and vbscript: URLs", () => {
