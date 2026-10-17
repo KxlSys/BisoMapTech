@@ -31,3 +31,11 @@
 **Learning:** Filtering out invalid user data during render rather than sanitizing its href prevents users from managing or deleting their own content. Error fallbacks in async fetchers (like Microlink API) must enforce URL scheme checks before assigning state that triggers `window.open`.
 
 **Prevention:** Render user-managed data items using `sanitizeUrl` for safe href fallback so invalid URLs remain visible and deletable by the owner. Ensure all catch/fallback paths in preview helpers explicitly validate URL schemes with `isSafeUrl`.
+
+## 2026-11-20 - Unvalidated Post-Auth Redirect (Open Redirect)
+
+**Vulnerability:** The OAuth authentication flow read a `next` query parameter in `login-page.tsx` and saved it directly to `sessionStorage` as `auth.returnTo`. Upon completing OAuth login, `auth-callback-page.tsx` navigated to `returnTo` without verifying if it was an internal relative path. An attacker could craft a link like `/login?next=https://evil.com` or `//evil.com`, forcing post-authentication redirection to an external malicious domain.
+
+**Learning:** Storing URL query parameters directly into session state for post-login navigation without scheme/domain validation allows attackers to abuse authentic site trust for phishing or credential theft.
+
+**Prevention:** Always validate post-authentication redirect targets using a strict helper (`isSafeInternalRedirect` / `sanitizeInternalRedirect`) that enforces leading `/` paths while explicitly rejecting protocol-relative (`//`), Windows path trick (`/\`), and absolute scheme (`http:`, `https:`, `javascript:`) URLs.

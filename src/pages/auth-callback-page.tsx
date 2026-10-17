@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth-store";
 import { upsertProfile, fetchProfileById } from "@/lib/profile-service";
 import { getCityCoordinates } from "@/lib/cities";
+import { sanitizeInternalRedirect } from "@/lib/url-utils";
 import type { Profile } from "@/types";
 
 function readTokensFromHash() {
@@ -108,9 +109,10 @@ export function AuthCallbackPage() {
           navigate("/onboarding", { replace: true });
         } else {
           setIsNewUser(false);
-          const returnTo = sessionStorage.getItem("auth.returnTo");
+          const rawReturnTo = sessionStorage.getItem("auth.returnTo");
           sessionStorage.removeItem("auth.returnTo");
-          navigate(returnTo || "/", { replace: true });
+          const returnTo = sanitizeInternalRedirect(rawReturnTo, "/");
+          navigate(returnTo, { replace: true });
         }
       } catch (err) {
         const message =
