@@ -39,3 +39,11 @@
 **Learning:** Storing URL query parameters directly into session state for post-login navigation without scheme/domain validation allows attackers to abuse authentic site trust for phishing or credential theft.
 
 **Prevention:** Always validate post-authentication redirect targets using a strict helper (`isSafeInternalRedirect` / `sanitizeInternalRedirect`) that enforces leading `/` paths while explicitly rejecting protocol-relative (`//`), Windows path trick (`/\`), and absolute scheme (`http:`, `https:`, `javascript:`) URLs.
+
+## 2026-12-05 - Arbitrary Command Execution and Bypass in Vite launch-editor
+
+**Vulnerability:** Vite versions between 8.0.0 and 8.1.5 contained High-severity vulnerabilities in its `launch-editor` module (GHSA-698v-4r3x-3vcv, GHSA-r825-w8mm-5pxw, GHSA-587h-7wmj-h5pm) where `escapeCmdArgs()` omitted `%` escaping on Windows, CLI flags for certain editors could be misinterpreted, and `fs.existsSync()` checks could be bypassed.
+
+**Learning:** Dev dependencies like bundlers (`vite`) or development server utilities can execute commands or handle CLI arguments during development and CI build workflows. Outdated dev tooling creates build-environment security risks.
+
+**Prevention:** Keep direct development dependencies updated to patched releases (`vite@^8.3.5`). Periodically run `npm audit` and keep dependency ranges up to date in `package.json` to ensure security patches are applied promptly.
