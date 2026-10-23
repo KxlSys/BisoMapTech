@@ -48,6 +48,7 @@ describe("url-utils", () => {
 
     it("returns false for invalid or relative URLs without base", () => {
       expect(isSafeUrl("not-a-url")).toBe(false);
+      expect(isSafeUrl("about:blank")).toBe(false);
       expect(isSafeUrl("")).toBe(false);
       expect(isSafeUrl(null)).toBe(false);
       expect(isSafeUrl(undefined)).toBe(false);
