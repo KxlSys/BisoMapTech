@@ -4,6 +4,7 @@ import { GitBranch, MapPin, Users, Code, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth-store";
 import { usePlatformStats } from "@/hooks/use-platform-stats";
+import { isSafeInternalRedirect } from "@/lib/url-utils";
 
 export function LoginPage() {
   const { signInWithGitHub, user } = useAuthStore();
@@ -17,8 +18,10 @@ export function LoginPage() {
 
   function handleSignIn() {
     const next = searchParams.get("next");
-    if (next) {
-      sessionStorage.setItem("auth.returnTo", next);
+    if (next && isSafeInternalRedirect(next)) {
+      sessionStorage.setItem("auth.returnTo", next.trim());
+    } else {
+      sessionStorage.removeItem("auth.returnTo");
     }
     signInWithGitHub();
   }
