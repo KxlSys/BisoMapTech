@@ -32,10 +32,10 @@
 
 **Prevention:** Render user-managed data items using `sanitizeUrl` for safe href fallback so invalid URLs remain visible and deletable by the owner. Ensure all catch/fallback paths in preview helpers explicitly validate URL schemes with `isSafeUrl`.
 
-## 2026-11-20 - Unvalidated Post-Auth Redirect (Open Redirect)
+## 2026-12-05 - Missing Relationship Authorization in Edge Function Email Dispatch
 
-**Vulnerability:** The OAuth authentication flow read a `next` query parameter in `login-page.tsx` and saved it directly to `sessionStorage` as `auth.returnTo`. Upon completing OAuth login, `auth-callback-page.tsx` navigated to `returnTo` without verifying if it was an internal relative path. An attacker could craft a link like `/login?next=https://evil.com` or `//evil.com`, forcing post-authentication redirection to an external malicious domain.
+**Vulnerability:** The `send-message-notification` Edge Function authenticated that the caller's JWT matched `sender_id`, but failed to verify whether `sender_id` and `receiver_id` had an accepted connection. An authenticated attacker could call the function directly with any `receiver_id` UUID to send arbitrary spam or phishing email notifications.
 
-**Learning:** Storing URL query parameters directly into session state for post-login navigation without scheme/domain validation allows attackers to abuse authentic site trust for phishing or credential theft.
+**Learning:** Verifying JWT identity (`user.id === sender_id`) is necessary but insufficient when functions operate across user boundaries or execute with privileged Service Role keys. Edge functions must re-enforce domain relationship rules (such as RLS or connection status) before performing privileged side effects like sending emails.
 
-**Prevention:** Always validate post-authentication redirect targets using a strict helper (`isSafeInternalRedirect` / `sanitizeInternalRedirect`) that enforces leading `/` paths while explicitly rejecting protocol-relative (`//`), Windows path trick (`/\`), and absolute scheme (`http:`, `https:`, `javascript:`) URLs.
+**Prevention:** Always perform explicit authorization checks on user-to-user relationships (e.g., using Supabase `are_connected` RPC or checking `connections` status) in Edge Functions before invoking external APIs or dispatching emails.
