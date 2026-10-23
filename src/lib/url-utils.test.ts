@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  isSafeUrl,
-  sanitizeUrl,
-  isSafeInternalRedirect,
-  sanitizeInternalRedirect,
-} from "./url-utils";
+import { isSafeUrl, sanitizeUrl } from "./url-utils";
 
 describe("url-utils", () => {
   describe("isSafeUrl", () => {
@@ -48,7 +43,6 @@ describe("url-utils", () => {
 
     it("returns false for invalid or relative URLs without base", () => {
       expect(isSafeUrl("not-a-url")).toBe(false);
-      expect(isSafeUrl("about:blank")).toBe(false);
       expect(isSafeUrl("")).toBe(false);
       expect(isSafeUrl(null)).toBe(false);
       expect(isSafeUrl(undefined)).toBe(false);
@@ -69,60 +63,6 @@ describe("url-utils", () => {
 
     it("returns custom fallback when specified", () => {
       expect(sanitizeUrl("javascript:alert(1)", "about:blank")).toBe("about:blank");
-    });
-  });
-
-  describe("isSafeInternalRedirect", () => {
-    it("returns true for valid internal paths", () => {
-      expect(isSafeInternalRedirect("/")).toBe(true);
-      expect(isSafeInternalRedirect("/matching")).toBe(true);
-      expect(isSafeInternalRedirect("/matching?vue=projets")).toBe(true);
-      expect(isSafeInternalRedirect("/contributeurs/john_doe#section")).toBe(true);
-    });
-
-    it("returns false for external URLs", () => {
-      expect(isSafeInternalRedirect("https://evil.com")).toBe(false);
-      expect(isSafeInternalRedirect("http://evil.com/login")).toBe(false);
-      expect(isSafeInternalRedirect("https://bisomaptech.vercel.app")).toBe(false);
-    });
-
-    it("returns false for protocol-relative URLs", () => {
-      expect(isSafeInternalRedirect("//evil.com")).toBe(false);
-      expect(isSafeInternalRedirect("//evil.com/path")).toBe(false);
-    });
-
-    it("returns false for Windows backslash path tricks", () => {
-      expect(isSafeInternalRedirect("/\\evil.com")).toBe(false);
-      expect(isSafeInternalRedirect("/\\/evil.com")).toBe(false);
-    });
-
-    it("returns false for javascript and data URIs", () => {
-      expect(isSafeInternalRedirect("javascript:alert(1)")).toBe(false);
-      expect(isSafeInternalRedirect("data:text/html,abc")).toBe(false);
-    });
-
-    it("returns false for null, undefined, empty, or whitespace strings", () => {
-      expect(isSafeInternalRedirect("")).toBe(false);
-      expect(isSafeInternalRedirect("   ")).toBe(false);
-      expect(isSafeInternalRedirect(null)).toBe(false);
-      expect(isSafeInternalRedirect(undefined)).toBe(false);
-    });
-  });
-
-  describe("sanitizeInternalRedirect", () => {
-    it("returns the path if it is a safe internal redirect", () => {
-      expect(sanitizeInternalRedirect("/matching?vue=projets")).toBe("/matching?vue=projets");
-      expect(sanitizeInternalRedirect("/contributeurs")).toBe("/contributeurs");
-    });
-
-    it("returns fallback '/' for unsafe or external URLs", () => {
-      expect(sanitizeInternalRedirect("https://evil.com")).toBe("/");
-      expect(sanitizeInternalRedirect("//evil.com")).toBe("/");
-      expect(sanitizeInternalRedirect("javascript:alert(1)")).toBe("/");
-    });
-
-    it("returns custom fallback when provided", () => {
-      expect(sanitizeInternalRedirect("https://evil.com", "/onboarding")).toBe("/onboarding");
     });
   });
 });

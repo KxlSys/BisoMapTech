@@ -381,9 +381,7 @@ function LinkPreview({ url }: { url: string }) {
     <div
       onClick={(e) => {
         e.stopPropagation();
-        if (isSafeUrl(data.url)) {
-          window.open(data.url, "_blank", "noopener,noreferrer");
-        }
+        window.open(data.url, "_blank", "noopener,noreferrer");
       }}
       className="flex flex-col gap-0 rounded-xl border border-white/10 bg-black/20 overflow-hidden mt-2 max-w-[340px] hover:bg-black/35 transition-all hover:scale-[1.01] cursor-pointer select-none text-left"
     >
