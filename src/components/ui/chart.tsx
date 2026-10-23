@@ -81,6 +81,15 @@ function ChartContainer({
   )
 }
 
+export function sanitizeCssIdentifier(val: string): string {
+  return val.replace(/[^a-zA-Z0-9_-]/g, "")
+}
+
+export function sanitizeCssValue(val?: string): string {
+  if (!val) return ""
+  return val.replace(/[<>{};"'\\/*@]/g, "").trim()
+}
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme ?? config.color
@@ -90,20 +99,25 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
+  const cleanId = sanitizeCssIdentifier(id)
+
   return (
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+${prefix} [data-chart=${cleanId}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ??
       itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
+    const cleanKey = sanitizeCssIdentifier(key)
+    const cleanColor = sanitizeCssValue(color)
+    return cleanColor ? `  --color-${cleanKey}: ${cleanColor};` : null
   })
+  .filter(Boolean)
   .join("\n")}
 }
 `
