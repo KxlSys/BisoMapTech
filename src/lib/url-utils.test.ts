@@ -21,6 +21,11 @@ describe("url-utils", () => {
       expect(isSafeUrl("jav\tascript:alert(1)")).toBe(false);
     });
 
+    it("returns false for dangerous link preview and window.open targets", () => {
+      expect(isSafeUrl("javascript:document.cookie")).toBe(false);
+      expect(isSafeUrl("data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==")).toBe(false);
+    });
+
     it("handles whitespace and control character trimming for safe URLs", () => {
       expect(isSafeUrl("  https://github.com/user  ")).toBe(true);
       expect(isSafeUrl("\thttps://example.com\n")).toBe(true);

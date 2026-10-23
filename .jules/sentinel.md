@@ -31,11 +31,3 @@
 **Learning:** Filtering out invalid user data during render rather than sanitizing its href prevents users from managing or deleting their own content. Error fallbacks in async fetchers (like Microlink API) must enforce URL scheme checks before assigning state that triggers `window.open`.
 
 **Prevention:** Render user-managed data items using `sanitizeUrl` for safe href fallback so invalid URLs remain visible and deletable by the owner. Ensure all catch/fallback paths in preview helpers explicitly validate URL schemes with `isSafeUrl`.
-
-## 2026-12-05 - Missing Relationship Authorization in Edge Function Email Dispatch
-
-**Vulnerability:** The `send-message-notification` Edge Function authenticated that the caller's JWT matched `sender_id`, but failed to verify whether `sender_id` and `receiver_id` had an accepted connection. An authenticated attacker could call the function directly with any `receiver_id` UUID to send arbitrary spam or phishing email notifications.
-
-**Learning:** Verifying JWT identity (`user.id === sender_id`) is necessary but insufficient when functions operate across user boundaries or execute with privileged Service Role keys. Edge functions must re-enforce domain relationship rules (such as RLS or connection status) before performing privileged side effects like sending emails.
-
-**Prevention:** Always perform explicit authorization checks on user-to-user relationships (e.g., using Supabase `are_connected` RPC or checking `connections` status) in Edge Functions before invoking external APIs or dispatching emails.
