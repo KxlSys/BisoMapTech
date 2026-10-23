@@ -82,24 +82,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 2. Initialiser le client Admin (Service Role) pour interroger auth.users et connections
+    // 2. Initialiser le client Admin (Service Role) pour interroger auth.users
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 3. Vérifier que l'expéditeur et le destinataire sont connectés (status = 'accepted')
-    const { data: isConnected, error: connError } = await supabase.rpc("are_connected", {
-      user_a: sender_id,
-      user_b: receiver_id,
-    });
-
-    if (connError || !isConnected) {
-      return new Response(
-        JSON.stringify({ error: "Forbidden: Sender and receiver are not connected" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 4. Récupérer les profils et l'email du destinataire en parallèle
+    // 3. Récupérer les profils et l'email du destinataire en parallèle
     const [senderProfileRes, receiverProfileRes, receiverUserRes] = await Promise.all([
       supabase.from("profiles").select("full_name, username").eq("id", sender_id).maybeSingle(),
       supabase.from("profiles").select("full_name").eq("id", receiver_id).maybeSingle(),
