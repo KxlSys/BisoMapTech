@@ -31,3 +31,11 @@
 **Learning:** Filtering out invalid user data during render rather than sanitizing its href prevents users from managing or deleting their own content. Error fallbacks in async fetchers (like Microlink API) must enforce URL scheme checks before assigning state that triggers `window.open`.
 
 **Prevention:** Render user-managed data items using `sanitizeUrl` for safe href fallback so invalid URLs remain visible and deletable by the owner. Ensure all catch/fallback paths in preview helpers explicitly validate URL schemes with `isSafeUrl`.
+
+## 2026-12-05 - CSS/HTML Injection via Unsanitized Inline Style Component Properties
+
+**Vulnerability:** The `ChartStyle` component in `src/components/ui/chart.tsx` generated inline `<style>` tags using `dangerouslySetInnerHTML` by directly string-interpolating `id`, chart `key`, and CSS `color` properties without sanitization. An attacker supplying crafted configuration identifiers or color values could break out of CSS declaration blocks (`}; ...`) or HTML tags (`</style><script>...`) leading to CSS injection or DOM XSS.
+
+**Learning:** Generating dynamic `<style>` strings with `dangerouslySetInnerHTML` bypasses React's automatic HTML escaping, exposing raw string parameters directly to the DOM parser.
+
+**Prevention:** Always sanitize dynamic identifiers (restricting to `[a-zA-Z0-9_-]`) and value properties (stripping `<`, `>`, `{`, `}`, `;`, `"`, `'`, `\`, `/`, `*`, `@`) before interpolating them into inline style tags.
