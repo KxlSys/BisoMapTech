@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { VoiceMessage } from "@/components/messages/voice-message";
-import { isSafeUrl } from "@/lib/url-utils";
+import { isSafeUrl, sanitizeUrl } from "@/lib/url-utils";
 import { useAuthStore } from "@/store/auth-store";
 import { supabase } from "@/lib/supabase";
 import {
@@ -242,8 +242,9 @@ function AttachmentRenderer({ message, partnerPublicKey, isMine }: AttachmentRen
   if (message.attachment_type === "pdf") {
     return (
       <a
-        href={decryptedUrl}
+        href={sanitizeUrl(decryptedUrl, "#")}
         download={message.attachment_name || "document.pdf"}
+        rel="noopener noreferrer"
         className="flex items-center gap-3 mt-1.5 rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/8 transition-colors max-w-[280px] text-left"
       >
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-400">

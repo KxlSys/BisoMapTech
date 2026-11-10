@@ -39,3 +39,11 @@
 **Learning:** Generating dynamic `<style>` strings with `dangerouslySetInnerHTML` bypasses React's automatic HTML escaping, exposing raw string parameters directly to the DOM parser.
 
 **Prevention:** Always sanitize dynamic identifiers (restricting to `[a-zA-Z0-9_-]`) and value properties (stripping `<`, `>`, `{`, `}`, `;`, `"`, `'`, `\`, `/`, `*`, `@`) before interpolating them into inline style tags.
+
+## 2027-02-14 - DOM Cross-Site Scripting via Unsanitized Attachment Download Anchor Hrefs
+
+**Vulnerability:** In `AttachmentRenderer` (`src/pages/messages-page.tsx`), PDF attachments rendered an anchor tag `<a href={decryptedUrl} download={...}>` without sanitizing `decryptedUrl`. When unencrypted attachments or manipulated message payloads contained `javascript:` pseudo-protocols or unauthorized schemes, clicking the download anchor executed arbitrary script in the context of the user's session.
+
+**Learning:** While image click handlers and unencrypted fallbacks verified URL schemes with `isSafeUrl`, anchor tags with `download` attributes can still execute `javascript:` URLs upon click if their `href` attribute is assigned an unsanitized URL string.
+
+**Prevention:** Always wrap dynamic attachment download URLs in `sanitizeUrl(url, "#")` and enforce `rel="noopener noreferrer"` on attachment anchor elements.
