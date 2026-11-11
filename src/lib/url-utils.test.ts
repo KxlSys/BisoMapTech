@@ -69,5 +69,14 @@ describe("url-utils", () => {
     it("returns custom fallback when specified", () => {
       expect(sanitizeUrl("javascript:alert(1)", "about:blank")).toBe("about:blank");
     });
+
+    it("sanitizes unsafe attachment and document download links", () => {
+      expect(sanitizeUrl("javascript:alert(document.domain)", "#")).toBe("#");
+      expect(sanitizeUrl("data:application/pdf;base64,JVBERi0xLjc=", "#")).toBe("#");
+      expect(sanitizeUrl("blob:https://bisomaptech.vercel.app/test-uuid", "#")).toBe(
+        "blob:https://bisomaptech.vercel.app/test-uuid"
+      );
+      expect(sanitizeUrl("https://example.com/test.pdf", "#")).toBe("https://example.com/test.pdf");
+    });
   });
 });
